@@ -14,5 +14,5 @@ package com.devduong.be.enums;
  */
 public enum RoleName {
     ADMIN,
-    CUSTOMER
+    USER
 }
