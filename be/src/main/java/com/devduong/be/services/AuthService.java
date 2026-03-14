@@ -26,6 +26,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -72,11 +73,19 @@ public class AuthService {
 
     //  TODO: Login
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.phone(), request.password())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.phone(), request.password())
+            );
+        } catch (AuthenticationException e) {
+            // Bắt lỗi xác thực (sai mật khẩu/số điện thoại) từ Spring Security
+            // và ném ra AppException để GlobalExceptionHandler xử lý thành API Response
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+
         User user = userRepository.findByPhone(request.phone())
-                .orElseThrow(() -> new RuntimeException("Phone not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         return new AuthResponse(accessToken, refreshToken);
@@ -87,12 +96,12 @@ public class AuthService {
         String refreshToken = request.refreshToken();
         String phone = jwtService.extractPhone(refreshToken);
         User user = userRepository.findByPhone(phone)
-                .orElseThrow(() -> new RuntimeException("Phone not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         if (!jwtService.isTokenValid(refreshToken)) {
-            throw new RuntimeException("Refresh token is invalid");
+            throw new AppException(ErrorCode.INVALID_TOKEN);
         }
         if (user.getStatus() == UserStatus.LOCKED) {
-            throw new RuntimeException("User is locked");
+            throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         String accessToken = jwtService.generateAccessToken(user);
         return new AuthResponse(accessToken, refreshToken);
