@@ -7,6 +7,7 @@
 package com.devduong.be.repositories;
 
 import com.devduong.be.entities.Role;
+import com.devduong.be.enums.RoleName;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,5 +22,5 @@ import java.util.UUID;
  */
 @Repository
 public interface RoleRepository extends JpaRepository<Role, UUID> {
-    Optional<Role> findByName(String name);
+    Optional<Role> findByName(RoleName name);
 }

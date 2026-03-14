@@ -43,7 +43,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    AuthenticationManager authenticationManager(AuthenticationConfiguration config)throws Exception{
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -60,11 +60,10 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(getPublicEndpoints()).permitAll()
                         .anyRequest().authenticated()
                 )
-                // Thêm JwtFilter vào chuỗi lọc của Spring Security, đảm bảo rằng nó được thực thi trước UsernamePasswordAuthenticationFilter để xử lý xác thực JWT trước khi xử lý xác thực thông thường.
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

@@ -36,7 +36,7 @@ public class User {
     UUID id;
 
     @Column(name = "full_name")
-    String fullname;
+    String fullName;
 
     @Column(unique = true)
     String phone;

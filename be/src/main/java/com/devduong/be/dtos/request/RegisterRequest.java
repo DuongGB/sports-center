@@ -6,6 +6,10 @@
 
 package com.devduong.be.dtos.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 /*
  * @description:
  * @author: Nguyen Tan Thai Duong
@@ -13,8 +17,16 @@ package com.devduong.be.dtos.request;
  * @version:    1.0
  */
 public record RegisterRequest(
-        String fullname,
+        @NotBlank(message = "Full name is required")
+        String fullName,
+        @NotBlank(message = "Phone number is required")
+        @Pattern(
+                regexp = "^(0|\\+84)[0-9]{9}$",
+                message = "Phone number is invalid"
+        )
         String phone,
+        @NotBlank(message = "Password is required")
+        @Size(min = 8, message = "Password must be at least 8 characters")
         String password
 ) {
 }

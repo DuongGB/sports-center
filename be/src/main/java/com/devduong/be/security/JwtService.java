@@ -11,14 +11,14 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jwt.EncryptedJWT;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jwt.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
+import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -89,7 +89,7 @@ public class JwtService {
 
         // Tạo JWT được mã hóa bằng JWE cho refresh token, tương tự như access token nhưng có thời gian sống lâu hơn
         SignedJWT jwt = new SignedJWT(
-                new JWSHeader(JWSAlgorithm.ES256),
+                new JWSHeader(JWSAlgorithm.RS256),
                 claims
         );
         try {
@@ -100,17 +100,27 @@ public class JwtService {
         }
     }
 
-    // TODO: Phương thức để giải mã JWT và trích xuất claims từ token đã được mã hóa bằng JWE
+    // TODO: Phương thức để phân tích JWT và trích xuất claims hỗ trợ cả JWE (Access Token) và JWS (Refresh Token)
     public JWTClaimsSet extractAllClaims(String token) {
         try {
-            // Sử dụng EncryptedJWT để giải mã JWT đã được mã hóa bằng JWE
-            EncryptedJWT encryptedJWT = EncryptedJWT.parse(token);
-            // Sử dụng RSADecrypter để giải mã JWT với khóa riêng tư từ RSAKeyProvider
-            RSADecrypter rsaDecrypter = new RSADecrypter(rsaKeyProvider.getPrivateKey());
-            // Giải mã JWT để trích xuất claims
-            encryptedJWT.decrypt(rsaDecrypter);
-            // Trả về claims đã được giải mã
-            return encryptedJWT.getJWTClaimsSet();
+            // Sử dụng JWTParser để phân tích token, có thể là một JWT được mã hóa bằng JWE hoặc một JWT được ký bằng JWS
+            JWT jwt = JWTParser.parse(token);
+
+            // Nếu token là một JWT được mã hóa bằng JWE, sử dụng RSADecrypter để giải mã và trích xuất claims. Nếu token là một JWT được ký bằng JWS, sử dụng RSASSAVerifier để xác minh chữ ký trước khi trích xuất claims.
+            if (jwt instanceof EncryptedJWT encryptedJWT) {
+                RSADecrypter rsaDecrypter = new RSADecrypter(rsaKeyProvider.getPrivateKey());
+                encryptedJWT.decrypt(rsaDecrypter);
+                return encryptedJWT.getJWTClaimsSet();
+                // Nếu token là một JWT được mã hóa bằng JWE, sử dụng RSADecrypter để giải mã và trích xuất claims
+            } else if (jwt instanceof SignedJWT signedJWT) {
+                RSASSAVerifier verifier = new RSASSAVerifier((RSAPublicKey) rsaKeyProvider.getPublicKey());
+                if (!signedJWT.verify(verifier)) {
+                    throw new RuntimeException("Invalid token");
+                }
+                return signedJWT.getJWTClaimsSet();
+            } else {
+                throw new RuntimeException("Unsupported token type");
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
