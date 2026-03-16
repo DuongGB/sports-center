@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /*
  * @description: Component này sẽ tự động chạy khi ứng dụng Spring Boot khởi động và thực hiện việc kiểm tra, khởi tạo dữ liệu mặc định cho hệ thống, bao gồm:
@@ -60,6 +61,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // Tạo user Admin
             User adminUser = User.builder()
+                    .id(UUID.randomUUID().toString())
                     .fullName("Super Admin")
                     .phone(adminPhone)
                     .password(passwordEncoder.encode("admin123")) // Mã hóa mật khẩu

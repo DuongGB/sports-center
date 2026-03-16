@@ -26,7 +26,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
     // TODO: USER
     USER_NOT_FOUND(1001, "User not found", HttpStatus.NOT_FOUND),
-    INVALID_PASSWORD(1002, "Invalid password", HttpStatus.UNAUTHORIZED),
+    INVALID_PASSWORD(1002, "Password or phone number is invalid", HttpStatus.UNAUTHORIZED),
     PHONE_EXISTS(1003, "Phone number already exists", HttpStatus.BAD_REQUEST),
     ROLE_NOT_FOUND(1004, "Role not found", HttpStatus.NOT_FOUND),
 

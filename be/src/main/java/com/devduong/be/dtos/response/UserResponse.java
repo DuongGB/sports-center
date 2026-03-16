@@ -17,7 +17,7 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record UserResponse(
-        UUID id,
+        String id,
         String fullName,
         String phone,
         String status,

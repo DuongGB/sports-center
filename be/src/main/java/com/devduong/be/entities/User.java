@@ -32,8 +32,7 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    UUID id;
+    String id;
 
     @Column(name = "full_name")
     String fullName;
@@ -49,6 +48,9 @@ public class User {
     @Column(name = "created_at")
     LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
@@ -56,5 +58,17 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     Set<Role> roles = new HashSet<>();
+
+    // TODO: Add @PrePersist and @PreUpdate to set createdAt and updatedAt
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+        status = UserStatus.ACTIVE;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
 

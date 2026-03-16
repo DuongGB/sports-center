@@ -33,6 +33,7 @@ public class Role {
     UUID id;
 
     @Enumerated(EnumType.STRING)
+    @Column(unique = true, nullable = false)
     RoleName name;
 }
 
