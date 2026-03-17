@@ -30,4 +30,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u.id FROM User u WHERE u.id LIKE CONCAT(:prefix, '%')")
     List<String> findIdsByPrefix(@Param("prefix") String prefix);
+
+    // lấy tất cả người dùng có vai trò là "CUSTOMER"
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = 'CUSTOMER'")
+    List<User> findAllCustomers();
 }
