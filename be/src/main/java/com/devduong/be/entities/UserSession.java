@@ -21,7 +21,11 @@ import java.util.UUID;
  * @version:    1.0
  */
 @Entity
-@Table(name = "user_sessions")
+@Table(name = "user_sessions",
+        indexes = {
+                @Index(name = "idx_session_user", columnList = "user_id"),
+                @Index(name = "idx_session_token", columnList = "access_token")
+        })
 @Getter
 @Setter
 @Builder

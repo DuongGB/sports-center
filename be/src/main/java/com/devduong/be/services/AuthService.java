@@ -113,10 +113,12 @@ public class AuthService {
         String refreshToken = request.refreshToken();
         UserSession session = userSessionRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_TOKEN));
-        User user = session.getUser();
         if (!jwtService.isTokenValid(refreshToken)) {
+            session.setStatus(SessionStatus.EXPIRED);
+            userSessionRepository.save(session);
             throw new AppException(ErrorCode.INVALID_TOKEN);
         }
+        User user = session.getUser();
         if (user.getStatus() == UserStatus.LOCKED) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
