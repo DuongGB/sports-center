@@ -33,6 +33,7 @@ public enum ErrorCode {
     // TODO: AUTH
     INVALID_TOKEN(2001, "Invalid token", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(2002, "Token expired", HttpStatus.UNAUTHORIZED),
+    FORBIDDEN(2003, "No permission", HttpStatus.FORBIDDEN),
 
     // TODO: PRODUCT VALIDATION
     INVALID_REQUEST(3001, "Invalid request", HttpStatus.BAD_REQUEST),
