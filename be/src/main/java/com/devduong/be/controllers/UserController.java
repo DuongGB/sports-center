@@ -14,6 +14,7 @@ import com.devduong.be.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -36,32 +37,32 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> getAllCustomers() {
-        List<UserResponse> customers = userService.getAllCustomers();
         return ResponseEntity.ok(ApiResponse.<List<UserResponse>>builder()
                 .success(true)
+                .code(HttpStatus.OK.value())
                 .message("Get all customers successful")
-                .data(customers)
+                .data(userService.getAllCustomers())
                 .build());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> getUserById(@PathVariable String id) {
-        UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                 .success(true)
+                .code(HttpStatus.OK.value())
                 .message("Get user by id successful")
-                .data(user)
+                .data(userService.getUserById(id))
                 .build());
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> updateUser(@PathVariable String id, @Valid @RequestBody UserUpdateRequest request) {
-        UserResponse updatedUser = userService.updateUser(id, request);
         return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                 .success(true)
+                .code(HttpStatus.OK.value())
                 .message("Update user successful")
-                .data(updatedUser)
+                .data(userService.updateUser(id, request))
                 .build());
     }
 }

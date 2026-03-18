@@ -37,6 +37,10 @@ public enum ErrorCode {
 
     // TODO: PRODUCT VALIDATION
     INVALID_REQUEST(3001, "Invalid request", HttpStatus.BAD_REQUEST),
+    // TODO: SPORT TYPE
+    SPORT_TYPE_NOT_FOUND(3002, "Sport type not found", HttpStatus.NOT_FOUND),
+    SPORT_TYPE_EXISTS(3003, "Sport type already exists", HttpStatus.BAD_REQUEST),
+
 
     // TODO: PERMISSION
     ACCESS_DENIED(4001, "Access denied", HttpStatus.FORBIDDEN),
