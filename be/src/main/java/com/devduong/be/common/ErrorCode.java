@@ -40,11 +40,17 @@ public enum ErrorCode {
     // TODO: SPORT TYPE
     SPORT_TYPE_NOT_FOUND(3002, "Sport type not found", HttpStatus.NOT_FOUND),
     SPORT_TYPE_EXISTS(3003, "Sport type already exists", HttpStatus.BAD_REQUEST),
-
+    // TODO: COURT
+    COURT_NOT_FOUND(3004, "Court not found", HttpStatus.NOT_FOUND),
+    COURT_EXISTS(3005, "Court already exists", HttpStatus.BAD_REQUEST),
 
     // TODO: PERMISSION
     ACCESS_DENIED(4001, "Access denied", HttpStatus.FORBIDDEN),
     UNAUTHORIZED(4002, "Unauthorized", HttpStatus.UNAUTHORIZED),
+
+    // TODO: SORT
+    INVALID_SORT_FIELD(5001, "Invalid sort field", HttpStatus.BAD_REQUEST),
+    INVALID_SORT_DIRECTION(5002, "Invalid sort direction", HttpStatus.BAD_REQUEST),
 
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);

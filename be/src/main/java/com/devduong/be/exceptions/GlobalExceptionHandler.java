@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
         ApiResponse<Object> response = ApiResponse.builder()
                 .success(false)
                 .code(ErrorCode.INVALID_REQUEST.getCode())
-                .message(ErrorCode.INVALID_REQUEST.getMessage())
+                .message(ex.getMessage())
                 .data(errors)
                 .path(request.getRequestURI())
                 .timestamp(LocalDateTime.now())

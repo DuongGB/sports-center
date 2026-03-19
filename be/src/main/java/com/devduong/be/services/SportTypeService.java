@@ -7,14 +7,22 @@
 package com.devduong.be.services;
 
 import com.devduong.be.common.ErrorCode;
+import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.SportTypeFilterRequest;
 import com.devduong.be.dtos.request.SportTypeRequest;
 import com.devduong.be.dtos.response.SportTypeResponse;
+import com.devduong.be.dtos.response.UserResponse;
 import com.devduong.be.entities.SportType;
+import com.devduong.be.entities.User;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.SportTypeMapper;
 import com.devduong.be.repositories.SportTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,11 +42,23 @@ public class SportTypeService {
     SportTypeMapper sportTypeMapper;
 
     // TODO: Get all sport types
-    public List<SportTypeResponse> getAllSportTypes() {
-        List<SportType> sportTypes = sportTypeRepository.findAll();
-        return sportTypes.stream()
+    public PageResponse<SportTypeResponse> getAllSportTypes(SportTypeFilterRequest request) {
+        // Cấu hình sorting
+        Pageable pageable = request.getPageable();
+        // Gọi DB
+        Page<SportType> sportTypePage = sportTypeRepository.findAllWithFilter(request.keyword(), pageable);
+        // Map Entity sang DTO
+        List<SportTypeResponse> sportTypeResponses = sportTypePage.getContent().stream()
                 .map(sportTypeMapper::toSportTypeResponse)
                 .toList();
+        // Trả về kết quả
+        return new PageResponse<>(
+                request.page(),
+                request.size(),
+                sportTypePage.getTotalElements(),
+                sportTypePage.getTotalPages(),
+                sportTypeResponses
+        );
     }
 
     // TODO: Get sport type by id

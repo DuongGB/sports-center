@@ -7,6 +7,8 @@
 package com.devduong.be.controllers;
 
 import com.devduong.be.common.ApiResponse;
+import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.UserFilterRequest;
 import com.devduong.be.dtos.request.UserUpdateRequest;
 import com.devduong.be.dtos.response.UserResponse;
 import com.devduong.be.entities.User;
@@ -36,12 +38,15 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> getAllCustomers() {
-        return ResponseEntity.ok(ApiResponse.<List<UserResponse>>builder()
+    public ResponseEntity<ApiResponse<?>> getAllCustomers(
+            @ModelAttribute UserFilterRequest request // Sử dụng @ModelAttribute để tự động map query params vào object request
+    ) {
+        PageResponse<UserResponse> pageResponse = userService.getAllCustomers(request);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<UserResponse>>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Get all customers successful")
-                .data(userService.getAllCustomers())
+                .data(pageResponse)
                 .build());
     }
 

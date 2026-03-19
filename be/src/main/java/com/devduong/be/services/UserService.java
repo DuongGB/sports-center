@@ -7,6 +7,8 @@
 package com.devduong.be.services;
 
 import com.devduong.be.common.ErrorCode;
+import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.UserFilterRequest;
 import com.devduong.be.dtos.request.UserUpdateRequest;
 import com.devduong.be.dtos.response.UserResponse;
 import com.devduong.be.entities.User;
@@ -15,6 +17,10 @@ import com.devduong.be.mappers.UserMapper;
 import com.devduong.be.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,11 +41,27 @@ public class UserService {
     PasswordEncoder passwordEncoder;
 
     // TODO: Get all users with role "CUSTOMER"
-    public List<UserResponse> getAllCustomers() {
-        List<User> customers = userRepository.findAllCustomers();
-        return customers.stream()
+    public PageResponse<UserResponse> getAllCustomers(UserFilterRequest request) {
+        // Cấu hình sorting
+        Pageable pageable = request.getPageable();
+        // Gọi DB
+        Page<User> userPage = userRepository.findCustomersWithFilter(
+                request.keyword(),
+                request.status(),
+                pageable
+        );
+        // Map Entity sang DTO
+        List<UserResponse> userResponses = userPage.getContent().stream()
                 .map(userMapper::toUserResponse)
                 .toList();
+        // Trả về kết quả
+        return new PageResponse<>(
+                request.page(),
+                userPage.getTotalPages(),
+                userPage.getSize(),
+                userPage.getTotalElements(),
+                userResponses
+        );
     }
 
     // TODO: Get user by id

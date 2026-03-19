@@ -27,6 +27,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
     boolean success;
     int code;
@@ -34,11 +35,9 @@ public class ApiResponse<T> {
     T data;
     String path;
     @Builder.Default
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     LocalDateTime timestamp = LocalDateTime.now();
 
     @Builder.Default
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     String traceId = UUID.randomUUID().toString();
 
 }

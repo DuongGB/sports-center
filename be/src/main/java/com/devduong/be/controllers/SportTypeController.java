@@ -7,7 +7,10 @@
 package com.devduong.be.controllers;
 
 import com.devduong.be.common.ApiResponse;
+import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.SportTypeFilterRequest;
 import com.devduong.be.dtos.request.SportTypeRequest;
+import com.devduong.be.dtos.response.SportTypeResponse;
 import com.devduong.be.services.SportTypeService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -34,12 +37,13 @@ public class SportTypeController {
     SportTypeService sportTypeService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> getAllSportTypes() {
-        return ResponseEntity.ok(ApiResponse.builder()
+    public ResponseEntity<ApiResponse<?>> getAllSportTypes(@ModelAttribute SportTypeFilterRequest request) {
+        PageResponse<SportTypeResponse> pageResponse = sportTypeService.getAllSportTypes(request);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<SportTypeResponse>>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Get all sport types successful")
-                .data(sportTypeService.getAllSportTypes())
+                .data(pageResponse)
                 .build());
     }
 
