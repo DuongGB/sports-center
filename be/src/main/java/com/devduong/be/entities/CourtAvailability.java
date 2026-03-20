@@ -33,13 +33,14 @@ public class CourtAvailability {
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "court_id", nullable = false)
     Court court;
 
+    // Ngày cụ thể mà sân có thể được đặt hoặc bị chặn
     LocalDate date;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_slot_id", nullable = false)
     TimeSlot timeSlot;
 

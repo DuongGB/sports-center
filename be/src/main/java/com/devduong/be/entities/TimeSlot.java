@@ -11,6 +11,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -33,9 +34,9 @@ public class TimeSlot {
     UUID id;
 
     @Column(name = "start_time", nullable = false)
-    LocalDateTime startTime;
+    LocalTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    LocalDateTime endTime;
+    LocalTime endTime;
 }
 

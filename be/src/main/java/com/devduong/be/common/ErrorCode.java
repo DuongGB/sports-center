@@ -43,6 +43,14 @@ public enum ErrorCode {
     // TODO: COURT
     COURT_NOT_FOUND(3004, "Court not found", HttpStatus.NOT_FOUND),
     COURT_EXISTS(3005, "Court already exists", HttpStatus.BAD_REQUEST),
+    // TODO: PRICE COURT
+    PRICE_ALREADY_EXISTS(3006, "Price already exists for court and time slot", HttpStatus.BAD_REQUEST),
+    // TODO: TIME SLOT
+    TIME_SLOT_NOT_FOUND(3007, "Time slot not found", HttpStatus.NOT_FOUND),
+    TIME_SLOT_EXISTS(3008, "Time slot already exists for start time and end time", HttpStatus.BAD_REQUEST),
+    INVALID_TIME_SLOT(3009, "Invalid time slot (start time must be before end time)", HttpStatus.BAD_REQUEST),
+    // TODO: AVAILABILITY
+    AVAILABILITY_ALREADY_EXISTS(3010, "Availability already exists for court, date and time slot", HttpStatus.BAD_REQUEST),
 
     // TODO: PERMISSION
     ACCESS_DENIED(4001, "Access denied", HttpStatus.FORBIDDEN),
