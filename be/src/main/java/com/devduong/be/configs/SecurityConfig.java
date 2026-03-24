@@ -55,6 +55,7 @@ public class SecurityConfig {
     public String[] getPublicEndpoints() {
         return new String[]{
                 "/api/auth/**",
+                "/api/booking/**",
         };
     }
 

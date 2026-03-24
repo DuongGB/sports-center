@@ -7,6 +7,7 @@
 package com.devduong.be.repositories;
 
 import com.devduong.be.entities.CourtAvailability;
+import com.devduong.be.enums.AvailabilityStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -27,4 +28,7 @@ public interface CourtAvailabilityRepository extends JpaRepository<CourtAvailabi
 
     // TODO: Kiểm tra xem khung giờ của sân trong ngày đó đã bị đặt hay chưa
     boolean existsByCourtIdAndDateAndTimeSlotId(UUID courtId, LocalDate date, UUID timeSlotId);
+
+    // TODO: Check xem sân có bị khóa và ngày và khung giờ đụ thể không
+    boolean existsByCourtIdAndTimeSlotIdAndDateAndStatus(UUID courtId, UUID timeSlotId, LocalDate date, AvailabilityStatus status);
 }

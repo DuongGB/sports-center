@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 /*
@@ -38,5 +39,14 @@ public class TimeSlot {
 
     @Column(name = "end_time", nullable = false)
     LocalTime endTime;
+
+    @OneToMany(mappedBy = "timeSlot", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtPrice> courtPrices;
+
+    @OneToMany(mappedBy = "timeSlot", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Booking> bookings;
+
+    @OneToMany(mappedBy = "timeSlot", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtAvailability> courtAvailabilities;
 }
 
