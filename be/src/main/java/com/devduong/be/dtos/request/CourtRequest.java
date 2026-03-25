@@ -7,6 +7,7 @@
 package com.devduong.be.dtos.request;
 
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -19,7 +20,9 @@ import java.util.UUID;
 public record CourtRequest(
         @NotBlank(message = "Court name is required")
         String name,
+        @NotBlank(message = "Court location is required")
         String location,
+        MultipartFile image,
         UUID sportTypeId
 ) {
 }

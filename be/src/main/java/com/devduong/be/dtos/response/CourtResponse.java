@@ -18,6 +18,7 @@ public record CourtResponse(
         String sportTypeName,
         String name,
         String location,
-        String status
+        String status,
+        String imageUrl
 ) {
 }

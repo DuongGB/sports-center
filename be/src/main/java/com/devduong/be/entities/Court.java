@@ -42,10 +42,13 @@ public class Court {
     @Column(nullable = false)
     String location;
 
+    @Column(name = "image_url")
+    String imageUrl;
+
     @Enumerated(EnumType.STRING)
     CourtStatus status;
 
-    @OneToMany (mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
     List<CourtAvailability> courtAvailabilities;
 }
 

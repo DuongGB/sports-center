@@ -12,9 +12,11 @@ import com.devduong.be.dtos.request.CourtFilterRequest;
 import com.devduong.be.dtos.request.CourtRequest;
 import com.devduong.be.dtos.response.CourtResponse;
 import com.devduong.be.services.CourtService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -56,9 +58,9 @@ public class CourtController {
                 .build());
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> createCourt(@RequestBody CourtRequest request) {
+    public ResponseEntity<ApiResponse<?>> createCourt(@ModelAttribute @Valid CourtRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourtResponse>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
@@ -67,9 +69,9 @@ public class CourtController {
                 .build());
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> updateCourt(@PathVariable UUID id, @RequestBody CourtRequest request) {
+    public ResponseEntity<ApiResponse<?>> updateCourt(@PathVariable UUID id, @ModelAttribute @Valid CourtRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourtResponse>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())

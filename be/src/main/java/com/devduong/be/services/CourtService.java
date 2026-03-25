@@ -42,6 +42,7 @@ public class CourtService {
     CourtRepository courtRepository;
     SportTypeRepository sportTypeRepository;
     CourtMapper courtMapper;
+    CloudinaryService cloudinaryService;
 
     // TODO: Get all courts with filter and pagination
     public PageResponse<CourtResponse> getAllCourts(CourtFilterRequest request) {
@@ -73,6 +74,10 @@ public class CourtService {
     // TODO: Create court
     @Transactional
     public CourtResponse createCourt(CourtRequest request) {
+        String imageUrl = null;
+        if (request.image() != null && !request.image().isEmpty()) {
+            imageUrl = cloudinaryService.uploadImage(request.image());
+        }
         SportType sportType = sportTypeRepository.findById(request.sportTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND));
         CourtStatus status = CourtStatus.ACTIVE;
@@ -80,6 +85,7 @@ public class CourtService {
                 .id(UUID.randomUUID())
                 .name(request.name())
                 .location(request.location())
+                .imageUrl(imageUrl)
                 .status(status)
                 .sportType(sportType)
                 .build();
@@ -96,6 +102,10 @@ public class CourtService {
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
         SportType sportType = sportTypeRepository.findById(request.sportTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND));
+        if (request.image() != null && !request.image().isEmpty()) {
+            String imageUrl = cloudinaryService.uploadImage(request.image());
+            court.setImageUrl(imageUrl);
+        }
         court.setName(request.name());
         court.setSportType(sportType);
         court.setLocation(request.location());
