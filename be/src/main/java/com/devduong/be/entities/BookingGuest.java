@@ -31,11 +31,6 @@ public class BookingGuest {
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "booking_id")
-    Booking booking;
-
     @Column(name = "full_name", nullable = false)
     String fullName;
 

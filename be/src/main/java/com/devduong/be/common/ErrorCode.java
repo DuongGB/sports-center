@@ -33,13 +33,41 @@ public enum ErrorCode {
     // TODO: AUTH
     INVALID_TOKEN(2001, "Invalid token", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(2002, "Token expired", HttpStatus.UNAUTHORIZED),
+    FORBIDDEN(2003, "No permission", HttpStatus.FORBIDDEN),
 
     // TODO: PRODUCT VALIDATION
     INVALID_REQUEST(3001, "Invalid request", HttpStatus.BAD_REQUEST),
+    // TODO: SPORT TYPE
+    SPORT_TYPE_NOT_FOUND(3002, "Sport type not found", HttpStatus.NOT_FOUND),
+    SPORT_TYPE_EXISTS(3003, "Sport type already exists", HttpStatus.BAD_REQUEST),
+    // TODO: COURT
+    COURT_NOT_FOUND(3004, "Court not found", HttpStatus.NOT_FOUND),
+    COURT_EXISTS(3005, "Court already exists", HttpStatus.BAD_REQUEST),
+    COURT_ALREADY_BOOKED(3006, "Court is already booked for the selected date and time slot", HttpStatus.BAD_REQUEST),
+    COURT_BLOCKED(3007, "Court is blocked for the selected date and time slot", HttpStatus.BAD_REQUEST),
+    // TODO: PRICE COURT
+    PRICE_ALREADY_EXISTS(3008, "Price already exists for court and time slot", HttpStatus.BAD_REQUEST),
+    // TODO: TIME SLOT
+    TIME_SLOT_NOT_FOUND(3009, "Time slot not found", HttpStatus.NOT_FOUND),
+    TIME_SLOT_EXISTS(3010, "Time slot already exists for start time and end time", HttpStatus.BAD_REQUEST),
+    INVALID_TIME_SLOT(3011, "Invalid time slot (start time must be before end time)", HttpStatus.BAD_REQUEST),
+    // TODO: AVAILABILITY
+    AVAILABILITY_ALREADY_EXISTS(3012, "Availability already exists for court, date and time slot", HttpStatus.BAD_REQUEST),
 
     // TODO: PERMISSION
     ACCESS_DENIED(4001, "Access denied", HttpStatus.FORBIDDEN),
     UNAUTHORIZED(4002, "Unauthorized", HttpStatus.UNAUTHORIZED),
+
+    // TODO: SORT
+    INVALID_SORT_FIELD(5001, "Invalid sort field", HttpStatus.BAD_REQUEST),
+    INVALID_SORT_DIRECTION(5002, "Invalid sort direction", HttpStatus.BAD_REQUEST),
+    // TODO: BOOKING
+    GUEST_INFO_REQUIRED(6001, "Guest information is required for booking", HttpStatus.BAD_REQUEST),
+    BOOKING_NOT_FOUND(6002, "Booking not found", HttpStatus.NOT_FOUND),
+    BOOKING_ALREADY_CANCELLED(6003, "Booking is already cancelled", HttpStatus.BAD_REQUEST),
+    CANCEL_TIME_EXPIRED(6004, "Cannot cancel booking after the cancellation deadline", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_ACTION(6005, "You are not authorized to perform this action", HttpStatus.FORBIDDEN),
+    MISSING_PHONE_NUMBER(6006, "Phone number is required for guest booking", HttpStatus.BAD_REQUEST),
 
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);

@@ -7,6 +7,9 @@
 package com.devduong.be.repositories;
 
 import com.devduong.be.entities.User;
+import com.devduong.be.enums.UserStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,4 +33,16 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u.id FROM User u WHERE u.id LIKE CONCAT(:prefix, '%')")
     List<String> findIdsByPrefix(@Param("prefix") String prefix);
+
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = 'CUSTOMER' " +
+            "AND (:keyword IS NULL OR " +
+            "LOWER(u.id) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " + // Ép kiểu keyword
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "u.phone LIKE CONCAT('%', CAST(:keyword AS string), '%')) " +
+            "AND (:status IS NULL OR u.status = :status)")
+    Page<User> findCustomersWithFilter(
+            @Param("keyword") String keyword,
+            @Param("status") UserStatus status,
+            Pageable pageable
+    );
 }

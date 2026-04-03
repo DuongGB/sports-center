@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
 import java.util.UUID;
 
 /*
@@ -41,7 +42,13 @@ public class Court {
     @Column(nullable = false)
     String location;
 
+    @Column(name = "image_url")
+    String imageUrl;
+
     @Enumerated(EnumType.STRING)
     CourtStatus status;
+
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtAvailability> courtAvailabilities;
 }
 

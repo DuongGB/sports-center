@@ -37,25 +37,30 @@ public class Booking {
 
     // NULL if booking made by guest
     @ManyToOne
-    @JoinColumn(name="user_id")
+    @JoinColumn(name = "user_id")
     User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guest_id")
+    BookingGuest bookingGuest;
+
     @ManyToOne
-    @JoinColumn(name="court_id", nullable = false)
+    @JoinColumn(name = "court_id", nullable = false)
     Court court;
 
-    @Column(name="booking_date", nullable = false)
+    @Column(name = "booking_date", nullable = false)
     LocalDate bookingDate;
 
     @ManyToOne
-    @JoinColumn(name="time_slot_id", nullable = false)
+    @JoinColumn(name = "time_slot_id", nullable = false)
     TimeSlot timeSlot;
 
-    @Column(name = "total_price",nullable = false)
-    double totalPrice;
+    @Column(name = "total_price", nullable = false)
+    Double totalPrice;
 
     @Enumerated(EnumType.STRING)
-    BookingStatus status;
+    @Column(nullable = false)
+    BookingStatus bookingStatus;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt;
@@ -63,11 +68,15 @@ public class Booking {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
-    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL)
-    BookingGuest guest;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
-    List<Payment> payments;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
 
 

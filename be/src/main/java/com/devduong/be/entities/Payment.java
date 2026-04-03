@@ -23,7 +23,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "payments")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -33,19 +34,25 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
-    @ManyToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
     Booking booking;
 
     @Enumerated(EnumType.STRING)
-    PaymentMethod method;
+    @Column(nullable = false)
+    PaymentMethod paymentMethod;
 
-    double amount;
+    @Column(nullable = false)
+    Double amount;
 
     @Enumerated(EnumType.STRING)
-    PaymentStatus status;
+    @Column(nullable = false)
+    PaymentStatus paymentStatus;
 
-    @Column(name = "paid_at")
-    LocalDateTime paidAt;
+    @Column(name = "transaction_id")
+    String transactionId;
+
+    @Column(name = "payment_date", nullable = false)
+    LocalDateTime paymentDate;
 }
 

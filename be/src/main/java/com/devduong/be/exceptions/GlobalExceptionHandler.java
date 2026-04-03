@@ -11,6 +11,7 @@ import com.devduong.be.common.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -64,7 +65,7 @@ public class GlobalExceptionHandler {
         ApiResponse<Object> response = ApiResponse.builder()
                 .success(false)
                 .code(ErrorCode.INVALID_REQUEST.getCode())
-                .message(ErrorCode.INVALID_REQUEST.getMessage())
+                .message(ex.getMessage())
                 .data(errors)
                 .path(request.getRequestURI())
                 .timestamp(LocalDateTime.now())
@@ -85,5 +86,24 @@ public class GlobalExceptionHandler {
                 .status(error.getHttpStatus())
                 .body(buildResponse(error, request));
     }
+
+    // TODO: Bắt tất cả các AccessDeniedException (Spring Security)
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        ErrorCode error = ErrorCode.ACCESS_DENIED;
+        ApiResponse<Object> response = ApiResponse.builder()
+                .success(false)
+                .code(error.getCode())
+                .message(error.getMessage())
+                .data(null)
+                .path(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
+                .traceId(UUID.randomUUID().toString())
+                .build();
+        return ResponseEntity
+                .status(error.getHttpStatus())
+                .body(response);
+    }
+
 }
 

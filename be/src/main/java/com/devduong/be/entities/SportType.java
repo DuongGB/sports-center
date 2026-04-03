@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
 import java.util.UUID;
 
 /*
@@ -32,5 +33,8 @@ public class SportType {
     UUID id;
 
     String name;
+
+    @OneToMany(mappedBy = "sportType", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Court> courts;
 }
 

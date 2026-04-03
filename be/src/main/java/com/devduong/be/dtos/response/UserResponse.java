@@ -6,6 +6,8 @@
 
 package com.devduong.be.dtos.response;
 
+import lombok.Builder;
+
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
@@ -16,6 +18,7 @@ import java.util.UUID;
  * @date:   3/14/2026
  * @version:    1.0
  */
+@Builder
 public record UserResponse(
         String id,
         String fullName,

@@ -16,6 +16,7 @@ import com.devduong.be.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +38,7 @@ public class AuthController {
         UserResponse userResponse = authService.register(request);
         return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                 .success(true)
+                .code(HttpStatus.CREATED.value())
                 .message("Register successful")
                 .data(userResponse)
                 .build());
@@ -47,6 +49,7 @@ public class AuthController {
         AuthResponse authResponse = authService.login(request);
         return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
                 .success(true)
+                .code(HttpStatus.OK.value())
                 .message("Login successful")
                 .data(authResponse)
                 .build());
@@ -57,6 +60,7 @@ public class AuthController {
         AuthResponse authResponse = authService.refreshToken(request);
         return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
                 .success(true)
+                .code(HttpStatus.OK.value())
                 .message("Refresh successful")
                 .data(authResponse)
                 .build());
@@ -69,6 +73,7 @@ public class AuthController {
             authService.logout(accessToken);
         }
         return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
                 .success(true)
                 .message("Logout successful")
                 .build());
@@ -79,6 +84,7 @@ public class AuthController {
         UserResponse userResponse = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                 .success(true)
+                .code(HttpStatus.OK.value())
                 .message("Get current user successful")
                 .data(userResponse)
                 .build());
