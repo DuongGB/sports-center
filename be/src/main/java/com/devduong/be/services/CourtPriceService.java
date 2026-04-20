@@ -50,11 +50,11 @@ public class CourtPriceService {
 
     // TODO: create court price
     @Transactional
-    public CourtPriceResponse createCourtPrice(CourtPriceRequest request) {
-        if (courtPriceRepository.existsByCourtIdAndTimeSlotId(request.courtId(), request.timeSlotId())) {
+    public CourtPriceResponse createCourtPrice(UUID courtId,CourtPriceRequest request) {
+        if (courtPriceRepository.existsByCourtIdAndTimeSlotId(courtId, request.timeSlotId())) {
             throw new AppException(ErrorCode.PRICE_ALREADY_EXISTS);
         }
-        Court court = courtRepository.findById(request.courtId())
+        Court court = courtRepository.findById(courtId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
         TimeSlot timeSlot = timeSlotRepository.findById(request.timeSlotId())
                 .orElseThrow(() -> new AppException(ErrorCode.TIME_SLOT_NOT_FOUND));

@@ -19,8 +19,6 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record CourtAvailabilityRequest(
-        @NotNull(message = "Court ID is required")
-        UUID courtId,
         @NotNull(message = "Time slot ID is required")
         UUID timeSlotId,
         @NotNull(message = "Date is required")

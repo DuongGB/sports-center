@@ -42,13 +42,15 @@ public class CourtPriceController {
                 .build());
     }
 
-    @PostMapping
+    @PostMapping("/court/{courtId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> createCourtPrice(@RequestBody @Valid CourtPriceRequest request) {
+    public ResponseEntity<ApiResponse<?>> createCourtPrice(
+            @PathVariable UUID courtId,
+            @RequestBody @Valid CourtPriceRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourtPriceResponse>builder()
                 .success(true)
                 .message("Create court price successfully")
-                .data(courtPriceService.createCourtPrice(request))
+                .data(courtPriceService.createCourtPrice(courtId,request))
                 .build());
     }
 }

@@ -18,11 +18,7 @@ import java.util.UUID;
  */
 public record CourtPriceResponse(
         UUID id,
-        UUID courtId,
-        String courtName,
-        UUID timeSlotId,
-        LocalTime startTime,
-        LocalTime endTime,
+        TimeSlotResponse timeSlot,
         double price
 ) {
 }

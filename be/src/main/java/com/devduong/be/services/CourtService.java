@@ -8,16 +8,19 @@ package com.devduong.be.services;
 
 import com.devduong.be.common.ErrorCode;
 import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.CourtAvailabilityRequest;
 import com.devduong.be.dtos.request.CourtFilterRequest;
+import com.devduong.be.dtos.request.CourtPriceRequest;
 import com.devduong.be.dtos.request.CourtRequest;
 import com.devduong.be.dtos.response.CourtResponse;
-import com.devduong.be.entities.Court;
-import com.devduong.be.entities.SportType;
+import com.devduong.be.entities.*;
 import com.devduong.be.enums.CourtStatus;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.CourtMapper;
+import com.devduong.be.repositories.CourtPriceRepository;
 import com.devduong.be.repositories.CourtRepository;
 import com.devduong.be.repositories.SportTypeRepository;
+import com.devduong.be.repositories.TimeSlotRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -25,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -41,6 +45,8 @@ import java.util.UUID;
 public class CourtService {
     CourtRepository courtRepository;
     SportTypeRepository sportTypeRepository;
+    TimeSlotRepository timeSlotRepository;
+    CourtPriceRepository courtPriceRepository;
     CourtMapper courtMapper;
     CloudinaryService cloudinaryService;
 
@@ -73,46 +79,190 @@ public class CourtService {
 
     // TODO: Create court
     @Transactional
-    public CourtResponse createCourt(CourtRequest request) {
-        String imageUrl = null;
-        if (request.image() != null && !request.image().isEmpty()) {
-            imageUrl = cloudinaryService.uploadImage(request.image());
-        }
+    public CourtResponse createCourt(
+            CourtRequest request,
+            MultipartFile image
+    ) {
+
         SportType sportType = sportTypeRepository.findById(request.sportTypeId())
-                .orElseThrow(() -> new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND));
-        CourtStatus status = CourtStatus.ACTIVE;
+                .orElseThrow(() ->
+                        new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND)
+                );
+
         Court court = Court.builder()
-                .id(UUID.randomUUID())
+                .sportType(sportType)
                 .name(request.name())
                 .location(request.location())
-                .imageUrl(imageUrl)
-                .status(status)
-                .sportType(sportType)
+                .status(request.status())
                 .build();
-        // Lưu vào DB
-        court = courtRepository.save(court);
-        // Map Entity sang DTO và trả về
-        return courtMapper.toCourtResponse(court);
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = cloudinaryService.uploadImage(image);
+            court.setImageUrl(imageUrl);
+        }
+
+        // Availability
+
+        if (request.availabilities() != null) {
+
+            List<CourtAvailability> availabilities =
+                    request.availabilities().stream()
+                            .map(availReq -> {
+
+                                TimeSlot timeSlot =
+                                        timeSlotRepository.findById(
+                                                        availReq.timeSlotId()
+                                                )
+                                                .orElseThrow(() ->
+                                                        new AppException(
+                                                                ErrorCode.TIME_SLOT_NOT_FOUND
+                                                        )
+                                                );
+
+                                return CourtAvailability.builder()
+                                        .court(court)
+                                        .timeSlot(timeSlot)
+                                        .date(availReq.date())
+                                        .status(availReq.status())
+                                        .build();
+
+                            })
+                            .toList();
+
+            court.setCourtAvailabilities(availabilities);
+        }
+
+        // Price
+
+        if (request.prices() != null) {
+
+            List<CourtPrice> prices =
+                    request.prices().stream()
+                            .map(priceReq -> {
+
+                                TimeSlot timeSlot =
+                                        timeSlotRepository.findById(
+                                                        priceReq.timeSlotId()
+                                                )
+                                                .orElseThrow(() ->
+                                                        new AppException(
+                                                                ErrorCode.TIME_SLOT_NOT_FOUND
+                                                        )
+                                                );
+
+                                return CourtPrice.builder()
+                                        .court(court)
+                                        .timeSlot(timeSlot)
+                                        .price(priceReq.price())
+                                        .build();
+
+                            })
+                            .toList();
+
+            court.setCourtPrices(prices);
+        }
+
+        Court savedCourt = courtRepository.save(court);
+
+        return courtMapper.toCourtResponse(savedCourt);
     }
 
     // TODO: Update court
     @Transactional
-    public CourtResponse updateCourt(UUID id, CourtRequest request) {
+    public CourtResponse updateCourt(
+            UUID id,
+            CourtRequest request,
+            MultipartFile image
+    ) {
+
         Court court = courtRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
-        SportType sportType = sportTypeRepository.findById(request.sportTypeId())
-                .orElseThrow(() -> new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND));
-        if (request.image() != null && !request.image().isEmpty()) {
-            String imageUrl = cloudinaryService.uploadImage(request.image());
-            court.setImageUrl(imageUrl);
-        }
+                .orElseThrow(() ->
+                        new AppException(ErrorCode.COURT_NOT_FOUND)
+                );
+
+        SportType sportType = sportTypeRepository.findById(
+                        request.sportTypeId()
+                )
+                .orElseThrow(() ->
+                        new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND)
+                );
+
         court.setName(request.name());
-        court.setSportType(sportType);
         court.setLocation(request.location());
         court.setSportType(sportType);
-        // Lưu vào DB
-        court = courtRepository.save(court);
-        // Map Entity sang DTO và trả về
+
+        if (request.status() != null) {
+            court.setStatus(request.status());
+        }
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = cloudinaryService.uploadImage(image);
+            court.setImageUrl(imageUrl);
+        }
+
+        // UPDATE AVAILABILITY
+
+        if (request.availabilities() != null) {
+
+            court.getCourtAvailabilities().clear();
+
+            for (CourtAvailabilityRequest availReq :
+                    request.availabilities()) {
+
+                TimeSlot timeSlot =
+                        timeSlotRepository.findById(
+                                        availReq.timeSlotId()
+                                )
+                                .orElseThrow(() ->
+                                        new AppException(
+                                                ErrorCode.TIME_SLOT_NOT_FOUND
+                                        )
+                                );
+
+                CourtAvailability availability =
+                        CourtAvailability.builder()
+                                .court(court)
+                                .timeSlot(timeSlot)
+                                .date(availReq.date())
+                                .status(availReq.status())
+                                .build();
+
+                court.getCourtAvailabilities().add(
+                        availability
+                );
+            }
+        }
+
+        // UPDATE PRICE
+
+        if (request.prices() != null) {
+
+            court.getCourtPrices().clear();
+
+            for (CourtPriceRequest priceReq :
+                    request.prices()) {
+
+                TimeSlot timeSlot =
+                        timeSlotRepository.findById(
+                                        priceReq.timeSlotId()
+                                )
+                                .orElseThrow(() ->
+                                        new AppException(
+                                                ErrorCode.TIME_SLOT_NOT_FOUND
+                                        )
+                                );
+
+                CourtPrice price =
+                        CourtPrice.builder()
+                                .court(court)
+                                .timeSlot(timeSlot)
+                                .price(priceReq.price())
+                                .build();
+
+                court.getCourtPrices().add(price);
+            }
+        }
+
         return courtMapper.toCourtResponse(court);
     }
 

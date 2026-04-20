@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -60,23 +61,28 @@ public class CourtController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> createCourt(@ModelAttribute @Valid CourtRequest request) {
+    public ResponseEntity<ApiResponse<?>> createCourt(
+            @RequestPart("data") @Valid CourtRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         return ResponseEntity.ok(ApiResponse.<CourtResponse>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Create court successful")
-                .data(courtService.createCourt(request))
+                .data(courtService.createCourt(request, image))
                 .build());
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> updateCourt(@PathVariable UUID id, @ModelAttribute @Valid CourtRequest request) {
+    public ResponseEntity<ApiResponse<?>> updateCourt(
+            @PathVariable UUID id,
+            @RequestPart("data") @Valid CourtRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         return ResponseEntity.ok(ApiResponse.<CourtResponse>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Update court successful")
-                .data(courtService.updateCourt(id, request))
+                .data(courtService.updateCourt(id, request, image))
                 .build());
     }
 

@@ -51,12 +51,12 @@ public class CourtAvailabilityService {
 
     // TODO: create/update court availability
     @Transactional
-    public CourtAvailabilityResponse createOrUpdateAvailability(CourtAvailabilityRequest request) {
+    public CourtAvailabilityResponse createOrUpdateAvailability(UUID courtId,CourtAvailabilityRequest request) {
         // Check có record nào trùng sân, trùng ngày, trùng giờ không
-        if (courtAvailabilityRepository.existsByCourtIdAndDateAndTimeSlotId(request.courtId(), request.date(), request.timeSlotId())) {
+        if (courtAvailabilityRepository.existsByCourtIdAndDateAndTimeSlotId(courtId, request.date(), request.timeSlotId())) {
             throw new AppException(ErrorCode.AVAILABILITY_ALREADY_EXISTS);
         }
-        Court court = courtRepository.findById(request.courtId())
+        Court court = courtRepository.findById(courtId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
         TimeSlot timeSlot = timeSlotRepository.findById(request.timeSlotId())
                 .orElseThrow(() -> new AppException(ErrorCode.TIME_SLOT_NOT_FOUND));

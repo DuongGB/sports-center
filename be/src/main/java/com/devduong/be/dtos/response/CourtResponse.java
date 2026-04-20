@@ -6,6 +6,10 @@
 
 package com.devduong.be.dtos.response;
 
+import com.devduong.be.enums.CourtStatus;
+
+import java.util.List;
+
 /*
  * @description:
  * @author: Nguyen Tan Thai Duong
@@ -18,7 +22,9 @@ public record CourtResponse(
         String sportTypeName,
         String name,
         String location,
-        String status,
-        String imageUrl
+        CourtStatus status,
+        String imageUrl,
+        List<CourtAvailabilityResponse> availabilities,
+        List<CourtPriceResponse> prices
 ) {
 }

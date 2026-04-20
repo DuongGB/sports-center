@@ -30,6 +30,7 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Court {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
     @ManyToOne
@@ -50,5 +51,8 @@ public class Court {
 
     @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
     List<CourtAvailability> courtAvailabilities;
+
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtPrice> courtPrices;
 }
 
