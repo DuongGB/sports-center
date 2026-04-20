@@ -22,7 +22,10 @@ export default function LoginModal({
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === "phone" || name === "password") {
+      value = value.trim();
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: value,

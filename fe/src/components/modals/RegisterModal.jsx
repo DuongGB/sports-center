@@ -26,7 +26,13 @@ export default function RegisterModal({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === "phone" || name === "password" || name === "confirmPassword") {
+      value = value.trim();
+    } else if (name === "fullName") {
+      value = value.trimStart();
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
