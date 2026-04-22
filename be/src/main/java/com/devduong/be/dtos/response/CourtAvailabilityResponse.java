@@ -22,7 +22,9 @@ import java.util.UUID;
 public record CourtAvailabilityResponse(
         UUID id,
         LocalDate date,
-        TimeSlotResponse timeSlot,
-        AvailabilityStatus status
+        LocalTime startTime,
+        LocalTime endTime,
+        AvailabilityStatus status,
+        String reason
 ) {
 }

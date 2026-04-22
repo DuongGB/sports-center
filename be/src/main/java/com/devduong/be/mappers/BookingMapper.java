@@ -22,8 +22,6 @@ import org.mapstruct.Mapping;
 public interface BookingMapper {
     @Mapping(source = "booking.id", target = "bookingId")
     @Mapping(source = "booking.court.name", target = "courtName")
-    @Mapping(source = "booking.timeSlot.startTime", target = "startTime")
-    @Mapping(source = "booking.timeSlot.endTime", target = "endTime")
     @Mapping(source = "booking.bookingStatus", target = "bookingStatus")
     @Mapping(source = "payment.id", target = "paymentId")
     @Mapping(source = "payment.paymentMethod", target = "paymentMethod")

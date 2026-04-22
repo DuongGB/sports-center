@@ -51,9 +51,11 @@ public class Booking {
     @Column(name = "booking_date", nullable = false)
     LocalDate bookingDate;
 
-    @ManyToOne
-    @JoinColumn(name = "time_slot_id", nullable = false)
-    TimeSlot timeSlot;
+    @Column(name = "start_time", nullable = false)
+    LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    LocalDateTime endTime;
 
     @Column(name = "total_price", nullable = false)
     Double totalPrice;
@@ -68,6 +70,9 @@ public class Booking {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
+    @Column(name = "cancelled_at")
+    LocalDateTime cancelledAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -76,6 +81,11 @@ public class Booking {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @PreRemove
+    protected void onRemove() {
+        cancelledAt = LocalDateTime.now();
     }
 }
 

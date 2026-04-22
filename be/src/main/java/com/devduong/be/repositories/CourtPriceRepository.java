@@ -24,6 +24,4 @@ public interface CourtPriceRepository extends JpaRepository<CourtPrice, UUID> {
     // TODO: get list price by court id
     List<CourtPrice> findByCourtId(UUID courtId);
 
-    // TODO: Check sân có giá vào khung giờ đó không
-    boolean existsByCourtIdAndTimeSlotId(UUID courtId, UUID timeSlotId);
 }

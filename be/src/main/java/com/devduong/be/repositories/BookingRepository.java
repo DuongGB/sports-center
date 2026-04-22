@@ -23,5 +23,5 @@ import java.util.UUID;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
     // TODO: Check xem sân đã bị ai đặt chưa
-    boolean existsByCourtIdAndTimeSlotIdAndBookingDateAndBookingStatusNot(UUID courtId, UUID timeSlot, LocalDate bookingDate, BookingStatus status);
+    boolean existsByCourtIdAndBookingDateAndBookingStatusNot(UUID courtId, LocalDate bookingDate, BookingStatus status);
 }

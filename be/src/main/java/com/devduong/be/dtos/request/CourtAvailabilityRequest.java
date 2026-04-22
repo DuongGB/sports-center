@@ -10,6 +10,8 @@ import com.devduong.be.enums.AvailabilityStatus;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -19,10 +21,13 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record CourtAvailabilityRequest(
-        @NotNull(message = "Time slot ID is required")
-        UUID timeSlotId,
+        @NotNull(message = "Court id is required")
+        UUID courtId,
         @NotNull(message = "Date is required")
         LocalDate date,
+        LocalTime startTime,
+        LocalTime endTime,
+        String reason,
         @NotNull(message = "Availability status is required")
         AvailabilityStatus status
 ) {

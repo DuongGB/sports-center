@@ -11,12 +11,10 @@ import com.devduong.be.dtos.request.CourtPriceRequest;
 import com.devduong.be.dtos.response.CourtPriceResponse;
 import com.devduong.be.entities.Court;
 import com.devduong.be.entities.CourtPrice;
-import com.devduong.be.entities.TimeSlot;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.CourtPriceMapper;
 import com.devduong.be.repositories.CourtPriceRepository;
 import com.devduong.be.repositories.CourtRepository;
-import com.devduong.be.repositories.TimeSlotRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -38,7 +36,6 @@ import java.util.UUID;
 public class CourtPriceService {
     CourtPriceRepository courtPriceRepository;
     CourtRepository courtRepository;
-    TimeSlotRepository timeSlotRepository;
     CourtPriceMapper courtPriceMapper;
 
     // TODO: get list price by court id
@@ -51,16 +48,12 @@ public class CourtPriceService {
     // TODO: create court price
     @Transactional
     public CourtPriceResponse createCourtPrice(UUID courtId,CourtPriceRequest request) {
-        if (courtPriceRepository.existsByCourtIdAndTimeSlotId(courtId, request.timeSlotId())) {
-            throw new AppException(ErrorCode.PRICE_ALREADY_EXISTS);
-        }
         Court court = courtRepository.findById(courtId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
-        TimeSlot timeSlot = timeSlotRepository.findById(request.timeSlotId())
-                .orElseThrow(() -> new AppException(ErrorCode.TIME_SLOT_NOT_FOUND));
         CourtPrice courtPrice = CourtPrice.builder()
                 .court(court)
-                .timeSlot(timeSlot)
+                .startTime(request.startTime())
+                .endTime(request.endTime())
                 .price(request.price())
                 .build();
         return courtPriceMapper.toCourtPriceResponse(courtPriceRepository.save(courtPrice));

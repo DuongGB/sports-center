@@ -24,8 +24,8 @@ import java.util.UUID;
 public record BookingResponse(
         UUID bookingId,
         String courtName,
-        LocalTime startTime,
-        LocalTime endTime,
+        LocalDateTime startTime,
+        LocalDateTime endTime,
         LocalDate bookingDate,
         Double totalPrice,
         BookingStatus bookingStatus,
@@ -33,6 +33,8 @@ public record BookingResponse(
         UUID paymentId,
         PaymentMethod paymentMethod,
         PaymentStatus paymentStatus,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        LocalDateTime deletedAt
 ) {
 }

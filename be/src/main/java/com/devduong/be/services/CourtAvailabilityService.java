@@ -11,12 +11,10 @@ import com.devduong.be.dtos.request.CourtAvailabilityRequest;
 import com.devduong.be.dtos.response.CourtAvailabilityResponse;
 import com.devduong.be.entities.Court;
 import com.devduong.be.entities.CourtAvailability;
-import com.devduong.be.entities.TimeSlot;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.CourtAvailabilityMapper;
 import com.devduong.be.repositories.CourtAvailabilityRepository;
 import com.devduong.be.repositories.CourtRepository;
-import com.devduong.be.repositories.TimeSlotRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,7 +37,6 @@ import java.util.UUID;
 public class CourtAvailabilityService {
     CourtAvailabilityRepository courtAvailabilityRepository;
     CourtRepository courtRepository;
-    TimeSlotRepository timeSlotRepository;
     CourtAvailabilityMapper courtAvailabilityMapper;
 
     // TODO: get list availability by court id and date
@@ -52,18 +49,15 @@ public class CourtAvailabilityService {
     // TODO: create/update court availability
     @Transactional
     public CourtAvailabilityResponse createOrUpdateAvailability(UUID courtId,CourtAvailabilityRequest request) {
-        // Check có record nào trùng sân, trùng ngày, trùng giờ không
-        if (courtAvailabilityRepository.existsByCourtIdAndDateAndTimeSlotId(courtId, request.date(), request.timeSlotId())) {
-            throw new AppException(ErrorCode.AVAILABILITY_ALREADY_EXISTS);
-        }
+
         Court court = courtRepository.findById(courtId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
-        TimeSlot timeSlot = timeSlotRepository.findById(request.timeSlotId())
-                .orElseThrow(() -> new AppException(ErrorCode.TIME_SLOT_NOT_FOUND));
         CourtAvailability courtAvailability = CourtAvailability.builder()
                 .court(court)
                 .date(request.date())
-                .timeSlot(timeSlot)
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .reason(request.reason())
                 .status(request.status())
                 .build();
         return courtAvailabilityMapper.toCourtAvailabilityResponse(courtAvailabilityRepository.save(courtAvailability));

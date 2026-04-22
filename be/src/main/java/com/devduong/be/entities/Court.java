@@ -11,6 +11,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,8 +45,11 @@ public class Court {
     @Column(nullable = false)
     String location;
 
-    @Column(name = "image_url")
-    String imageUrl;
+    @Column(name = "openTime")
+    LocalTime openTime;
+
+    @Column(name = "close_time")
+    LocalTime closeTime;
 
     @Enumerated(EnumType.STRING)
     CourtStatus status;
@@ -54,5 +59,8 @@ public class Court {
 
     @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
     List<CourtPrice> courtPrices;
+
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtImage> courtImages;
 }
 

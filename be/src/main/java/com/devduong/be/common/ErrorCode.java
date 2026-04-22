@@ -47,10 +47,6 @@ public enum ErrorCode {
     COURT_BLOCKED(3007, "Court is blocked for the selected date and time slot", HttpStatus.BAD_REQUEST),
     // TODO: PRICE COURT
     PRICE_ALREADY_EXISTS(3008, "Price already exists for court and time slot", HttpStatus.BAD_REQUEST),
-    // TODO: TIME SLOT
-    TIME_SLOT_NOT_FOUND(3009, "Time slot not found", HttpStatus.NOT_FOUND),
-    TIME_SLOT_EXISTS(3010, "Time slot already exists for start time and end time", HttpStatus.BAD_REQUEST),
-    INVALID_TIME_SLOT(3011, "Invalid time slot (start time must be before end time)", HttpStatus.BAD_REQUEST),
     // TODO: AVAILABILITY
     AVAILABILITY_ALREADY_EXISTS(3012, "Availability already exists for court, date and time slot", HttpStatus.BAD_REQUEST),
 

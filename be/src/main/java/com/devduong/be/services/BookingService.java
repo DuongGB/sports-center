@@ -41,7 +41,6 @@ public class BookingService {
     BookingGuestRepository bookingGuestRepository;
     PaymentRepository paymentRepository;
     CourtRepository courtRepository;
-    TimeSlotRepository timeSlotRepository;
     CourtPriceRepository courtPriceRepository;
     CourtAvailabilityRepository courtAvailabilityRepository;
     UserRepository userRepository;
@@ -49,26 +48,8 @@ public class BookingService {
     PaymentService paymentService;
 
     // TODO: Đặt sân
-    @Transactional
-    public BookingResponse createBooking(BookingRequest request) {
-        // Check Court và TimeSlot có tồn tại không
-        Court court = getCourtById(request.courtId());
-        TimeSlot timeSlot = getTimeSlotById(request.timeSlotId());
-        // Check xem sân đã bị đặt chưa và có bị khóa vào ngày và khung giờ đó không
-        validateCourtAvailability(request.courtId(), request.timeSlotId(), request.bookingDate());
-        // Lấy giá của sân vào khung giờ đó
-        CourtPrice courtPrice = getCourtPrice(request.courtId(), request.timeSlotId());
-        // Lấy thông tin user hiện tại đang đăng nhập để gán vào booking
-        User user = resolveUser();
-        // Chỉ tạo Guest khi không có User (user == null)
-        BookingGuest guest = (user == null) ? resolveGuest(request) : null;
-        // Tạo booking mới và lưu vào database
-        Booking booking = createAndSaveBooking(request, court, timeSlot, user, guest, courtPrice);
-        // Tạo payment mới và lưu vào database
-        Payment payment = paymentService.createPendingPayment(booking, request.paymentMethod());
-        // Trả về thông tin booking vừa tạo
-        return bookingMapper.toBookingResponse(booking, payment);
-    }
+
+
 
     // TODO: Hủy đặt sân
     @Transactional
@@ -104,34 +85,7 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
     }
 
-    private TimeSlot getTimeSlotById(UUID timeSlotId) {
-        return timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() -> new AppException(ErrorCode.TIME_SLOT_NOT_FOUND));
-    }
 
-    // TODO: Kiểm tra xem sân đã bị đặt chưa và có bị khóa vào ngày và khung giờ đó không
-    private void validateCourtAvailability(UUID courtId, UUID timeSlotId, LocalDate bookingDate) {
-        // Check xem sân đã bị ai đặt chưa (trạng thái khác CANCELLED)
-        boolean isBooked = bookingRepository.existsByCourtIdAndTimeSlotIdAndBookingDateAndBookingStatusNot(
-                courtId, timeSlotId, bookingDate, BookingStatus.CANCELLED);
-        if (isBooked) {
-            throw new AppException(ErrorCode.COURT_ALREADY_BOOKED);
-        }
-        // Check xem sân có bị khóa vào ngày và khung giờ đó không
-        boolean isBlocked = courtAvailabilityRepository.existsByCourtIdAndTimeSlotIdAndDateAndStatus(
-                courtId, timeSlotId, bookingDate, AvailabilityStatus.BLOCKED);
-        if (isBlocked) {
-            throw new AppException(ErrorCode.COURT_BLOCKED);
-        }
-    }
-
-    // TODO: Lấy giá của sân vào khung giờ đó
-    private CourtPrice getCourtPrice(UUID courtId, UUID timeSlotId) {
-        return courtPriceRepository.findByCourtId(courtId).stream()
-                .filter(price -> price.getTimeSlot().getId().equals(timeSlotId))
-                .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.PRICE_ALREADY_EXISTS));
-    }
 
     // TODO: Lấy thông tin user hiện tại đang đăng nhập để gán vào booking
     private User resolveUser() {
@@ -157,18 +111,7 @@ public class BookingService {
     }
 
     // TODO: Tạo booking mới và lưu vào database
-    private Booking createAndSaveBooking(BookingRequest request, Court court, TimeSlot timeSlot, User user, BookingGuest guest, CourtPrice courtPrice) {
-        Booking booking = Booking.builder()
-                .court(court)
-                .timeSlot(timeSlot)
-                .bookingDate(request.bookingDate())
-                .user(user)
-                .bookingGuest(guest)
-                .totalPrice(courtPrice.getPrice())
-                .bookingStatus(BookingStatus.PENDING)
-                .build();
-        return bookingRepository.save(booking);
-    }
+
 
     // TODO: Xác minh quyền sở hữu Booking trước khi cho phép hủy
     private void verifyBookingOwnership(Booking booking, String providedPhone) {

@@ -8,6 +8,7 @@ package com.devduong.be.dtos.response;
 
 import com.devduong.be.enums.CourtStatus;
 
+import java.time.LocalTime;
 import java.util.List;
 
 /*
@@ -22,8 +23,10 @@ public record CourtResponse(
         String sportTypeName,
         String name,
         String location,
+        LocalTime openTime,
+        LocalTime closeTime,
         CourtStatus status,
-        String imageUrl,
+        List<String> courtImages,
         List<CourtAvailabilityResponse> availabilities,
         List<CourtPriceResponse> prices
 ) {

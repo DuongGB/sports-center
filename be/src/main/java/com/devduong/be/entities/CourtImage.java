@@ -1,5 +1,5 @@
 /*
- * @ {#} CourtPrice.java   1.0     2/5/2026
+ * @ {#} CourtImage.java   1.0     4/22/2026
  *
  * Copyright (c) 2026 IUH. All rights reserved.
  */
@@ -7,28 +7,29 @@
 package com.devduong.be.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.UUID;
 
 /*
  * @description:
  * @author: Nguyen Tan Thai Duong
- * @date:   2/5/2026
+ * @date:   4/22/2026
  * @version:    1.0
  */
 @Entity
-@Table(name = "court_prices")
+@Table(name = "court_images")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class CourtPrice {
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
+public class CourtImage {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
@@ -37,12 +38,17 @@ public class CourtPrice {
     @JoinColumn(name = "court_id", nullable = false)
     Court court;
 
-    @Column(name = "start_time")
-    LocalTime startTime;
+    @Column(name = "image_url")
+    String imageUrl;
 
-    @Column(name = "end_time")
-    LocalTime endTime;
+    @Column(name = "created_at", nullable = false)
+    LocalDateTime createdAt;
 
-    double price;
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+    }
+
+
 }
 

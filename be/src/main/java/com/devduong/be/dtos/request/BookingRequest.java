@@ -20,8 +20,10 @@ import java.util.UUID;
  */
 public record BookingRequest(
         @NotNull UUID courtId,
-        @NotNull UUID timeSlotId,
+        UUID userId,
         @NotNull LocalDate bookingDate,
+        @NotNull String startTime,
+        @NotNull String endTime,
         @NotNull PaymentMethod paymentMethod,
 
         // Thông tin khách vãng lai (có thể null nếu truyền token của User đã login)

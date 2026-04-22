@@ -31,16 +31,7 @@ import java.util.UUID;
 public class BookingController {
     BookingService bookingService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<?>> createBooking(
-            @RequestBody @Valid BookingRequest request) {
-        return ResponseEntity.ok(ApiResponse.<BookingResponse>builder()
-                .success(true)
-                .code(201)
-                .message("Booking created successfully")
-                .data(bookingService.createBooking(request))
-                .build());
-    }
+
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<?>> cancelBooking(@PathVariable UUID id, @RequestParam(required = false) String phone) {
