@@ -12,10 +12,11 @@ import HomePage from "./pages/HomePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/admin/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import UsersPage from "./pages/admin/UsersPage";
 import SportTypesPage from "./pages/admin/SportTypesPage";
 import CourtsPage from "./pages/admin/CourtsPage";
-import TimeSlotsPage from "./pages/admin/TimeSlotsPage";
 
 const queryClient = new QueryClient();
 
@@ -84,7 +85,6 @@ function AppContent() {
             <Route path="users" element={<UsersPage />} />
             <Route path="sport-types" element={<SportTypesPage />} />
             <Route path="courts" element={<CourtsPage />} />
-            <Route path="time-slots" element={<TimeSlotsPage />} />
           </Route>
         </Route>
       </Routes>
@@ -118,6 +118,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AppContent />
         <ReactQueryDevtools initialIsOpen={false} />
+        <ToastContainer position="top-right" autoClose={3000} />
       </QueryClientProvider>
     </Provider>
   );

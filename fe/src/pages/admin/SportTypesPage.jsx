@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSportTypes } from "@/hooks/useSportTypes";
 import { sportTypeService } from "@/services/sportTypeService";
-import { X } from "lucide-react";
+import { X, Eye } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function SportTypesPage() {
   const { sportTypes, loading, page, totalPages, fetchSportTypes, setPage } = useSportTypes();
@@ -32,6 +33,13 @@ export default function SportTypesPage() {
     setIsModalOpen(true);
   };
 
+  const openViewModal = (item) => {
+    setModalMode("view");
+    setFormData({ id: item.id, name: item.name });
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     if (!submitting) {
       setIsModalOpen(false);
@@ -41,7 +49,7 @@ export default function SportTypesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setFormError("Tên môn thể thao không được để trống");
+      toast.error("Tên môn thể thao không được để trống");
       return;
     }
 
@@ -50,27 +58,40 @@ export default function SportTypesPage() {
     try {
       if (modalMode === "add") {
         await sportTypeService.createSportType({ name: formData.name.trim() });
+        toast.success("Thêm loại sân thành công");
       } else {
         await sportTypeService.updateSportType(formData.id, { name: formData.name.trim() });
+        toast.success("Cập nhật loại sân thành công");
       }
       setIsModalOpen(false);
       fetchSportTypes(page); // Reload data
     } catch (error) {
-      setFormError(error?.message || "Có lỗi xảy ra");
+      toast.error(error?.message || "Có lỗi xảy ra");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa môn thể thao này?")) {
-      try {
-        await sportTypeService.deleteSportType(id);
-        fetchSportTypes(page);
-      } catch (error) {
-        alert(error?.message || "Xóa thất bại");
-      }
-    }
+  const handleDelete = (id) => {
+    toast.info(
+      <div>
+        <p>Bạn có chắc chắn muốn xóa môn thể thao này?</p>
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" variant="destructive" onClick={async () => {
+              try {
+                await sportTypeService.deleteSportType(id);
+                fetchSportTypes(page);
+                toast.success("Xóa thành công");
+              } catch (error) {
+                toast.error(error?.message || "Xóa thất bại");
+              }
+              toast.dismiss();
+          }}>Xác nhận</Button>
+          <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
+        </div>
+      </div>,
+      { autoClose: false, closeOnClick: false }
+    );
   };
 
   return (
@@ -85,7 +106,6 @@ export default function SportTypesPage() {
           <table className="w-full text-sm text-left text-foreground">
             <thead className="bg-muted text-muted-foreground border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-medium">ID</th>
                 <th className="px-6 py-4 font-medium">Tên Môn Thể Thao</th>
                 <th className="px-6 py-4 font-medium text-right">Thao tác</th>
               </tr>
@@ -93,22 +113,29 @@ export default function SportTypesPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="3" className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan="2" className="px-6 py-8 text-center text-muted-foreground">
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : sportTypes.length === 0 ? (
                 <tr>
-                  <td colSpan="3" className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan="2" className="px-6 py-8 text-center text-muted-foreground">
                     Không có bản ghi nào
                   </td>
                 </tr>
               ) : (
                 sportTypes.map((item) => (
                   <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="px-6 py-4 text-muted-foreground font-mono text-xs max-w-[150px] truncate">{item.id}</td>
                     <td className="px-6 py-4 font-medium">{item.name}</td>
                     <td className="px-6 py-4 text-right space-x-2">
+                       <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => openViewModal(item)}
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                      >
+                        <Eye className="w-4 h-4 mr-1" /> Chi tiết
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -167,7 +194,7 @@ export default function SportTypesPage() {
           <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-xl">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-foreground">
-                {modalMode === "add" ? "Thêm Loại Sân" : "Sửa Loại Sân"}
+                {modalMode === "add" ? "Thêm Loại Sân" : modalMode === "edit" ? "Sửa Loại Sân" : "Chi Tiết Loại Sân"}
               </h2>
               <button
                 onClick={handleCloseModal}
@@ -178,31 +205,37 @@ export default function SportTypesPage() {
               </button>
             </div>
 
-            {formError && (
-              <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {formError}
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-4">
+              
+              {modalMode === "view" && (
+                <div className="space-y-2 mb-4">
+                  <label className="text-sm font-medium text-muted-foreground">ID Môn Thể Thao</label>
+                  <div className="p-2 border border-border rounded-md bg-muted text-sm break-all">
+                    {formData.id}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Tên Môn Thể Thao</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value.trimStart() })}
                   placeholder="Ví dụ: Bóng đá mini"
-                  disabled={submitting}
+                  disabled={submitting || modalMode === "view"}
                   className="border-input bg-input"
                 />
               </div>
 
               <div className="pt-4 flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={handleCloseModal} disabled={submitting}>
-                  Hủy
+                <Button type="button" variant={modalMode === "view" ? "default" : "outline"} onClick={handleCloseModal} disabled={submitting}>
+                  {modalMode === "view" ? "Đóng" : "Hủy"}
                 </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Đang lưu..." : "Lưu Thay Đổi"}
-                </Button>
+                {modalMode !== "view" && (
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? "Đang lưu..." : "Lưu Thay Đổi"}
+                  </Button>
+                )}
               </div>
             </form>
           </div>

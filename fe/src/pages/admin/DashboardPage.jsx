@@ -3,34 +3,34 @@ import { Users, Activity, CreditCard, DollarSign } from "lucide-react";
 export default function DashboardPage() {
   const stats = [
     {
-      name: "Total Revenue",
+      name: "Tổng doanh thu",
       value: "$45,231.89",
       icon: DollarSign,
-      change: "+20.1% from last month",
+      change: "+20.1% so với tháng trước",
     },
     {
-      name: "Users",
+      name: "Người dùng",
       value: "+2350",
       icon: Users,
-      change: "+180.1% from last month",
+      change: "+180.1% so với tháng trước",
     },
     {
-      name: "Bookings",
+      name: "Lượt đặt sân",
       value: "+12,234",
       icon: Activity,
-      change: "+19% from last month",
+      change: "+19% so với tháng trước",
     },
     {
-      name: "Active Now",
+      name: "Đang hoạt động",
       value: "+573",
       icon: Activity,
-      change: "+201 since last hour",
+      change: "+201 trong giờ qua",
     },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
@@ -55,8 +55,8 @@ export default function DashboardPage() {
       </div>
       
       <div className="min-h-[400px] rounded-xl border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center">
-        <p className="text-muted-foreground mb-2">More dashboard components will go here</p>
-        <p className="text-sm text-muted-foreground/70">e.g., Charts, Recent Bookings, etc.</p>
+        <p className="text-muted-foreground mb-2">Các phần bổ sung của bảng điều khiển sẽ được hiển thị ở đây</p>
+        <p className="text-sm text-muted-foreground/70">VD: Biểu đồ, Lượt đặt gần đây, v.v.</p>
       </div>
     </div>
   );

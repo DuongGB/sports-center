@@ -12,11 +12,10 @@ const AdminLayout = () => {
   };
 
   const navItems = [
-    { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Users", path: "/admin/users", icon: Users },
+    { name: "Bảng Điều Khiển", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Người Dùng", path: "/admin/users", icon: Users },
     { name: "Loại Sân", path: "/admin/sport-types", icon: Dumbbell },
-    { name: "Danh sách Sân", path: "/admin/courts", icon: Map },
-    { name: "Khung Giờ", path: "/admin/time-slots", icon: Clock },
+    { name: "Sân Bãi", path: "/admin/courts", icon: Map },
   ];
 
   return (
@@ -25,7 +24,7 @@ const AdminLayout = () => {
       <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-border">
           <Link to="/admin" className="text-xl font-bold bg-gradient-to-r from-teal-500 to-blue-500 bg-clip-text text-transparent">
-            Admin Panel
+            Bảng Quản Trị
           </Link>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -55,7 +54,7 @@ const AdminLayout = () => {
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
           >
             <LogOut size={20} />
-            <span>Logout</span>
+            <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
@@ -65,13 +64,13 @@ const AdminLayout = () => {
         {/* Header */}
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
           <div className="flex md:hidden">
-            <span className="text-lg font-bold">Admin Panel</span>
+            <span className="text-lg font-bold">Bảng Quản Trị</span>
           </div>
           <div className="hidden md:flex flex-1"></div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <span className="text-sm font-medium text-foreground">
-              Welcome, {user?.fullName || "Admin"}
+              Xin chào, {user?.fullName || "Admin"}
             </span>
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
               {user?.fullName?.charAt(0) || "A"}
