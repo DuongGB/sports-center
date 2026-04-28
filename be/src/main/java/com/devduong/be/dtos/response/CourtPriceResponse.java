@@ -17,7 +17,6 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record CourtPriceResponse(
-        UUID id,
         LocalTime startTime,
         LocalTime endTime,
         double price

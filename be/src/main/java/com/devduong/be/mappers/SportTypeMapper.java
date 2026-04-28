@@ -9,6 +9,7 @@ package com.devduong.be.mappers;
 import com.devduong.be.dtos.response.SportTypeResponse;
 import com.devduong.be.entities.SportType;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 /*
  * @description:
@@ -18,5 +19,6 @@ import org.mapstruct.Mapper;
  */
 @Mapper(componentModel = "spring")
 public interface SportTypeMapper {
+    @Mapping(source = "courtPrices", target = "prices")
     SportTypeResponse toSportTypeResponse(SportType sportType);
 }

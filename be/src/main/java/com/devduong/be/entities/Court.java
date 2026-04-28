@@ -58,9 +58,6 @@ public class Court {
     List<CourtAvailability> courtAvailabilities;
 
     @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<CourtPrice> courtPrices;
-
-    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
     List<CourtImage> courtImages;
 }
 

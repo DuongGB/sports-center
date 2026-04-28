@@ -40,6 +40,9 @@ public class User {
     @Column(unique = true)
     String phone;
 
+    @Column(unique = true)
+    String email;
+
     String password;
 
     @Enumerated(EnumType.STRING)

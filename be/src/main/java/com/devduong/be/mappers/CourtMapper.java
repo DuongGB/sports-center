@@ -26,7 +26,6 @@ public interface CourtMapper {
     @Mapping(source = "sportType.id", target = "sportTypeId")
     @Mapping(source = "sportType.name", target = "sportTypeName")
     @Mapping(source = "courtAvailabilities", target = "availabilities")
-    @Mapping(source = "courtPrices", target = "prices")
     @Mapping(source = "courtImages", target = "courtImages", qualifiedByName = "mapCourtImagesToUrls")
     CourtResponse toCourtResponse(Court court);
 

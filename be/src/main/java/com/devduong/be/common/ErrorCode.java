@@ -47,6 +47,7 @@ public enum ErrorCode {
     COURT_BLOCKED(3007, "Court is blocked for the selected date and time slot", HttpStatus.BAD_REQUEST),
     // TODO: PRICE COURT
     PRICE_ALREADY_EXISTS(3008, "Price already exists for court and time slot", HttpStatus.BAD_REQUEST),
+    PRICE_NOT_FOUND(3009, "Price not found", HttpStatus.NOT_FOUND),
     // TODO: AVAILABILITY
     AVAILABILITY_ALREADY_EXISTS(3012, "Availability already exists for court, date and time slot", HttpStatus.BAD_REQUEST),
 

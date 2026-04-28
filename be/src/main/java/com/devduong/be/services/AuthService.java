@@ -146,11 +146,10 @@ public class AuthService {
     //  TODO: Get current user
     public UserResponse getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String phone = authentication.getName();
-        User user = userRepository.findByPhone(phone)
-                .orElseThrow(() -> new RuntimeException("Phone not found"));
+        String userId = authentication.getName();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         return userMapper.toUserResponse(user);
-
     }
 }
 

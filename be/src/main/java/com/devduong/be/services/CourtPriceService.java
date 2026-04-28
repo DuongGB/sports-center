@@ -11,10 +11,12 @@ import com.devduong.be.dtos.request.CourtPriceRequest;
 import com.devduong.be.dtos.response.CourtPriceResponse;
 import com.devduong.be.entities.Court;
 import com.devduong.be.entities.CourtPrice;
+import com.devduong.be.entities.SportType;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.CourtPriceMapper;
 import com.devduong.be.repositories.CourtPriceRepository;
 import com.devduong.be.repositories.CourtRepository;
+import com.devduong.be.repositories.SportTypeRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,23 +37,23 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CourtPriceService {
     CourtPriceRepository courtPriceRepository;
-    CourtRepository courtRepository;
     CourtPriceMapper courtPriceMapper;
+    private final SportTypeRepository sportTypeRepository;
 
     // TODO: get list price by court id
-    public List<CourtPriceResponse> getCourtPricesByCourtId(UUID courtId) {
-        return courtPriceRepository.findByCourtId(courtId).stream()
+    public List<CourtPriceResponse> getCourtPricesBySportTypeId(UUID sportTypeId) {
+        return courtPriceRepository.findBySportTypeId(sportTypeId).stream()
                 .map(courtPriceMapper::toCourtPriceResponse)
                 .toList();
     }
 
     // TODO: create court price
     @Transactional
-    public CourtPriceResponse createCourtPrice(UUID courtId,CourtPriceRequest request) {
-        Court court = courtRepository.findById(courtId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
+    public CourtPriceResponse createCourtPrice(UUID sportTypeId, CourtPriceRequest request) {
+        SportType sportType = sportTypeRepository.findById(sportTypeId)
+                .orElseThrow(() -> new AppException(ErrorCode.SPORT_TYPE_NOT_FOUND));
         CourtPrice courtPrice = CourtPrice.builder()
-                .court(court)
+                .sportType(sportType)
                 .startTime(request.startTime())
                 .endTime(request.endTime())
                 .price(request.price())
@@ -59,7 +61,15 @@ public class CourtPriceService {
         return courtPriceMapper.toCourtPriceResponse(courtPriceRepository.save(courtPrice));
     }
 
-
-
+    // TODO: update court price
+    @Transactional
+    public CourtPriceResponse updateCourtPrice(UUID courtPriceId, CourtPriceRequest request) {
+        CourtPrice courtPrice = courtPriceRepository.findById(courtPriceId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRICE_NOT_FOUND));
+        courtPrice.setStartTime(request.startTime());
+        courtPrice.setEndTime(request.endTime());
+        courtPrice.setPrice(request.price());
+        return courtPriceMapper.toCourtPriceResponse(courtPriceRepository.save(courtPrice));
+    }
 }
 

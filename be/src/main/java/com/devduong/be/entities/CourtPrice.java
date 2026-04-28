@@ -34,8 +34,8 @@ public class CourtPrice {
     UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "court_id", nullable = false)
-    Court court;
+    @JoinColumn(name = "sport_type_id", nullable = false)
+    SportType sportType;
 
     @Column(name = "start_time")
     LocalTime startTime;

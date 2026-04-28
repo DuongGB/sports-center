@@ -10,14 +10,12 @@ import com.devduong.be.common.ErrorCode;
 import com.devduong.be.common.PageResponse;
 import com.devduong.be.dtos.request.CourtAvailabilityRequest;
 import com.devduong.be.dtos.request.CourtFilterRequest;
-import com.devduong.be.dtos.request.CourtPriceRequest;
 import com.devduong.be.dtos.request.CourtRequest;
 import com.devduong.be.dtos.response.CourtResponse;
 import com.devduong.be.entities.*;
 import com.devduong.be.enums.CourtStatus;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.CourtMapper;
-import com.devduong.be.repositories.CourtPriceRepository;
 import com.devduong.be.repositories.CourtRepository;
 import com.devduong.be.repositories.SportTypeRepository;
 import lombok.AccessLevel;
@@ -45,9 +43,9 @@ import java.util.UUID;
 public class CourtService {
     CourtRepository courtRepository;
     SportTypeRepository sportTypeRepository;
-    CourtPriceRepository courtPriceRepository;
     CourtMapper courtMapper;
     CloudinaryService cloudinaryService;
+
 
     // TODO: Get all courts with filter and pagination
     public PageResponse<CourtResponse> getAllCourts(CourtFilterRequest request) {
@@ -88,8 +86,8 @@ public class CourtService {
                 .sportType(sportType)
                 .name(request.name())
                 .location(request.location())
-                .openTime(request.openTime()) // Lấy trực tiếp từ request
-                .closeTime(request.closeTime()) // Lấy trực tiếp từ request
+                .openTime(request.openTime())
+                .closeTime(request.closeTime())
                 .status(request.status())
                 .build();
 
@@ -107,7 +105,7 @@ public class CourtService {
             court.setCourtImages(courtImages);
         }
 
-        // 2. Availability (Không cần check TimeSlot nữa)
+        // 2. Availability
         if (request.availabilities() != null) {
             List<CourtAvailability> availabilities =
                     request.availabilities().stream()
@@ -124,20 +122,7 @@ public class CourtService {
             court.setCourtAvailabilities(availabilities);
         }
 
-        // 3. Price (Không cần check TimeSlot nữa)
-        if (request.prices() != null) {
-            List<CourtPrice> prices =
-                    request.prices().stream()
-                            .map(priceReq -> CourtPrice.builder()
-                                    .court(court)
-                                    .startTime(priceReq.startTime())
-                                    .endTime(priceReq.endTime())
-                                    .price(priceReq.price())
-                                    .build())
-                            .toList();
-
-            court.setCourtPrices(prices);
-        }
+        // Giá sân (prices) đã được chuyển sang SportType, không còn lưu ở Court nữa
 
         Court savedCourt = courtRepository.save(court);
 
@@ -217,25 +202,7 @@ public class CourtService {
             }
         }
 
-        // 3. UPDATE PRICE
-        if (request.prices() != null) {
-            if (court.getCourtPrices() != null) {
-                court.getCourtPrices().clear();
-            } else {
-                court.setCourtPrices(new ArrayList<>());
-            }
-
-            for (CourtPriceRequest priceReq : request.prices()) {
-                CourtPrice price = CourtPrice.builder()
-                        .court(court)
-                        .startTime(priceReq.startTime())
-                        .endTime(priceReq.endTime())
-                        .price(priceReq.price())
-                        .build();
-
-                court.getCourtPrices().add(price);
-            }
-        }
+        // Đã gỡ bỏ logic UPDATE PRICE do không còn liên quan tới Court
 
         courtRepository.save(court);
         return courtMapper.toCourtResponse(court);
