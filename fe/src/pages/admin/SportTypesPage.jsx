@@ -11,7 +11,7 @@ export default function SportTypesPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit'
-  const [formData, setFormData] = useState({ id: "", name: "" });
+  const [formData, setFormData] = useState({ id: "", name: "", prices: [] });
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,21 +21,31 @@ export default function SportTypesPage() {
 
   const openAddModal = () => {
     setModalMode("add");
-    setFormData({ id: "", name: "" });
+    setFormData({ id: "", name: "", prices: [] });
     setFormError("");
     setIsModalOpen(true);
   };
 
+  const formatPrices = (prices) => {
+    if (!prices) return [];
+    return prices.map(p => ({
+      ...p,
+      startTime: p.startTime?.substring(0, 5) || "00:00",
+      endTime: p.endTime?.substring(0, 5) || "00:00",
+      price: p.price || 0
+    }));
+  };
+
   const openEditModal = (item) => {
     setModalMode("edit");
-    setFormData({ id: item.id, name: item.name });
+    setFormData({ id: item.id, name: item.name, prices: formatPrices(item.prices) });
     setFormError("");
     setIsModalOpen(true);
   };
 
   const openViewModal = (item) => {
     setModalMode("view");
-    setFormData({ id: item.id, name: item.name });
+    setFormData({ id: item.id, name: item.name, prices: formatPrices(item.prices) });
     setFormError("");
     setIsModalOpen(true);
   };
@@ -53,14 +63,20 @@ export default function SportTypesPage() {
       return;
     }
 
+    const formattedPrices = formData.prices.map(p => ({
+      ...p,
+      startTime: p.startTime.substring(0, 5),
+      endTime: p.endTime.substring(0, 5)
+    }));
+
     setSubmitting(true);
     setFormError("");
     try {
       if (modalMode === "add") {
-        await sportTypeService.createSportType({ name: formData.name.trim() });
+        await sportTypeService.createSportType({ name: formData.name.trim(), prices: formattedPrices });
         toast.success("Thêm loại sân thành công");
       } else {
-        await sportTypeService.updateSportType(formData.id, { name: formData.name.trim() });
+        await sportTypeService.updateSportType(formData.id, { name: formData.name.trim(), prices: formattedPrices });
         toast.success("Cập nhật loại sân thành công");
       }
       setIsModalOpen(false);
@@ -225,6 +241,81 @@ export default function SportTypesPage() {
                   disabled={submitting || modalMode === "view"}
                   className="border-input bg-input"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Bảng Giá Theo Giờ</label>
+                  {modalMode !== "view" && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setFormData(prev => ({ ...prev, prices: [...prev.prices, { startTime: "00:00", endTime: "00:00", price: 0 }] }))}
+                    >
+                      Thêm giá
+                    </Button>
+                  )}
+                </div>
+                
+                {formData.prices.map((price, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-2">
+                    <Input
+                      type="time"
+                      value={price.startTime}
+                      onChange={(e) => {
+                        const newPrices = [...formData.prices];
+                        newPrices[index].startTime = e.target.value;
+                        setFormData({ ...formData, prices: newPrices });
+                      }}
+                      disabled={submitting || modalMode === "view"}
+                      className="w-full"
+                    />
+                    <span className="text-muted-foreground">-</span>
+                    <Input
+                      type="time"
+                      value={price.endTime}
+                      onChange={(e) => {
+                        const newPrices = [...formData.prices];
+                        newPrices[index].endTime = e.target.value;
+                        setFormData({ ...formData, prices: newPrices });
+                      }}
+                      disabled={submitting || modalMode === "view"}
+                      className="w-full"
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={price.price}
+                      onChange={(e) => {
+                        const newPrices = [...formData.prices];
+                        newPrices[index].price = Number(e.target.value);
+                        setFormData({ ...formData, prices: newPrices });
+                      }}
+                      placeholder="Giá (VNĐ)"
+                      disabled={submitting || modalMode === "view"}
+                      className="w-full"
+                    />
+                    {modalMode !== "view" && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:bg-destructive/10 shrink-0"
+                        onClick={() => {
+                          const newPrices = formData.prices.filter((_, i) => i !== index);
+                          setFormData({ ...formData, prices: newPrices });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {formData.prices.length === 0 && (
+                  <div className="text-sm text-muted-foreground italic border border-dashed border-border rounded-md p-4 text-center">Chưa có khung giá nào.</div>
+                )}
               </div>
 
               <div className="pt-4 flex justify-end gap-3">

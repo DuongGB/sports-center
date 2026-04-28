@@ -17,6 +17,7 @@ import "react-toastify/dist/ReactToastify.css";
 import UsersPage from "./pages/admin/UsersPage";
 import SportTypesPage from "./pages/admin/SportTypesPage";
 import CourtsPage from "./pages/admin/CourtsPage";
+import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 
 const queryClient = new QueryClient();
 
@@ -54,7 +55,7 @@ function AppContent() {
 
   return (
     <>
-      {!isAdminRoute && (
+      {!isAdminRoute && !(isAuthenticated && !user) && (
         <Header
           user={user}
           isAuthenticated={isAuthenticated}
@@ -68,14 +69,25 @@ function AppContent() {
         <Route
           path="/"
           element={
-            <HomePage
-              user={user}
-              isAuthenticated={isAuthenticated}
-              onLoginClick={() => setIsLoginModalOpen(true)}
-              onRegisterClick={() => setIsRegisterModalOpen(true)}
-            />
+            isAuthenticated && !user ? (
+              <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span className="ml-3 text-muted-foreground">Đang tải...</span>
+              </div>
+            ) : user?.roles?.includes("ADMIN") ? (
+              <Navigate to="/admin/dashboard" replace />
+            ) : (
+              <HomePage
+                user={user}
+                isAuthenticated={isAuthenticated}
+                onLoginClick={() => setIsLoginModalOpen(true)}
+                onRegisterClick={() => setIsRegisterModalOpen(true)}
+              />
+            )
           }
         />
+        
+        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
