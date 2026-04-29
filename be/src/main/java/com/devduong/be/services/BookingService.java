@@ -7,6 +7,7 @@
 package com.devduong.be.services;
 
 import com.devduong.be.common.ErrorCode;
+import com.devduong.be.common.PageResponse;
 import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.dtos.response.PaymentExecutionResult;
@@ -19,6 +20,9 @@ import com.devduong.be.repositories.*;
 import com.devduong.be.services.payment.PaymentStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -144,6 +148,68 @@ public class BookingService {
     }
 
     // TODO: Hủy đặt sân
+    @Transactional
+    public void cancelBooking(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+    }
+
+    // TODO: Xác nhận đặt sân
+    @Transactional
+    public void confirmBooking(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
+        booking.setBookingStatus(BookingStatus.CONFIRMED);
+        bookingRepository.save(booking);
+    }
+
+    // TODO: Lấy tất cả booking (phân trang)
+    public PageResponse<BookingResponse> getAllBookings(int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Booking> bookingPage = bookingRepository.findAllByOrderByCreatedAtDesc(pageable);
+        List<BookingResponse> responses = bookingPage.getContent().stream()
+                .map(booking -> {
+                    String customerName = booking.getUser() != null
+                            ? booking.getUser().getFullName()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : "N/A");
+                    String customerPhone = booking.getUser() != null
+                            ? booking.getUser().getPhone()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
+                    // Get payment info from booking's payments if available
+                    Payment payment = null;
+                    PaymentMethod paymentMethod = null;
+                    if (booking.getUser() != null || booking.getBookingGuest() != null) {
+                        // try to get payment from repository - simplified
+                    }
+                    return new BookingResponse(
+                            booking.getId(),
+                            booking.getCourt().getId(),
+                            booking.getCourt().getName(),
+                            booking.getBookingDate(),
+                            booking.getStartTime(),
+                            booking.getEndTime(),
+                            booking.getTotalPrice(),
+                            booking.getBookingStatus(),
+                            customerName,
+                            customerPhone,
+                            null, // paymentId
+                            null, // paymentMethod
+                            null, // paymentStatus
+                            null, // paymentUrl
+                            booking.getCreatedAt()
+                    );
+                })
+                .toList();
+        return new PageResponse<>(
+                bookingPage.getNumber() + 1,
+                bookingPage.getTotalPages(),
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                responses
+        );
+    }
 
 }
-

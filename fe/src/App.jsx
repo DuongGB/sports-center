@@ -17,6 +17,8 @@ import "react-toastify/dist/ReactToastify.css";
 import UsersPage from "./pages/admin/UsersPage";
 import SportTypesPage from "./pages/admin/SportTypesPage";
 import CourtsPage from "./pages/admin/CourtsPage";
+import BookingsPage from "./pages/admin/BookingsPage";
+import BookingPage from "./pages/BookingPage";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 
 const queryClient = new QueryClient();
@@ -87,6 +89,7 @@ function AppContent() {
           }
         />
         
+        <Route path="/booking" element={<BookingPage />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         
         {/* Admin Routes */}
@@ -97,6 +100,7 @@ function AppContent() {
             <Route path="users" element={<UsersPage />} />
             <Route path="sport-types" element={<SportTypesPage />} />
             <Route path="courts" element={<CourtsPage />} />
+            <Route path="bookings" element={<BookingsPage />} />
           </Route>
         </Route>
       </Routes>

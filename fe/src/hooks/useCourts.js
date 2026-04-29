@@ -1,22 +1,27 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { courtService } from "@/services/courtService";
 
 export function useCourts() {
   const [courts, setCourts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState(null);
+  const hasFetched = useRef(false);
 
   const fetchCourts = useCallback(async (pageNumber = 1, size = 10) => {
     try {
-      setLoading(true);
+      // Only show full loading on initial fetch
+      if (!hasFetched.current) {
+        setLoading(true);
+      }
       setError(null);
       const res = await courtService.getAllCourts(pageNumber, size);
       if (res.success && res.data) {
         setCourts(res.data.data || []);
         setTotalPages(res.data.totalPages || 1);
         setPage(pageNumber);
+        hasFetched.current = true;
       }
     } catch (err) {
       setError(err?.message || "Failed to fetch courts");

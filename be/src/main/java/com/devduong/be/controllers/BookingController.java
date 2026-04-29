@@ -7,6 +7,7 @@
 package com.devduong.be.controllers;
 
 import com.devduong.be.common.ApiResponse;
+import com.devduong.be.common.PageResponse;
 import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.security.oauth2.UserPrincipal;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -55,5 +57,39 @@ public class BookingController {
                 .data(bookingService.createBooking(request, loggedInUserId))
                 .build());
     }
-}
 
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> getAllBookings(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(ApiResponse.<PageResponse<BookingResponse>>builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get all bookings successful")
+                .data(bookingService.getAllBookings(page, size))
+                .build());
+    }
+
+    @PutMapping("/{id}/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> confirmBooking(@PathVariable UUID id) {
+        bookingService.confirmBooking(id);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Booking confirmed successfully")
+                .build());
+    }
+
+    @PutMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> cancelBooking(@PathVariable UUID id) {
+        bookingService.cancelBooking(id);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Booking cancelled successfully")
+                .build());
+    }
+}

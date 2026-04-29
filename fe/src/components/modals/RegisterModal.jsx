@@ -4,6 +4,7 @@ import { registerUser } from "@/store/authSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function RegisterModal({
   isOpen,
@@ -110,7 +111,7 @@ export default function RegisterModal({
       setFormError("");
 
       // Show success message, then switch to login
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       onClose();
       onSwitchToLogin();
     } catch (err) {
@@ -121,7 +122,7 @@ export default function RegisterModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between sticky top-0 bg-card">

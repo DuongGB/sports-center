@@ -9,6 +9,8 @@ package com.devduong.be.repositories;
 import com.devduong.be.entities.Booking;
 import com.devduong.be.enums.BookingStatus;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +39,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("date") LocalDate date,
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime);
+
+    Page<Booking> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

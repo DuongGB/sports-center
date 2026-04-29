@@ -1,0 +1,30 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { bookingService } from "@/services/bookingService";
+
+export function useBookingsQuery(page = 1, size = 10) {
+  return useQuery({
+    queryKey: ["bookings", page, size],
+    queryFn: () => bookingService.getAllBookings(page, size).then(res => res.data),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useBookingMutations() {
+  const queryClient = useQueryClient();
+
+  const confirmBookingMut = useMutation({
+    mutationFn: (id) => bookingService.confirmBooking(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
+  const cancelBookingMut = useMutation({
+    mutationFn: (id) => bookingService.cancelBooking(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
+  return { confirmBookingMut, cancelBookingMut };
+}

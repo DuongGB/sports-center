@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useCourts } from "@/hooks/useCourts";
 import { useSportTypes } from "@/hooks/useSportTypes";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -98,6 +98,8 @@ export default function HomePage({
     time: "18:00",
     date: "",
   });
+
+  const navigate = useNavigate();
 
   const { courts, fetchCourts, loading: courtsLoading, page, totalPages, setPage } = useCourts();
   const { sportTypes, fetchSportTypes, loading: sportTypesLoading } = useSportTypes();
@@ -419,7 +421,7 @@ export default function HomePage({
               >
                 Xóa bộ lọc
               </Button>
-              <Button onClick={onLoginClick}>Đăng nhập để đặt</Button>
+              <Button onClick={() => navigate("/booking")}>Đặt sân ngay</Button>
             </div>
           </div>
 
@@ -497,12 +499,7 @@ export default function HomePage({
                     <Button
                       disabled={court.status !== "available"}
                       onClick={() => {
-                        if (!isAuthenticated) {
-                          onLoginClick?.();
-                          return;
-                        }
-                        // Chuyển tới trang booking
-                        window.location.href = `/booking?courtId=${court.id}`;
+                        navigate(`/booking?courtId=${court.id}`);
                       }}
                     >
                       {court.status === "available" ? "Đặt ngay" : "Tạm dừng"}
