@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useUsers } from "@/hooks/useUsers";
 import { X, Eye } from "lucide-react";
+import { formatDate } from "@/utils/dateUtils";
 
 export default function UsersPage() {
   const { users, loading, page, totalPages, fetchUsers, setPage } = useUsers();
@@ -30,9 +31,11 @@ export default function UsersPage() {
             <thead className="bg-muted text-muted-foreground border-b border-border">
               <tr>
                 <th className="px-6 py-4 font-medium">Họ Tên</th>
+                <th className="px-6 py-4 font-medium">Email</th>
                 <th className="px-6 py-4 font-medium">SĐT</th>
                 <th className="px-6 py-4 font-medium">Vai Trò</th>
                 <th className="px-6 py-4 font-medium">Trạng Thái</th>
+                <th className="px-6 py-4 font-medium">Ngày Tạo</th>
                 <th className="px-6 py-4 font-medium text-right">Thao Tác</th>
               </tr>
             </thead>
@@ -45,7 +48,7 @@ export default function UsersPage() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan="7" className="px-6 py-8 text-center text-muted-foreground">
                     Không có bản ghi nào
                   </td>
                 </tr>
@@ -53,6 +56,7 @@ export default function UsersPage() {
                 users.map((user) => (
                   <tr key={user.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium">{user.fullName}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
                     <td className="px-6 py-4 text-muted-foreground">{user.phone}</td>
                     <td className="px-6 py-4">
                       {user.roles?.map((role) => (
@@ -76,6 +80,9 @@ export default function UsersPage() {
                       }`}>
                         {user.status || "N/A"}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {formatDate(user.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => openViewModal(user)} className="text-muted-foreground hover:text-foreground hover:bg-muted">
@@ -144,6 +151,10 @@ export default function UsersPage() {
                 <span className="col-span-2 text-sm text-foreground">{viewData.fullName}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
+                <span className="text-sm font-medium text-muted-foreground">Email:</span>
+                <span className="col-span-2 text-sm text-foreground">{viewData.email}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
                 <span className="text-sm font-medium text-muted-foreground">SĐT:</span>
                 <span className="col-span-2 text-sm text-foreground">{viewData.phone}</span>
               </div>
@@ -157,7 +168,7 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-3 gap-2 pb-2">
                 <span className="text-sm font-medium text-muted-foreground">Ngày tạo:</span>
-                <span className="col-span-2 text-sm text-foreground">{viewData.createdAt || "N/A"}</span>
+                <span className="col-span-2 text-sm text-foreground">{formatDate(viewData.createdAt)}</span>
               </div>
             </div>
 
