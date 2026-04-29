@@ -6,9 +6,14 @@
 
 package com.devduong.be.security.oauth2;
 
+import com.devduong.be.common.ErrorCode;
+import com.devduong.be.entities.Role;
 import com.devduong.be.entities.User;
 import com.devduong.be.entities.UserOauthAccount;
 import com.devduong.be.enums.AuthProvider;
+import com.devduong.be.enums.RoleName;
+import com.devduong.be.exceptions.AppException;
+import com.devduong.be.repositories.RoleRepository;
 import com.devduong.be.repositories.UserOauthAccountRepository;
 import com.devduong.be.repositories.UserRepository;
 import com.devduong.be.utils.GenerateCustomerId;
@@ -21,7 +26,9 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 /*
  * @description:
@@ -36,6 +43,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     UserRepository userRepository;
     UserOauthAccountRepository userOauthAccountRepository;
     GenerateCustomerId generateCustomerId;
+    RoleRepository roleRepository;
 
     @Override
     @Transactional
@@ -46,9 +54,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
 
         OAuth2UserInfo oAuth2UserInfo;
-        if(provider.equals(AuthProvider.GOOGLE)){
+        if (provider.equals(AuthProvider.GOOGLE)) {
             oAuth2UserInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
-        } else if(provider.equals(AuthProvider.FACEBOOK)){
+        } else if (provider.equals(AuthProvider.FACEBOOK)) {
             oAuth2UserInfo = new FacebookOAuth2UserInfo(oAuth2User.getAttributes());
         } else {
             throw new OAuth2AuthenticationException("Unsupported provider: " + registrationId);
@@ -57,21 +65,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Optional<UserOauthAccount> userOauthAccountOpt = userOauthAccountRepository
                 .findByProviderAndProviderUserId(provider, oAuth2UserInfo.getId());
         User user;
-        if(userOauthAccountOpt.isPresent()){
+        if (userOauthAccountOpt.isPresent()) {
             // Đã link rồi, lấy user
             user = userOauthAccountOpt.get().getUser();
-        }else{
+        } else {
             // 2. Chưa link, kiểm tra email đã tồn tại chưa
             Optional<User> userOpt = userRepository.findByEmail(oAuth2UserInfo.getEmail());
-            if(userOpt.isPresent()){
+            if (userOpt.isPresent()) {
                 // Email đã tồn tại, link tài khoản OAuth2 với user hiện tại
                 user = userOpt.get();
-            }else{
+            } else {
                 // Email chưa tồn tại, tạo user mới
+                Role customerRole = roleRepository.findByName(RoleName.CUSTOMER)
+                        .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+                Set<Role> roles = new HashSet<>();
+                roles.add(customerRole);
                 user = User.builder()
                         .id(generateCustomerId.generateCustomerId())
-                        .email(oAuth2UserInfo.getEmail())
                         .fullName(oAuth2UserInfo.getName())
+                        .email(oAuth2UserInfo.getEmail())
+                        .roles(roles)
                         .build();
                 user = userRepository.save(user);
             }
