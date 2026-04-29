@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useCourts } from "@/hooks/useCourts";
+import { useSportTypes } from "@/hooks/useSportTypes";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -41,113 +43,7 @@ const navLinks = [
   { label: "Liên hệ", href: "#contact" },
 ];
 
-const sports = [
-  {
-    name: "Cầu lông",
-    icon: "🏸",
-    description: "Sân tiêu chuẩn, ánh sáng tốt, đặt theo giờ linh hoạt.",
-  },
-  {
-    name: "Bóng đá",
-    icon: "⚽",
-    description: "Sân mini 5, 7, 11 người phù hợp tập luyện và thi đấu.",
-  },
-  {
-    name: "Bóng chuyền",
-    icon: "🏐",
-    description: "Không gian rộng, mặt sân bám tốt, an toàn cho vận động.",
-  },
-  {
-    name: "Pickleball",
-    icon: "🥒",
-    description: "Môn thể thao mới, phù hợp nhóm bạn và gia đình.",
-  },
-  {
-    name: "Bóng bàn",
-    icon: "🏓",
-    description: "Khu vực trong nhà, ổn định, dễ đặt lịch nhanh.",
-  },
-  {
-    name: "Bóng rổ",
-    icon: "🏀",
-    description: "Sân chất lượng cao cho luyện kỹ thuật và giao hữu.",
-  },
-];
 
-const featuredCourts = [
-  {
-    id: 1,
-    name: "Sân Cầu Lông A1",
-    sport: "Cầu lông",
-    price: "120.000đ/giờ",
-    location: "Khu trung tâm, tầng 1",
-    status: "available",
-    rating: 4.9,
-    image:
-      "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
-    tags: ["Ánh sáng LED", "Điều hòa", "Giữ chỗ nhanh"],
-  },
-  {
-    id: 2,
-    name: "Sân Bóng Đá Mini 7 Người",
-    sport: "Bóng đá",
-    price: "500.000đ/giờ",
-    location: "Sân ngoài trời, bãi đỗ xe rộng",
-    status: "available",
-    rating: 4.8,
-    image:
-      "https://images.unsplash.com/photo-1551958214-2d5e2d3a228a?q=80&w=2070&auto=format&fit=crop",
-    tags: ["Cỏ nhân tạo", "Rào chắn an toàn", "Đèn ban đêm"],
-  },
-  {
-    id: 3,
-    name: "Sân Pickleball Pro",
-    sport: "Pickleball",
-    price: "150.000đ/giờ",
-    location: "Khu vực premium, đặt lịch linh hoạt",
-    status: "maintenance",
-    rating: 4.7,
-    image:
-      "https://images.unsplash.com/photo-1631771429219-b2b313e59713?q=80&w=1974&auto=format&fit=crop",
-    tags: ["Sàn tiêu chuẩn", "Vợt thuê", "Bảo trì định kỳ"],
-  },
-  {
-    id: 4,
-    name: "Sân Bóng Rổ Elite",
-    sport: "Bóng rổ",
-    price: "220.000đ/giờ",
-    location: "Nhà thi đấu trong nhà",
-    status: "available",
-    rating: 4.9,
-    image:
-      "https://images.unsplash.com/photo-1547347298-4074fc3086f0?q=80&w=2070&auto=format&fit=crop",
-    tags: ["Sàn gỗ", "Khán đài nhỏ", "Đặt nhóm"],
-  },
-  {
-    id: 5,
-    name: "Sân Bóng Chuyền Arena",
-    sport: "Bóng chuyền",
-    price: "180.000đ/giờ",
-    location: "Khu thể thao đa năng",
-    status: "available",
-    rating: 4.6,
-    image:
-      "https://images.unsplash.com/photo-1519311965067-36d3e5d9f2f0?q=80&w=2070&auto=format&fit=crop",
-    tags: ["Sân rộng", "Lưới chuẩn", "Phù hợp giải phong trào"],
-  },
-  {
-    id: 6,
-    name: "Sân Bóng Bàn Club",
-    sport: "Bóng bàn",
-    price: "90.000đ/giờ",
-    location: "Khu trong nhà yên tĩnh",
-    status: "available",
-    rating: 4.8,
-    image:
-      "https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?q=80&w=2070&auto=format&fit=crop",
-    tags: ["Bàn chuẩn thi đấu", "Máy lạnh", "Đặt theo khung giờ"],
-  },
-];
 
 const pricePlans = [
   {
@@ -203,8 +99,53 @@ export default function HomePage({
     date: "",
   });
 
+  const { courts, fetchCourts, loading: courtsLoading, page, totalPages, setPage } = useCourts();
+  const { sportTypes, fetchSportTypes, loading: sportTypesLoading } = useSportTypes();
+
+  useEffect(() => {
+    fetchCourts(page, 6);
+  }, [fetchCourts, page]);
+
+  useEffect(() => {
+    fetchSportTypes(1, 20);
+  }, [fetchSportTypes]);
+
+  const getSportIcon = (name) => {
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes("cầu lông")) return "🏸";
+    if (nameLower.includes("bóng đá")) return "⚽";
+    if (nameLower.includes("bóng chuyền")) return "🏐";
+    if (nameLower.includes("pickleball")) return "🥒";
+    if (nameLower.includes("bóng bàn")) return "🏓";
+    if (nameLower.includes("bóng rổ")) return "🏀";
+    if (nameLower.includes("tennis") || nameLower.includes("quần vợt")) return "🎾";
+    return "🎯";
+  };
+
+  const displaySports = sportTypes.map(st => ({
+    name: st.name,
+    icon: getSportIcon(st.name),
+    description: "Khám phá sân chơi chất lượng cao và cơ sở vật chất tuyệt vời.",
+  }));
+
+  const displayCourts = courts.map(court => ({
+    id: court.id,
+    name: court.name,
+    sport: court.sportTypeName || "Khác",
+    price: court.prices && court.prices.length > 0 
+      ? `${court.prices[0].price.toLocaleString()}đ/giờ` 
+      : "Liên hệ",
+    location: court.location,
+    status: court.status === "ACTIVE" ? "available" : court.status === "MAINTENANCE" ? "maintenance" : "inactive",
+    rating: 4.8,
+    image: court.courtImages && court.courtImages.length > 0 
+      ? court.courtImages[0] 
+      : "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
+    tags: ["Mới cập nhật", "Giữ chỗ nhanh"],
+  }));
+
   const filteredCourts = useMemo(() => {
-    return featuredCourts.filter((court) => {
+    return displayCourts.filter((court) => {
       const keywordMatch =
         search.keyword.trim() === "" ||
         court.name.toLowerCase().includes(search.keyword.toLowerCase()) ||
@@ -215,7 +156,7 @@ export default function HomePage({
 
       return keywordMatch && sportMatch;
     });
-  }, [search.keyword, search.sport]);
+  }, [search.keyword, search.sport, displayCourts]);
 
   const featuredCount = filteredCourts.length;
 
@@ -320,7 +261,7 @@ export default function HomePage({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Tất cả môn</SelectItem>
-                          {sports.map((sport) => (
+                          {displaySports.map((sport) => (
                             <SelectItem key={sport.name} value={sport.name}>
                               {sport.name}
                             </SelectItem>
@@ -418,26 +359,32 @@ export default function HomePage({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sports.map((sport) => (
-              <Card
-                key={sport.name}
-                className="group border-border/60 bg-card/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-3xl">
-                      {sport.icon}
+            {sportTypesLoading ? (
+              <div className="col-span-full py-8 text-center text-muted-foreground">
+                Đang tải danh sách môn thể thao...
+              </div>
+            ) : (
+              displaySports.map((sport) => (
+                <Card
+                  key={sport.name}
+                  className="group border-border/60 bg-card/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5"
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-3xl">
+                        {sport.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{sport.name}</h3>
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                          {sport.description}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{sport.name}</h3>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        {sport.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </section>
 
@@ -448,9 +395,9 @@ export default function HomePage({
         >
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-primary">Sân nổi bật</p>
+              <p className="text-sm font-medium text-primary">Danh sách sân bãi</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                {featuredCount} sân phù hợp với bộ lọc hiện tại
+                {courtsLoading ? "Đang tải danh sách sân..." : `Khám phá các sân chơi phù hợp`}
               </h2>
               <p className="mt-2 max-w-2xl text-muted-foreground">
                 Danh sách dưới đây được thiết kế như một trải nghiệm thương mại:
@@ -477,7 +424,16 @@ export default function HomePage({
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredCourts.map((court) => (
+            {courtsLoading ? (
+              <div className="col-span-full py-12 text-center text-muted-foreground">
+                Đang tải danh sách sân...
+              </div>
+            ) : filteredCourts.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-muted-foreground">
+                Không tìm thấy sân phù hợp với bộ lọc.
+              </div>
+            ) : (
+              filteredCourts.map((court) => (
               <Card
                 key={court.id}
                 className="group overflow-hidden border-border/60 bg-card/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/5"
@@ -546,7 +502,7 @@ export default function HomePage({
                           return;
                         }
                         // Chuyển tới trang booking
-                        window.location.href = "/booking";
+                        window.location.href = `/booking?courtId=${court.id}`;
                       }}
                     >
                       {court.status === "available" ? "Đặt ngay" : "Tạm dừng"}
@@ -554,8 +510,30 @@ export default function HomePage({
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )))}
           </div>
+
+          {!courtsLoading && totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setPage((p) => Math.max(1, p - 1))} 
+                disabled={page === 1}
+              >
+                Trước
+              </Button>
+              <span className="text-sm font-medium text-muted-foreground">
+                Trang {page} / {totalPages}
+              </span>
+              <Button 
+                variant="outline" 
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))} 
+                disabled={page === totalPages}
+              >
+                Tiếp
+              </Button>
+            </div>
+          )}
         </section>
 
         {/* Pricing Section */}

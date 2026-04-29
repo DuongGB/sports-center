@@ -6,6 +6,8 @@
 
 package com.devduong.be.dtos.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -17,8 +19,8 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record CourtPriceResponse(
-        LocalTime startTime,
-        LocalTime endTime,
+        @JsonFormat(pattern = "HH:mm") LocalTime startTime,
+        @JsonFormat(pattern = "HH:mm") LocalTime endTime,
         double price
 ) {
 }

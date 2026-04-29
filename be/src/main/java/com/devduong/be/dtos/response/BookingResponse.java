@@ -22,19 +22,25 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record BookingResponse(
-        UUID bookingId,
+        UUID id,
+        UUID courtId,
         String courtName,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
         LocalDate bookingDate,
+        LocalTime startTime,
+        LocalTime endTime,
         Double totalPrice,
         BookingStatus bookingStatus,
 
+        // Thông tin người đặt (Hỗ trợ cả User và Guest)
+        String customerName,
+        String customerPhone,
+
+        // Thông tin thanh toán
         UUID paymentId,
         PaymentMethod paymentMethod,
         PaymentStatus paymentStatus,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt,
-        LocalDateTime deletedAt
+        String paymentUrl,
+
+        LocalDateTime createdAt
 ) {
 }

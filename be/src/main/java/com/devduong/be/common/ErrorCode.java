@@ -65,6 +65,8 @@ public enum ErrorCode {
     CANCEL_TIME_EXPIRED(6004, "Cannot cancel booking after the cancellation deadline", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED_ACTION(6005, "You are not authorized to perform this action", HttpStatus.FORBIDDEN),
     MISSING_PHONE_NUMBER(6006, "Phone number is required for guest booking", HttpStatus.BAD_REQUEST),
+    INVALID_TIME_RANGE(6007, "Invalid time range", HttpStatus.BAD_REQUEST),
+    COURT_CLOSED(6008, "Court is closed for the selected date and time slot", HttpStatus.BAD_REQUEST),
 
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);

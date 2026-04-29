@@ -8,10 +8,15 @@ package com.devduong.be.repositories;
 
 import com.devduong.be.entities.Booking;
 import com.devduong.be.enums.BookingStatus;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -22,6 +27,14 @@ import java.util.UUID;
  */
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
-    // TODO: Check xem sân đã bị ai đặt chưa
-    boolean existsByCourtIdAndBookingDateAndBookingStatusNot(UUID courtId, LocalDate bookingDate, BookingStatus status);
+    // TODO: Kiểm tra xem sân có bị trùng giờ không (bỏ qua các đơn đã CANCELLED)
+    @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.court.id = :courtId " +
+            "AND b.bookingDate = :date " +
+            "AND b.bookingStatus != 'CANCELLED' " +
+            "AND ((b.startTime < :endTime AND b.endTime > :startTime))")
+    boolean existsOverlappingBooking(
+            @Param("courtId") UUID courtId,
+            @Param("date") LocalDate date,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime);
 }

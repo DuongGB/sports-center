@@ -13,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -52,10 +52,10 @@ public class Booking {
     LocalDate bookingDate;
 
     @Column(name = "start_time", nullable = false)
-    LocalDateTime startTime;
+    LocalTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    LocalDateTime endTime;
+    LocalTime endTime;
 
     @Column(name = "total_price", nullable = false)
     Double totalPrice;
