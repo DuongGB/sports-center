@@ -8,6 +8,7 @@ package com.devduong.be.services;
 
 import com.devduong.be.common.ErrorCode;
 import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.BookingFilterRequest;
 import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.dtos.response.PaymentExecutionResult;
@@ -23,6 +24,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -166,10 +168,17 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
-    // TODO: Lấy tất cả booking (phân trang)
-    public PageResponse<BookingResponse> getAllBookings(int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Booking> bookingPage = bookingRepository.findAllByOrderByCreatedAtDesc(pageable);
+    // TODO: Lấy tất cả booking (phân trang + lọc)
+    public PageResponse<BookingResponse> getAllBookings(BookingFilterRequest request) {
+        Sort sort = Sort.by(Sort.Direction.fromString(request.sortDirection()), request.sortBy());
+        Pageable pageable = PageRequest.of(request.page() - 1, request.size(), sort);
+        
+        Page<Booking> bookingPage = bookingRepository.findWithFilter(
+                request.keyword(),
+                request.status(),
+                pageable
+        );
+        
         List<BookingResponse> responses = bookingPage.getContent().stream()
                 .map(booking -> {
                     String customerName = booking.getUser() != null
@@ -178,12 +187,7 @@ public class BookingService {
                     String customerPhone = booking.getUser() != null
                             ? booking.getUser().getPhone()
                             : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
-                    // Get payment info from booking's payments if available
-                    Payment payment = null;
-                    PaymentMethod paymentMethod = null;
-                    if (booking.getUser() != null || booking.getBookingGuest() != null) {
-                        // try to get payment from repository - simplified
-                    }
+                    
                     return new BookingResponse(
                             booking.getId(),
                             booking.getCourt().getId(),

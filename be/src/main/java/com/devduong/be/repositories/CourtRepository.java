@@ -35,4 +35,6 @@ public interface CourtRepository extends JpaRepository<Court, UUID> {
             @Param("status") CourtStatus status,
             Pageable pageable
     );
+
+    long countByStatus(CourtStatus status);
 }

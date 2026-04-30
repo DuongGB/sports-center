@@ -8,6 +8,7 @@ package com.devduong.be.controllers;
 
 import com.devduong.be.common.ApiResponse;
 import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.BookingFilterRequest;
 import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.security.oauth2.UserPrincipal;
@@ -60,14 +61,12 @@ public class BookingController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> getAllBookings(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<ApiResponse<?>> getAllBookings(BookingFilterRequest request) {
         return ResponseEntity.ok(ApiResponse.<PageResponse<BookingResponse>>builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Get all bookings successful")
-                .data(bookingService.getAllBookings(page, size))
+                .data(bookingService.getAllBookings(request))
                 .build());
     }
 

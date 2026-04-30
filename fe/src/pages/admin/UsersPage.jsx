@@ -1,18 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useUsers } from "@/hooks/useUsers";
-import { X, Eye } from "lucide-react";
+import { X, Eye, Search, Filter, RefreshCcw } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 
 export default function UsersPage() {
-  const { users, loading, page, totalPages, fetchUsers, setPage } = useUsers();
+  const [filters, setFilters] = useState({ keyword: "", status: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const { users, loading, page, totalPages, totalElements, fetchUsers, setPage } = useUsers();
   
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
 
   useEffect(() => {
-    fetchUsers(page);
-  }, [page, fetchUsers]);
+    fetchUsers(page, 10, filters);
+  }, [page, fetchUsers, filters]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setFilters(prev => ({ ...prev, keyword: searchTerm }));
+    setPage(1);
+  };
+
+  const handleStatusChange = (status) => {
+    setFilters(prev => ({ ...prev, status }));
+    setPage(1);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setFilters({ keyword: "", status: "" });
+    setPage(1);
+  };
 
   const openViewModal = (user) => {
     setViewData(user);
@@ -21,35 +41,76 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Người Dùng</h1>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <form onSubmit={handleSearch} className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm email, SĐT, tên..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </form>
+          
+          <select
+            value={filters.status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="ACTIVE">Hoạt động</option>
+            <option value="INACTIVE">Ngừng hoạt động</option>
+          </select>
+
+          {(filters.keyword || filters.status) && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
+              <RefreshCcw className="h-4 w-4 mr-2" /> Làm mới
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground font-medium">
+          {loading ? "Đang tìm kiếm..." : (
+            filters.keyword || filters.status ? 
+              `Tìm thấy ${totalElements} người dùng phù hợp` : 
+              `Tổng cộng ${totalElements} người dùng`
+          )}
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-foreground">
-            <thead className="bg-muted text-muted-foreground border-b border-border">
+            <thead className="bg-muted/80 text-foreground border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-medium">Họ Tên</th>
-                <th className="px-6 py-4 font-medium">Email</th>
-                <th className="px-6 py-4 font-medium">SĐT</th>
-                <th className="px-6 py-4 font-medium">Vai Trò</th>
-                <th className="px-6 py-4 font-medium">Trạng Thái</th>
-                <th className="px-6 py-4 font-medium">Ngày Tạo</th>
-                <th className="px-6 py-4 font-medium text-right">Thao Tác</th>
+                <th className="px-6 py-4 font-semibold">Họ Tên</th>
+                <th className="px-6 py-4 font-semibold">Email</th>
+                <th className="px-6 py-4 font-semibold">SĐT</th>
+                <th className="px-6 py-4 font-semibold">Vai Trò</th>
+                <th className="px-6 py-4 font-semibold">Trạng Thái</th>
+                <th className="px-6 py-4 font-semibold">Ngày Tạo</th>
+                <th className="px-6 py-4 font-semibold text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-muted-foreground">
-                    Đang tải dữ liệu...
+                  <td colSpan="7" className="px-6 py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <span>Đang tải dữ liệu...</span>
+                    </div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-8 text-center text-muted-foreground">
-                    Không có bản ghi nào
+                  <td colSpan="7" className="px-6 py-12 text-center text-muted-foreground">
+                    Không có bản ghi nào phù hợp với tìm kiếm
                   </td>
                 </tr>
               ) : (
@@ -62,10 +123,10 @@ export default function UsersPage() {
                       {user.roles?.map((role) => (
                         <span
                           key={role}
-                          className={`px-2.5 py-1 text-xs rounded-full font-medium inline-block mr-1 ${
+                          className={`px-2.5 py-1 text-[11px] rounded-md font-bold uppercase tracking-wider inline-block mr-1 ${
                             role === "ADMIN"
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                              : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                           }`}
                         >
                           {role}
@@ -73,11 +134,12 @@ export default function UsersPage() {
                       ))}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${
+                      <span className={`px-2.5 py-1 text-xs rounded-full font-bold inline-flex items-center gap-1.5 ${
                         user.status === "ACTIVE" 
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50"
+                          : "bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50"
                       }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-emerald-600" : "bg-red-600"}`} />
                         {user.status || "N/A"}
                       </span>
                     </td>
@@ -101,9 +163,9 @@ export default function UsersPage() {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-border bg-card gap-4">
             <span className="text-sm text-muted-foreground">
-              Trang {page} / {totalPages}
+              Hiển thị <span className="font-medium text-foreground">{users.length}</span> / {totalElements} kết quả - Trang {page} / {totalPages}
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -144,11 +206,11 @@ export default function UsersPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
                 <span className="text-sm font-medium text-muted-foreground">ID:</span>
-                <span className="col-span-2 text-sm text-foreground break-all">{viewData.id}</span>
+                <span className="col-span-2 text-sm text-foreground break-all font-mono">{viewData.id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
                 <span className="text-sm font-medium text-muted-foreground">Họ tên:</span>
-                <span className="col-span-2 text-sm text-foreground">{viewData.fullName}</span>
+                <span className="col-span-2 text-sm font-semibold text-foreground">{viewData.fullName}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
                 <span className="text-sm font-medium text-muted-foreground">Email:</span>
@@ -160,11 +222,17 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
                 <span className="text-sm font-medium text-muted-foreground">Vai trò:</span>
-                <span className="col-span-2 text-sm text-foreground">{viewData.roles?.join(', ')}</span>
+                <span className="col-span-2 text-sm text-foreground">
+                  {viewData.roles?.map(r => (
+                    <span key={r} className="inline-block px-2 py-0.5 rounded bg-muted text-[11px] font-bold mr-1">{r}</span>
+                  ))}
+                </span>
               </div>
               <div className="grid grid-cols-3 gap-2 border-b border-border pb-2">
                 <span className="text-sm font-medium text-muted-foreground">Trạng thái:</span>
-                <span className="col-span-2 text-sm text-foreground">{viewData.status}</span>
+                <span className={`col-span-2 text-sm font-bold ${viewData.status === 'ACTIVE' ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {viewData.status}
+                </span>
               </div>
               <div className="grid grid-cols-3 gap-2 pb-2">
                 <span className="text-sm font-medium text-muted-foreground">Ngày tạo:</span>
@@ -173,7 +241,7 @@ export default function UsersPage() {
             </div>
 
             <div className="pt-6 flex justify-end">
-              <Button onClick={() => setIsViewModalOpen(false)}>Đóng</Button>
+              <Button onClick={() => setIsViewModalOpen(false)} className="w-full sm:w-auto">Đóng</Button>
             </div>
           </div>
         </div>

@@ -105,7 +105,7 @@ export default function HomePage({
   const { sportTypes, fetchSportTypes, loading: sportTypesLoading } = useSportTypes();
 
   useEffect(() => {
-    fetchCourts(page, 6);
+    fetchCourts(page, 6, { status: "ACTIVE" });
   }, [fetchCourts, page]);
 
   useEffect(() => {
@@ -305,7 +305,10 @@ export default function HomePage({
                     />
                   </div>
 
-                  <Button className="h-11 w-full gap-2" onClick={onLoginClick}>
+                  <Button className="h-11 w-full gap-2" onClick={() => {
+                    const el = document.getElementById('booking');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}>
                     <CalendarDays className="h-4 w-4" />
                     Tìm sân trống ngay
                   </Button>

@@ -1,27 +1,64 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Eye, CheckCircle, XCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { X, Eye, CheckCircle, XCircle, Search, Filter, RefreshCcw } from "lucide-react";
 import { useBookingsQuery, useBookingMutations } from "@/hooks/queries/useBookingQueries";
 import { formatDate } from "@/utils/dateUtils";
 import { toast } from "react-toastify";
 
 const statusMap = {
-  PENDING: { label: "Chờ xác nhận", style: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-  CONFIRMED: { label: "Đã xác nhận", style: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  CANCELLED: { label: "Đã hủy", style: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-  COMPLETED: { label: "Hoàn thành", style: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  PENDING: { 
+    label: "Chờ xác nhận", 
+    style: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50",
+    dot: "bg-amber-600"
+  },
+  CONFIRMED: { 
+    label: "Đã xác nhận", 
+    style: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50",
+    dot: "bg-emerald-600"
+  },
+  CANCELLED: { 
+    label: "Đã hủy", 
+    style: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50",
+    dot: "bg-red-600"
+  },
+  COMPLETED: { 
+    label: "Hoàn thành", 
+    style: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50",
+    dot: "bg-blue-600"
+  },
 };
 
 const formatTime = (t) => (t ? t.substring(0, 5) : "??:??");
 const formatPrice = (p) => (p != null ? p.toLocaleString("vi-VN") + "đ" : "N/A");
 
 export default function BookingsPage() {
+  const [filters, setFilters] = useState({ keyword: "", status: "" });
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const size = 10;
 
-  const { data: bookingsQuery, isLoading } = useBookingsQuery(page, size);
+  const { data: bookingsQuery, isLoading } = useBookingsQuery(page, size, filters);
   const bookings = bookingsQuery?.data || [];
   const totalPages = bookingsQuery?.totalPages || 1;
+  const totalElements = bookingsQuery?.totalElements || 0;
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setFilters(prev => ({ ...prev, keyword: searchTerm }));
+    setPage(1);
+  };
+
+  const handleStatusChange = (status) => {
+    setFilters(prev => ({ ...prev, status }));
+    setPage(1);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setFilters({ keyword: "", status: "" });
+    setPage(1);
+  };
 
   const { confirmBookingMut, cancelBookingMut } = useBookingMutations();
 
@@ -71,58 +108,102 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Đặt Sân</h1>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <form onSubmit={handleSearch} className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm khách hàng, SĐT..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </form>
+
+          <select
+            value={filters.status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="PENDING">Chờ xác nhận</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="COMPLETED">Hoàn thành</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
+
+          {(filters.keyword || filters.status) && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
+              <RefreshCcw className="h-4 w-4 mr-2" /> Làm mới
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground font-medium">
+          {isLoading ? "Đang tìm kiếm..." : (
+            filters.keyword || filters.status ? 
+              `Tìm thấy ${totalElements} đơn đặt sân phù hợp` : 
+              `Tổng cộng ${totalElements} đơn đặt sân`
+          )}
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-foreground">
-            <thead className="bg-muted text-muted-foreground border-b border-border">
+            <thead className="bg-muted/80 text-foreground border-b border-border">
               <tr>
-                <th className="px-4 py-4 font-medium">Khách hàng</th>
-                <th className="px-4 py-4 font-medium">SĐT</th>
-                <th className="px-4 py-4 font-medium">Sân</th>
-                <th className="px-4 py-4 font-medium">Ngày đặt</th>
-                <th className="px-4 py-4 font-medium">Giờ</th>
-                <th className="px-4 py-4 font-medium">Tổng tiền</th>
-                <th className="px-4 py-4 font-medium">Trạng thái</th>
-                <th className="px-4 py-4 font-medium">Ngày tạo</th>
-                <th className="px-4 py-4 font-medium text-right">Thao tác</th>
+                <th className="px-4 py-4 font-semibold">Khách hàng</th>
+                <th className="px-4 py-4 font-semibold">SĐT</th>
+                <th className="px-4 py-4 font-semibold">Sân</th>
+                <th className="px-4 py-4 font-semibold">Ngày đặt</th>
+                <th className="px-4 py-4 font-semibold">Giờ</th>
+                <th className="px-4 py-4 font-semibold">Tổng tiền</th>
+                <th className="px-4 py-4 font-semibold">Trạng thái</th>
+                <th className="px-4 py-4 font-semibold">Ngày tạo</th>
+                <th className="px-4 py-4 font-semibold text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-8 text-center text-muted-foreground">
-                    Đang tải dữ liệu...
+                  <td colSpan="9" className="px-6 py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <span>Đang tải dữ liệu...</span>
+                    </div>
                   </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-8 text-center text-muted-foreground">
-                    Không có đơn đặt sân nào
+                  <td colSpan="9" className="px-6 py-12 text-center text-muted-foreground">
+                    Không có bản ghi nào phù hợp
                   </td>
                 </tr>
               ) : (
                 bookings.map((b) => {
-                  const status = statusMap[b.bookingStatus] || { label: b.bookingStatus, style: "bg-gray-100 text-gray-700" };
+                  const status = statusMap[b.bookingStatus] || { label: b.bookingStatus, style: "bg-gray-100 text-gray-700", dot: "bg-gray-400" };
                   return (
                     <tr key={b.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                       <td className="px-4 py-4 font-medium">{b.customerName || "N/A"}</td>
                       <td className="px-4 py-4 text-muted-foreground">{b.customerPhone || "N/A"}</td>
-                      <td className="px-4 py-4">{b.courtName || "N/A"}</td>
+                      <td className="px-4 py-4 font-medium text-foreground">{b.courtName || "N/A"}</td>
                       <td className="px-4 py-4 text-muted-foreground">{b.bookingDate || "N/A"}</td>
                       <td className="px-4 py-4 text-muted-foreground">
                         {formatTime(b.startTime)} - {formatTime(b.endTime)}
                       </td>
-                      <td className="px-4 py-4 font-medium text-primary">{formatPrice(b.totalPrice)}</td>
+                      <td className="px-4 py-4 font-bold text-primary">{formatPrice(b.totalPrice)}</td>
                       <td className="px-4 py-4">
-                        <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${status.style}`}>
-                          {status.label}
+                        <span className={`px-2.5 py-1 text-[11px] rounded-full font-bold border inline-flex items-center gap-1.5 ${status.style}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                          {status.label.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-muted-foreground">{formatDate(b.createdAt)}</td>
+                      <td className="px-4 py-4 text-muted-foreground text-xs">{formatDate(b.createdAt)}</td>
                       <td className="px-4 py-4 text-right space-x-1">
                         <Button variant="ghost" size="sm" onClick={() => openViewModal(b)} className="text-muted-foreground hover:text-foreground hover:bg-muted">
                           <Eye className="w-4 h-4 mr-1" /> Chi tiết
@@ -153,9 +234,9 @@ export default function BookingsPage() {
 
         {/* Pagination */}
         {!isLoading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-border bg-card gap-4">
             <span className="text-sm text-muted-foreground">
-              Trang {page} / {totalPages}
+              Hiển thị <span className="font-medium text-foreground">{bookings.length}</span> / {totalElements} kết quả - Trang {page} / {totalPages}
             </span>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>

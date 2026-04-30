@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bookingService } from "@/services/bookingService";
 
-export function useBookingsQuery(page = 1, size = 10) {
+export function useBookingsQuery(page = 1, size = 10, filters = {}) {
   return useQuery({
-    queryKey: ["bookings", page, size],
-    queryFn: () => bookingService.getAllBookings(page, size).then(res => res.data),
+    queryKey: ["bookings", page, size, filters],
+    queryFn: () => bookingService.getAllBookings(page, size, filters).then(res => res.data),
     placeholderData: (previousData) => previousData,
   });
 }

@@ -9,14 +9,14 @@ export function useCourts() {
   const [error, setError] = useState(null);
   const hasFetched = useRef(false);
 
-  const fetchCourts = useCallback(async (pageNumber = 1, size = 10) => {
+  const fetchCourts = useCallback(async (pageNumber = 1, size = 10, filters = {}) => {
     try {
       // Only show full loading on initial fetch
       if (!hasFetched.current) {
         setLoading(true);
       }
       setError(null);
-      const res = await courtService.getAllCourts(pageNumber, size);
+      const res = await courtService.getAllCourts(pageNumber, size, filters);
       if (res.success && res.data) {
         setCourts(res.data.data || []);
         setTotalPages(res.data.totalPages || 1);
@@ -33,3 +33,4 @@ export function useCourts() {
 
   return { courts, loading, error, page, totalPages, fetchCourts, setPage };
 }
+

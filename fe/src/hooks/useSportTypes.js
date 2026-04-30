@@ -6,19 +6,21 @@ export function useSportTypes() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [error, setError] = useState(null);
   const hasFetched = useRef(false);
 
-  const fetchSportTypes = useCallback(async (pageNumber = 1, size = 10) => {
+  const fetchSportTypes = useCallback(async (pageNumber = 1, size = 10, filters = {}) => {
     try {
       if (!hasFetched.current) {
         setLoading(true);
       }
       setError(null);
-      const res = await sportTypeService.getAllSportTypes(pageNumber, size);
+      const res = await sportTypeService.getAllSportTypes(pageNumber, size, filters);
       if (res.success && res.data) {
         setSportTypes(res.data.data || []);
         setTotalPages(res.data.totalPages || 1);
+        setTotalElements(res.data.totalElements || 0);
         setPage(pageNumber);
         hasFetched.current = true;
       }
@@ -30,5 +32,5 @@ export function useSportTypes() {
     }
   }, []);
 
-  return { sportTypes, loading, error, page, totalPages, fetchSportTypes, setPage };
+  return { sportTypes, loading, error, page, totalPages, totalElements, fetchSportTypes, setPage };
 }

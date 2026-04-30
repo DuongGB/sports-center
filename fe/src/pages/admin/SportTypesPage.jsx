@@ -3,21 +3,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSportTypes } from "@/hooks/useSportTypes";
 import { sportTypeService } from "@/services/sportTypeService";
-import { X, Eye } from "lucide-react";
+import { X, Eye, Search, RefreshCcw } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function SportTypesPage() {
-  const { sportTypes, loading, page, totalPages, fetchSportTypes, setPage } = useSportTypes();
+  const [filters, setFilters] = useState({ keyword: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const { sportTypes, loading, page, totalPages, totalElements, fetchSportTypes, setPage } = useSportTypes();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit'
+  const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit' | 'view'
   const [formData, setFormData] = useState({ id: "", name: "", prices: [] });
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchSportTypes(page);
-  }, [page, fetchSportTypes]);
+    fetchSportTypes(page, 10, filters);
+  }, [page, fetchSportTypes, filters]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setFilters({ keyword: searchTerm });
+    setPage(1);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setFilters({ keyword: "" });
+    setPage(1);
+  };
 
   const openAddModal = () => {
     setModalMode("add");
@@ -112,31 +126,65 @@ export default function SportTypesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Loại Sân Thể Thao</h1>
-        <Button onClick={openAddModal}>Thêm Mới</Button>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <form onSubmit={handleSearch} className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm tên môn thể thao..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </form>
+
+          {filters.keyword && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
+              <RefreshCcw className="h-4 w-4 mr-2" /> Làm mới
+            </Button>
+          )}
+
+          <Button onClick={openAddModal} className="h-10 ml-auto sm:ml-0">
+            Thêm Mới
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground font-medium">
+          {loading ? "Đang tìm kiếm..." : (
+            filters.keyword ? 
+              `Tìm thấy ${totalElements} môn thể thao phù hợp` : 
+              `Tổng cộng ${totalElements} môn thể thao`
+          )}
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-foreground">
-            <thead className="bg-muted text-muted-foreground border-b border-border">
+            <thead className="bg-muted/80 text-foreground border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-medium">Tên Môn Thể Thao</th>
-                <th className="px-6 py-4 font-medium text-right">Thao tác</th>
+                <th className="px-6 py-4 font-semibold">Tên Môn Thể Thao</th>
+                <th className="px-6 py-4 font-semibold text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="2" className="px-6 py-8 text-center text-muted-foreground">
-                    Đang tải dữ liệu...
+                  <td colSpan="2" className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <span className="text-muted-foreground">Đang tải dữ liệu...</span>
+                    </div>
                   </td>
                 </tr>
               ) : sportTypes.length === 0 ? (
                 <tr>
-                  <td colSpan="2" className="px-6 py-8 text-center text-muted-foreground">
-                    Không có bản ghi nào
+                  <td colSpan="2" className="px-6 py-12 text-center text-muted-foreground">
+                    Không có bản ghi nào phù hợp
                   </td>
                 </tr>
               ) : (
@@ -178,9 +226,9 @@ export default function SportTypesPage() {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-border bg-card gap-4">
             <span className="text-sm text-muted-foreground">
-              Trang {page} / {totalPages}
+              Hiển thị <span className="font-medium text-foreground">{sportTypes.length}</span> / {totalElements} kết quả - Trang {page} / {totalPages}
             </span>
             <div className="flex items-center gap-2">
               <Button

@@ -54,9 +54,9 @@ public class SportTypeService {
         // Trả về kết quả
         return new PageResponse<>(
                 request.page(),
-                request.size(),
-                sportTypePage.getTotalElements(),
                 sportTypePage.getTotalPages(),
+                sportTypePage.getSize(),
+                sportTypePage.getTotalElements(),
                 sportTypeResponses
         );
     }

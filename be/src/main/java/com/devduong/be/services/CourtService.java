@@ -56,8 +56,8 @@ public class CourtService {
                 .toList();
         return new PageResponse<>(
                 request.page(),
-                request.size(),
                 courtPage.getTotalPages(),
+                (long) courtPage.getSize(),
                 courtPage.getTotalElements(),
                 courtResponses
         );
