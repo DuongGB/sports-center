@@ -50,7 +50,7 @@ public class CourtService {
     // TODO: Get all courts with filter and pagination
     public PageResponse<CourtResponse> getAllCourts(CourtFilterRequest request) {
         Pageable pageable = request.getPageable();
-        Page<Court> courtPage = courtRepository.findAllWithFilter(request.keyword(), request.status(), pageable);
+        Page<Court> courtPage = courtRepository.findAllWithFilter(request.keyword(), request.status(), request.sportTypeId(), pageable);
         List<CourtResponse> courtResponses = courtPage.getContent().stream()
                 .map(courtMapper::toCourtResponse)
                 .toList();

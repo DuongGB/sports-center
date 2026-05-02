@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -159,13 +160,47 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
-    // TODO: Xác nhận đặt sân
     @Transactional
     public void confirmBooking(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
         booking.setBookingStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
+    }
+
+    // TODO: Xử lý hàng loạt
+    @Transactional
+    public void batchProcessBookings(List<UUID> bookingIds, String action) {
+        List<Booking> bookings = bookingRepository.findAllById(bookingIds);
+        for (Booking booking : bookings) {
+            if (booking.getBookingStatus() == BookingStatus.PENDING) {
+                if ("CONFIRM".equalsIgnoreCase(action)) {
+                    booking.setBookingStatus(BookingStatus.CONFIRMED);
+                } else if ("CANCEL".equalsIgnoreCase(action)) {
+                    booking.setBookingStatus(BookingStatus.CANCELLED);
+                    booking.setCancelledAt(LocalDateTime.now());
+                }
+            } else if (booking.getBookingStatus() == BookingStatus.CONFIRMED && "CANCEL".equalsIgnoreCase(action)) {
+                booking.setBookingStatus(BookingStatus.CANCELLED);
+                booking.setCancelledAt(LocalDateTime.now());
+            }
+        }
+        bookingRepository.saveAll(bookings);
+    }
+
+    // TODO: Cron job tự động xác nhận sau 24h (Chạy mỗi giờ)
+    @Scheduled(cron = "0 0 * * * *")
+    @Transactional
+    public void autoConfirmBookings() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(24);
+        List<Booking> oldPendingBookings = bookingRepository.findByBookingStatusAndCreatedAtBefore(
+                BookingStatus.PENDING, threshold
+        );
+        if (!oldPendingBookings.isEmpty()) {
+            oldPendingBookings.forEach(b -> b.setBookingStatus(BookingStatus.CONFIRMED));
+            bookingRepository.saveAll(oldPendingBookings);
+            System.out.println("Auto-confirmed " + oldPendingBookings.size() + " bookings.");
+        }
     }
 
     // TODO: Lấy tất cả booking (phân trang + lọc)

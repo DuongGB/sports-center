@@ -6,6 +6,7 @@ export function useCourts() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [error, setError] = useState(null);
   const hasFetched = useRef(false);
 
@@ -20,6 +21,7 @@ export function useCourts() {
       if (res.success && res.data) {
         setCourts(res.data.data || []);
         setTotalPages(res.data.totalPages || 1);
+        setTotalElements(res.data.totalElements || 0);
         setPage(pageNumber);
         hasFetched.current = true;
       }
@@ -31,6 +33,6 @@ export function useCourts() {
     }
   }, []);
 
-  return { courts, loading, error, page, totalPages, fetchCourts, setPage };
+  return { courts, loading, error, page, totalPages, totalElements, fetchCourts, setPage };
 }
 

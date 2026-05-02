@@ -63,12 +63,7 @@ const pricePlans = [
   },
 ];
 
-const stats = [
-  { value: "120+", label: "Sân đang hoạt động" },
-  { value: "6", label: "Môn thể thao phổ biến" },
-  { value: "98%", label: "Khách hàng hài lòng" },
-  { value: "24/7", label: "Hỗ trợ đặt sân" },
-];
+// stats will be defined inside HomePage to use dynamic data
 
 function statusLabel(status) {
   if (status === "available") return "Có sẵn";
@@ -97,12 +92,21 @@ export default function HomePage({
     sport: "all",
     time: "18:00",
     date: "",
+    courtName: "",
+    location: "",
   });
 
   const navigate = useNavigate();
 
-  const { courts, fetchCourts, loading: courtsLoading, page, totalPages, setPage } = useCourts();
-  const { sportTypes, fetchSportTypes, loading: sportTypesLoading } = useSportTypes();
+  const { courts, fetchCourts, loading: courtsLoading, page, totalPages, totalElements: totalCourts, setPage } = useCourts();
+  const { sportTypes, fetchSportTypes, loading: sportTypesLoading, totalElements: totalSportTypes } = useSportTypes();
+
+  const stats = [
+    { value: `${totalCourts}+`, label: "Sân đang hoạt động" },
+    { value: totalSportTypes, label: "Môn thể thao phổ biến" },
+    { value: "98%", label: "Khách hàng hài lòng" },
+    { value: "24/7", label: "Hỗ trợ đặt sân" },
+  ];
 
   useEffect(() => {
     fetchCourts(page, 6, { status: "ACTIVE" });
@@ -155,10 +159,12 @@ export default function HomePage({
         court.location.toLowerCase().includes(search.keyword.toLowerCase());
 
       const sportMatch = search.sport === "all" || court.sport === search.sport;
+      const nameMatch = search.courtName.trim() === "" || court.name.toLowerCase().includes(search.courtName.toLowerCase());
+      const locationMatch = search.location.trim() === "" || court.location.toLowerCase().includes(search.location.toLowerCase());
 
-      return keywordMatch && sportMatch;
+      return keywordMatch && sportMatch && nameMatch && locationMatch;
     });
-  }, [search.keyword, search.sport, displayCourts]);
+  }, [search.keyword, search.sport, search.courtName, search.location, displayCourts]);
 
   const featuredCount = filteredCourts.length;
 
@@ -285,6 +291,37 @@ export default function HomePage({
                             time: e.target.value,
                           }))
                         }
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tên sân</label>
+                      <Input
+                        value={search.courtName}
+                        onChange={(e) =>
+                          setSearch((prev) => ({
+                            ...prev,
+                            courtName: e.target.value,
+                          }))
+                        }
+                        placeholder="VD: Sân A1..."
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Khu vực</label>
+                      <Input
+                        value={search.location}
+                        onChange={(e) =>
+                          setSearch((prev) => ({
+                            ...prev,
+                            location: e.target.value,
+                          }))
+                        }
+                        placeholder="VD: Quận 1..."
                         className="h-11"
                       />
                     </div>
@@ -419,6 +456,8 @@ export default function HomePage({
                     sport: "all",
                     time: "18:00",
                     date: "",
+                    courtName: "",
+                    location: "",
                   })
                 }
               >
@@ -669,7 +708,7 @@ export default function HomePage({
                     <a href="#booking">Xem sân trống</a>
                   </Button>
                   <Button asChild variant="outline" size="lg">
-                    <a href="tel:02812345678">Gọi tư vấn</a>
+                    <a href="tel:0356309561">Gọi tư vấn</a>
                   </Button>
                 </div>
               </div>
@@ -677,7 +716,7 @@ export default function HomePage({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
                   <p className="text-sm text-muted-foreground">Hotline</p>
-                  <p className="mt-2 text-lg font-semibold">(028) 1234 5678</p>
+                  <p className="mt-2 text-lg font-semibold">0356 309 561</p>
                 </div>
                 <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
                   <p className="text-sm text-muted-foreground">Email</p>

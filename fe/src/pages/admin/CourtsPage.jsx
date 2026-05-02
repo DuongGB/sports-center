@@ -7,7 +7,7 @@ import { useSportTypesQuery } from "@/hooks/queries/useSportTypeQueries";
 import { toast } from "react-toastify";
 
 export default function CourtsPage() {
-  const [filters, setFilters] = useState({ keyword: "", status: "" });
+  const [filters, setFilters] = useState({ keyword: "", status: "", sportTypeId: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const size = 10;
@@ -32,9 +32,14 @@ export default function CourtsPage() {
     setPage(1);
   };
 
+  const handleSportTypeChange = (sportTypeId) => {
+    setFilters(prev => ({ ...prev, sportTypeId }));
+    setPage(1);
+  };
+
   const resetFilters = () => {
     setSearchTerm("");
-    setFilters({ keyword: "", status: "" });
+    setFilters({ keyword: "", status: "", sportTypeId: "" });
     setPage(1);
   };
 
@@ -204,7 +209,18 @@ export default function CourtsPage() {
             <option value="MAINTENANCE">Bảo trì</option>
           </select>
 
-          {(filters.keyword || filters.status) && (
+          <select
+            value={filters.sportTypeId}
+            onChange={(e) => handleSportTypeChange(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Tất cả loại sân</option>
+            {sportTypes.map((st) => (
+              <option key={st.id} value={st.id}>{st.name}</option>
+            ))}
+          </select>
+
+          {(filters.keyword || filters.status || filters.sportTypeId) && (
             <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
               <RefreshCcw className="h-4 w-4 mr-2" /> Làm mới
             </Button>

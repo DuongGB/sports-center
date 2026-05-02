@@ -16,4 +16,9 @@ export const bookingService = {
     apiCall(`/booking/${id}/confirm`, { method: "PUT" }),
   cancelBooking: (id) =>
     apiCall(`/booking/${id}/cancel`, { method: "PUT" }),
+  batchProcess: (ids, action) =>
+    apiCall(`/booking/batch`, { 
+      method: "PUT", 
+      body: JSON.stringify({ ids, action }) 
+    }),
 };

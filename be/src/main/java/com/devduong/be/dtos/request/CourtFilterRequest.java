@@ -11,6 +11,7 @@ import com.devduong.be.enums.CourtStatus;
 import com.devduong.be.exceptions.AppException;
 
 import java.util.List;
+import java.util.UUID;
 
 /*
  * @description:
@@ -21,6 +22,7 @@ import java.util.List;
 public record CourtFilterRequest(
         String keyword,
         CourtStatus status,
+        UUID sportTypeId,
         Integer page,
         Integer size,
         String sortBy,

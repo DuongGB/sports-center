@@ -29,10 +29,12 @@ public interface CourtRepository extends JpaRepository<Court, UUID> {
             "WHERE (:keyword IS NULL OR " +
             "LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
             "LOWER(c.location) LIKE LOWER(CONCAT('%',CAST(:keyword AS string), '%'))) " +
-            "AND (:status IS NULL OR c.status = :status)")
+            "AND (:status IS NULL OR c.status = :status) " +
+            "AND (:sportTypeId IS NULL OR c.sportType.id = :sportTypeId)")
     Page<Court> findAllWithFilter(
             @Param("keyword") String keyword,
             @Param("status") CourtStatus status,
+            @Param("sportTypeId") UUID sportTypeId,
             Pageable pageable
     );
 

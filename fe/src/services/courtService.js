@@ -5,6 +5,7 @@ export const courtService = {
     const params = new URLSearchParams({ page, size });
     if (filters.keyword) params.set("keyword", filters.keyword);
     if (filters.status) params.set("status", filters.status);
+    if (filters.sportTypeId) params.set("sportTypeId", filters.sportTypeId);
     return apiCall(`/courts?${params.toString()}`, { method: "GET" });
   },
   // Placeholders for future CRUD

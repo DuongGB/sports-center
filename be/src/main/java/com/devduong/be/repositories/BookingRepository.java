@@ -113,4 +113,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("status") BookingStatus status,
             Pageable pageable
     );
+
+    List<Booking> findByBookingStatusAndCreatedAtBefore(BookingStatus status, LocalDateTime dateTime);
 }

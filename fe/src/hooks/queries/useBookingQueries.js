@@ -26,5 +26,12 @@ export function useBookingMutations() {
     },
   });
 
-  return { confirmBookingMut, cancelBookingMut };
+  const batchProcessMut = useMutation({
+    mutationFn: ({ ids, action }) => bookingService.batchProcess(ids, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
+  return { confirmBookingMut, cancelBookingMut, batchProcessMut };
 }

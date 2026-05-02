@@ -124,8 +124,8 @@ export default function DashboardPage() {
     ? [
         {
           name: "Tổng doanh thu",
-          value: formatCurrency(overview.totalRevenue),
-          subValue: `Tháng này: ${formatCurrency(overview.monthRevenue)}`,
+          value: formatFullCurrency(overview.totalRevenue),
+          subValue: `Tháng này: ${formatFullCurrency(overview.monthRevenue)}`,
           icon: DollarSign,
           change: overview.revenueGrowthPercent,
           color: "text-emerald-500",

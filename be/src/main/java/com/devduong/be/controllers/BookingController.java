@@ -8,6 +8,7 @@ package com.devduong.be.controllers;
 
 import com.devduong.be.common.ApiResponse;
 import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.BatchBookingRequest;
 import com.devduong.be.dtos.request.BookingFilterRequest;
 import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
@@ -46,9 +47,17 @@ public class BookingController {
         String loggedInUserId = null;
         // Check user đã đăng nhập chưa
         if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
-            // Ép kiểu về UserPrincipal để lấy ID
-            UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-            loggedInUserId = principal.getId();
+            Object principal = authentication.getPrincipal();
+            // Check principal có đúng là đối tượng UserPrincipal không
+            if (principal instanceof UserPrincipal) {
+                UserPrincipal userPrincipal = (UserPrincipal) principal;
+                loggedInUserId = userPrincipal.getId();
+            }
+            // Nếu JwtFilter đang set principal là một string (chứa ID hoặc email)
+            else if (principal instanceof String && !"anonymousUser".equals(principal)) {
+                loggedInUserId = (String) principal;
+            }
+
         }
         // 2. Gọi service để tạo booking
         return ResponseEntity.ok(ApiResponse.builder()
@@ -89,6 +98,17 @@ public class BookingController {
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Booking cancelled successfully")
+                .build());
+    }
+
+    @PutMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> batchProcessBookings(@RequestBody BatchBookingRequest request) {
+        bookingService.batchProcessBookings(request.ids(), request.action());
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Batch processing successful")
                 .build());
     }
 }

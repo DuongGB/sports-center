@@ -37,6 +37,7 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const size = 10;
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: bookingsQuery, isLoading } = useBookingsQuery(page, size, filters);
   const bookings = bookingsQuery?.data || [];
@@ -60,7 +61,50 @@ export default function BookingsPage() {
     setPage(1);
   };
 
-  const { confirmBookingMut, cancelBookingMut } = useBookingMutations();
+  const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
+
+  const canBatchConfirm = selectedIds.length > 0 && selectedBookings.every(b => b.bookingStatus === "PENDING");
+  const canBatchCancel = selectedIds.length > 0 && selectedBookings.every(b => b.bookingStatus === "PENDING" || b.bookingStatus === "CONFIRMED");
+
+  const { confirmBookingMut, cancelBookingMut, batchProcessMut } = useBookingMutations();
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(bookings.map(b => b.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBatchAction = (action) => {
+    if (selectedIds.length === 0) return;
+    
+    const actionLabel = action === "CONFIRM" ? "xác nhận" : "hủy";
+    toast.info(
+      <div>
+        <p>Thực hiện {actionLabel} {selectedIds.length} đơn đã chọn?</p>
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" onClick={() => {
+            batchProcessMut.mutate({ ids: selectedIds, action }, {
+              onSuccess: () => {
+                toast.success(`Đã ${actionLabel} hàng loạt thành công!`);
+                setSelectedIds([]);
+              }
+            });
+            toast.dismiss();
+          }}>Xác nhận</Button>
+          <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
+        </div>
+      </div>,
+      { autoClose: false, closeOnClick: false }
+    );
+  };
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
@@ -143,13 +187,51 @@ export default function BookingsPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground font-medium">
-          {isLoading ? "Đang tìm kiếm..." : (
-            filters.keyword || filters.status ? 
-              `Tìm thấy ${totalElements} đơn đặt sân phù hợp` : 
-              `Tổng cộng ${totalElements} đơn đặt sân`
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-muted-foreground font-medium">
+            {isLoading ? "Đang tìm kiếm..." : (
+              filters.keyword || filters.status ? 
+                `Tìm thấy ${totalElements} đơn đặt sân phù hợp` : 
+                `Tổng cộng ${totalElements} đơn đặt sân`
+            )}
+          </p>
+          {selectedIds.length > 0 && (
+            <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
+              Đã chọn {selectedIds.length} đơn
+            </span>
           )}
-        </p>
+        </div>
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
+            <Button 
+              size="sm" 
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => handleBatchAction("CONFIRM")}
+              disabled={!canBatchConfirm}
+              title={!canBatchConfirm ? "Chỉ có thể xác nhận các đơn ở trạng thái CHỜ XÁC NHẬN" : ""}
+            >
+              <CheckCircle className="w-4 h-4 mr-1" /> Xác nhận hàng loạt
+            </Button>
+            <Button 
+              size="sm" 
+              variant="destructive"
+              className="disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => handleBatchAction("CANCEL")}
+              disabled={!canBatchCancel}
+              title={!canBatchCancel ? "Chỉ có thể hủy các đơn ở trạng thái CHỜ XÁC NHẬN hoặc ĐÃ XÁC NHẬN" : ""}
+            >
+              <XCircle className="w-4 h-4 mr-1" /> Hủy hàng loạt
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setSelectedIds([])}
+            >
+              Hủy chọn
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
@@ -157,6 +239,14 @@ export default function BookingsPage() {
           <table className="w-full text-sm text-left text-foreground">
             <thead className="bg-muted/80 text-foreground border-b border-border">
               <tr>
+                <th className="px-4 py-4 font-semibold w-10">
+                  <input 
+                    type="checkbox" 
+                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                    checked={bookings.length > 0 && selectedIds.length === bookings.length}
+                    onChange={handleSelectAll}
+                  />
+                </th>
                 <th className="px-4 py-4 font-semibold">Khách hàng</th>
                 <th className="px-4 py-4 font-semibold">SĐT</th>
                 <th className="px-4 py-4 font-semibold">Sân</th>
@@ -164,7 +254,6 @@ export default function BookingsPage() {
                 <th className="px-4 py-4 font-semibold">Giờ</th>
                 <th className="px-4 py-4 font-semibold">Tổng tiền</th>
                 <th className="px-4 py-4 font-semibold">Trạng thái</th>
-                <th className="px-4 py-4 font-semibold">Ngày tạo</th>
                 <th className="px-4 py-4 font-semibold text-right">Thao tác</th>
               </tr>
             </thead>
@@ -188,7 +277,15 @@ export default function BookingsPage() {
                 bookings.map((b) => {
                   const status = statusMap[b.bookingStatus] || { label: b.bookingStatus, style: "bg-gray-100 text-gray-700", dot: "bg-gray-400" };
                   return (
-                    <tr key={b.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                    <tr key={b.id} className={`border-b border-border last:border-0 hover:bg-muted/50 transition-colors ${selectedIds.includes(b.id) ? 'bg-primary/5' : ''}`}>
+                      <td className="px-4 py-4">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                          checked={selectedIds.includes(b.id)}
+                          onChange={() => handleSelectOne(b.id)}
+                        />
+                      </td>
                       <td className="px-4 py-4 font-medium">{b.customerName || "N/A"}</td>
                       <td className="px-4 py-4 text-muted-foreground">{b.customerPhone || "N/A"}</td>
                       <td className="px-4 py-4 font-medium text-foreground">{b.courtName || "N/A"}</td>
@@ -203,7 +300,6 @@ export default function BookingsPage() {
                           {status.label.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-muted-foreground text-xs">{formatDate(b.createdAt)}</td>
                       <td className="px-4 py-4 text-right space-x-1">
                         <Button variant="ghost" size="sm" onClick={() => openViewModal(b)} className="text-muted-foreground hover:text-foreground hover:bg-muted">
                           <Eye className="w-4 h-4 mr-1" /> Chi tiết
