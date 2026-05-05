@@ -41,28 +41,32 @@ public class RSAKeyProvider {
 
     // Phương thức để tải khóa công khai từ file
     private RSAPublicKey loadPublicKey() throws Exception {
-        // Load the public key from a file or other source
-        String key = Files.readString(Path.of("src/main/resources/keys/public.pem"));
-        key = key.replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s+", "");
+        try (var is = getClass().getClassLoader().getResourceAsStream("keys/public.pem")) {
+            if (is == null) throw new java.io.FileNotFoundException("keys/public.pem not found in classpath");
+            String key = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            key = key.replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replaceAll("\\s+", "");
 
-        byte[] decoded = Base64.getDecoder().decode(key);
-        KeyFactory factory = KeyFactory.getInstance("RSA");
-        return (RSAPublicKey) factory.generatePublic(new X509EncodedKeySpec(decoded)); // X509EncodedKeySpec cho public key theo chuẩn X.509
+            byte[] decoded = Base64.getDecoder().decode(key);
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            return (RSAPublicKey) factory.generatePublic(new X509EncodedKeySpec(decoded));
+        }
     }
 
     // Phương thức để tải khóa riêng tư từ file
     private RSAPrivateKey loadPrivateKey() throws Exception {
-        // Load the private key from a file or other source
-        String key = Files.readString(Path.of("src/main/resources/keys/private.pem"));
-        key = key.replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s+", "");
+        try (var is = getClass().getClassLoader().getResourceAsStream("keys/private.pem")) {
+            if (is == null) throw new java.io.FileNotFoundException("keys/private.pem not found in classpath");
+            String key = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            key = key.replace("-----BEGIN PRIVATE KEY-----", "")
+                    .replace("-----END PRIVATE KEY-----", "")
+                    .replaceAll("\\s+", "");
 
-        byte[] decoded = Base64.getDecoder().decode(key);
-        KeyFactory factory = KeyFactory.getInstance("RSA");
-        return (RSAPrivateKey) factory.generatePrivate(new PKCS8EncodedKeySpec(decoded)); // PKCS8EncodedKeySpec cho private key theo chuẩn PKCS#8
+            byte[] decoded = Base64.getDecoder().decode(key);
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            return (RSAPrivateKey) factory.generatePrivate(new PKCS8EncodedKeySpec(decoded));
+        }
     }
 
     public RSAPrivateKey getPrivateKey() {

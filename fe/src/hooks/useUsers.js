@@ -1,32 +1,39 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/userService";
 
 export function useUsers() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
-  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({ keyword: "", status: "" });
+  const queryClient = useQueryClient();
 
-  const fetchUsers = useCallback(async (pageNumber = 1, size = 10, filters = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await userService.getAllUsers(pageNumber, size, filters);
-      if (res.success && res.data) {
-        setUsers(res.data.data || []);
-        setTotalPages(res.data.totalPages || 1);
-        setTotalElements(res.data.totalElements || 0);
-        setPage(pageNumber);
-      }
-    } catch (err) {
-      setError(err?.message || "Failed to fetch users");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data, isLoading: loading, error } = useQuery({
+    queryKey: ["users", page, filters],
+    queryFn: () => userService.getAllUsers(page, 10, filters).then(res => res.data),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  return { users, loading, error, page, totalPages, totalElements, fetchUsers, setPage };
+  const updateUserMut = useMutation({
+    mutationFn: ({ id, data }) => userService.updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
+  const users = data?.data || [];
+  const totalPages = data?.totalPages || 1;
+  const totalElements = data?.totalElements || 0;
+
+  return { 
+    users, 
+    loading, 
+    error: error?.message, 
+    page, 
+    totalPages, 
+    totalElements, 
+    setPage, 
+    setFilters,
+    updateUserMut,
+    fetchUsers: () => {} // Compatibility
+  };
 }

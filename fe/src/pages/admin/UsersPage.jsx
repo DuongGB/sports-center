@@ -6,37 +6,70 @@ import { X, Eye, Search, Filter, RefreshCcw } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 
 export default function UsersPage() {
-  const [filters, setFilters] = useState({ keyword: "", status: "" });
+  const [userFilters, setUserFilters] = useState({ keyword: "", status: "" });
   const [searchTerm, setSearchTerm] = useState("");
-  const { users, loading, page, totalPages, totalElements, fetchUsers, setPage } = useUsers();
+  const { users, loading, page, totalPages, totalElements, setPage, setFilters, updateUserMut } = useUsers();
   
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ id: "", fullName: "", phone: "" });
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
-    fetchUsers(page, 10, filters);
-  }, [page, fetchUsers, filters]);
+    setFilters(userFilters);
+  }, [userFilters, setFilters]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setFilters(prev => ({ ...prev, keyword: searchTerm }));
+    setUserFilters(prev => ({ ...prev, keyword: searchTerm }));
     setPage(1);
   };
 
   const handleStatusChange = (status) => {
-    setFilters(prev => ({ ...prev, status }));
+    setUserFilters(prev => ({ ...prev, status }));
     setPage(1);
   };
 
   const resetFilters = () => {
     setSearchTerm("");
-    setFilters({ keyword: "", status: "" });
+    setUserFilters({ keyword: "", status: "" });
     setPage(1);
   };
 
   const openViewModal = (user) => {
     setViewData(user);
     setIsViewModalOpen(true);
+  };
+
+  const openEditModal = (user) => {
+    setEditForm({
+      id: user.id,
+      fullName: user.fullName || "",
+      phone: user.phone || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await updateUserMut.mutateAsync({
+        id: editForm.id,
+        data: {
+          fullName: editForm.fullName,
+          phone: editForm.phone,
+        },
+      });
+      import("react-toastify").then(({ toast }) => toast.success("Cập nhật thành công"));
+      setIsEditModalOpen(false);
+    } catch (error) {
+      import("react-toastify").then(({ toast }) => toast.error(error?.message || "Cập nhật thất bại"));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -56,7 +89,7 @@ export default function UsersPage() {
           </form>
           
           <select
-            value={filters.status}
+            value={userFilters.status}
             onChange={(e) => handleStatusChange(e.target.value)}
             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -65,7 +98,7 @@ export default function UsersPage() {
             <option value="INACTIVE">Ngừng hoạt động</option>
           </select>
 
-          {(filters.keyword || filters.status) && (
+          {(userFilters.keyword || userFilters.status) && (
             <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
               <RefreshCcw className="h-4 w-4 mr-2" /> Làm mới
             </Button>
@@ -76,7 +109,7 @@ export default function UsersPage() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground font-medium">
           {loading ? "Đang tìm kiếm..." : (
-            filters.keyword || filters.status ? 
+            userFilters.keyword || userFilters.status ? 
               `Tìm thấy ${totalElements} người dùng phù hợp` : 
               `Tổng cộng ${totalElements} người dùng`
           )}
@@ -150,7 +183,7 @@ export default function UsersPage() {
                       <Button variant="ghost" size="sm" onClick={() => openViewModal(user)} className="text-muted-foreground hover:text-foreground hover:bg-muted">
                         <Eye className="w-4 h-4 mr-1" /> Chi tiết
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                      <Button variant="ghost" size="sm" onClick={() => openEditModal(user)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         Sửa
                       </Button>
                     </td>
@@ -243,6 +276,51 @@ export default function UsersPage() {
             <div className="pt-6 flex justify-end">
               <Button onClick={() => setIsViewModalOpen(false)} className="w-full sm:w-auto">Đóng</Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Chỉnh Sửa Người Dùng</h2>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Họ tên</label>
+                <Input
+                  value={editForm.fullName}
+                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Số điện thoại</label>
+                <Input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="pt-6 flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={submitting}>
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "Đang lưu..." : "Lưu thay đổi"}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

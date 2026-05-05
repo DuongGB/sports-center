@@ -20,5 +20,11 @@ export const apiCall = async (endpoint, options = {}) => {
     headers,
   });
 
-  return response.json();
+  const data = await response.json();
+  
+  if (!response.ok || data.success === false) {
+    throw new Error(data.message || "Có lỗi xảy ra");
+  }
+
+  return data;
 };

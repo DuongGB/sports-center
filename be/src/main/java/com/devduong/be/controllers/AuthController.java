@@ -13,6 +13,7 @@ import com.devduong.be.dtos.request.RegisterRequest;
 import com.devduong.be.dtos.response.AuthResponse;
 import com.devduong.be.dtos.response.UserResponse;
 import com.devduong.be.services.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -67,16 +68,36 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String accessToken = authHeader.substring(7);
-            authService.logout(accessToken);
+    public ApiResponse<Void> logout(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            authService.logout(token.substring(7));
         }
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .code(HttpStatus.OK.value())
+        return ApiResponse.<Void>builder()
+                .message("Logged out successfully")
                 .success(true)
-                .message("Logout successful")
-                .build());
+                .code(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@RequestBody @Valid com.devduong.be.dtos.request.ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Vui lòng kiểm tra email để nhận hướng dẫn khôi phục mật khẩu")
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@RequestBody @Valid com.devduong.be.dtos.request.ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Đổi mật khẩu thành công")
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .build();
     }
 
     @GetMapping("/me")

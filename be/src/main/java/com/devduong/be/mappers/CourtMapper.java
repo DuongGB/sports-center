@@ -25,6 +25,7 @@ import java.util.List;
 public interface CourtMapper {
     @Mapping(source = "sportType.id", target = "sportTypeId")
     @Mapping(source = "sportType.name", target = "sportTypeName")
+    @Mapping(source = "sportType.courtPrices", target = "prices")
     @Mapping(source = "courtAvailabilities", target = "availabilities")
     @Mapping(source = "courtImages", target = "courtImages", qualifiedByName = "mapCourtImagesToUrls")
     CourtResponse toCourtResponse(Court court);

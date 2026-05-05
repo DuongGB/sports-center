@@ -27,6 +27,9 @@ public record RegisterRequest(
         String phone,
         @NotBlank(message = "Password is required")
         @Size(min = 8, message = "Password must be at least 8 characters")
-        String password
+        String password,
+        @NotBlank(message = "Email is required")
+        @jakarta.validation.constraints.Email(message = "Email is invalid")
+        String email
 ) {
 }

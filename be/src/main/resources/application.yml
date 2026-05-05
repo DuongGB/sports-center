@@ -28,6 +28,18 @@ spring:
             client-secret: ${FACEBOOK_CLIENT_SECRET}
             scope: public_profile, email
             redirect-uri: http://localhost:8080/login/oauth2/code/facebook
+  # Configuration for mail
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 app:
   oauth2:
     # Sau khi người dùng đăng nhập thành công, họ sẽ được chuyển hướng đến URL này

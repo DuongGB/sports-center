@@ -9,6 +9,7 @@ export default function LoginModal({
   isOpen,
   onClose,
   onSwitchToRegister,
+  onForgotPassword,
   onSuccess,
 }) {
   const dispatch = useDispatch();
@@ -173,9 +174,13 @@ export default function LoginModal({
               />
               <span className="text-foreground">Ghi nhớ tôi</span>
             </label>
-            <a href="#" className="hover:underline text-primary font-medium">
+            <button 
+              type="button"
+              onClick={onForgotPassword}
+              className="hover:underline text-primary font-medium"
+            >
               Quên mật khẩu?
-            </a>
+            </button>
           </div>
 
           {/* Submit Button */}

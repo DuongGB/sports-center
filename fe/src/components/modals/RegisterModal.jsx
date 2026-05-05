@@ -18,6 +18,7 @@ export default function RegisterModal({
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
+    email: "",
     password: "",
     confirmPassword: "",
   });
@@ -28,7 +29,7 @@ export default function RegisterModal({
 
   const handleChange = (e) => {
     let { name, value } = e.target;
-    if (name === "phone" || name === "password" || name === "confirmPassword") {
+    if (name === "phone" || name === "password" || name === "confirmPassword" || name === "email") {
       value = value.trim();
     } else if (name === "fullName") {
       value = value.trimStart();
@@ -59,6 +60,16 @@ export default function RegisterModal({
 
     if (!/^0\d{9}$/.test(formData.phone)) {
       setFormError("Số điện thoại phải bắt đầu bằng 0 và có 10 chữ số");
+      return false;
+    }
+
+    if (!formData.email) {
+      setFormError("Vui lòng nhập địa chỉ email");
+      return false;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setFormError("Địa chỉ email không hợp lệ");
       return false;
     }
 
@@ -97,6 +108,7 @@ export default function RegisterModal({
         registerUser({
           fullName: formData.fullName,
           phone: formData.phone,
+          email: formData.email,
           password: formData.password,
         }),
       ).unwrap();
@@ -104,6 +116,7 @@ export default function RegisterModal({
       setFormData({
         fullName: "",
         phone: "",
+        email: "",
         password: "",
         confirmPassword: "",
       });
@@ -179,6 +192,26 @@ export default function RegisterModal({
               value={formData.phone}
               onChange={handleChange}
               placeholder="0356309561"
+              disabled={loading}
+              className="border-input bg-input"
+            />
+          </div>
+
+          {/* Email Input */}
+          <div className="space-y-2">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-foreground"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="example@gmail.com"
               disabled={loading}
               className="border-input bg-input"
             />

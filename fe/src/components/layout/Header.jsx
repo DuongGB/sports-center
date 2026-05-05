@@ -84,9 +84,14 @@ export default function Header({
                   {user?.phone || "Đã đăng nhập"}
                 </p>
               </div>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Đăng xuất
-              </Button>
+              <div className="flex items-center gap-2 ml-4">
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm">Trang cá nhân</Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Đăng xuất
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
@@ -151,13 +156,18 @@ export default function Header({
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleLogout}
-                >
-                  Đăng xuất
-                </Button>
+                <div className="flex flex-col gap-2 mt-2 px-2">
+                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">Trang cá nhân</Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleLogout}
+                  >
+                    Đăng xuất
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="mt-4 border-t border-border pt-4 flex flex-col gap-2 sm:flex-row">

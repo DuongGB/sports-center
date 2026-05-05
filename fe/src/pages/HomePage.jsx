@@ -98,8 +98,8 @@ export default function HomePage({
 
   const navigate = useNavigate();
 
-  const { courts, fetchCourts, loading: courtsLoading, page, totalPages, totalElements: totalCourts, setPage } = useCourts();
-  const { sportTypes, fetchSportTypes, loading: sportTypesLoading, totalElements: totalSportTypes } = useSportTypes();
+  const { courts, loading: courtsLoading, page, totalPages, totalElements: totalCourts, setPage, setFilters } = useCourts();
+  const { sportTypes, loading: sportTypesLoading, totalElements: totalSportTypes } = useSportTypes();
 
   const stats = [
     { value: `${totalCourts}+`, label: "Sân đang hoạt động" },
@@ -108,13 +108,8 @@ export default function HomePage({
     { value: "24/7", label: "Hỗ trợ đặt sân" },
   ];
 
-  useEffect(() => {
-    fetchCourts(page, 6, { status: "ACTIVE" });
-  }, [fetchCourts, page]);
-
-  useEffect(() => {
-    fetchSportTypes(1, 20);
-  }, [fetchSportTypes]);
+  // Data fetching is now handled automatically by useCourts and useSportTypes hooks using React Query
+  // with built-in caching and deduplication.
 
   const getSportIcon = (name) => {
     const nameLower = name.toLowerCase();
@@ -129,6 +124,7 @@ export default function HomePage({
   };
 
   const displaySports = sportTypes.map(st => ({
+    id: st.id,
     name: st.name,
     icon: getSportIcon(st.name),
     description: "Khám phá sân chơi chất lượng cao và cơ sở vật chất tuyệt vời.",
@@ -150,23 +146,28 @@ export default function HomePage({
     tags: ["Mới cập nhật", "Giữ chỗ nhanh"],
   }));
 
-  const filteredCourts = useMemo(() => {
-    return displayCourts.filter((court) => {
-      const keywordMatch =
-        search.keyword.trim() === "" ||
-        court.name.toLowerCase().includes(search.keyword.toLowerCase()) ||
-        court.sport.toLowerCase().includes(search.keyword.toLowerCase()) ||
-        court.location.toLowerCase().includes(search.keyword.toLowerCase());
+  const featuredCount = courts.length;
 
-      const sportMatch = search.sport === "all" || court.sport === search.sport;
-      const nameMatch = search.courtName.trim() === "" || court.name.toLowerCase().includes(search.courtName.toLowerCase());
-      const locationMatch = search.location.trim() === "" || court.location.toLowerCase().includes(search.location.toLowerCase());
+  const handleSearchClick = () => {
+    const apiFilters = {
+      status: "ACTIVE",
+      keyword: search.keyword.trim(),
+      sportTypeId: search.sport === "all" ? "" : search.sport,
+    };
+    
+    // Also include location/courtName in keyword if not empty
+    if (search.location.trim()) {
+      apiFilters.keyword = apiFilters.keyword 
+        ? `${apiFilters.keyword} ${search.location.trim()}`
+        : search.location.trim();
+    }
+    
+    setFilters(apiFilters);
+    setPage(1);
 
-      return keywordMatch && sportMatch && nameMatch && locationMatch;
-    });
-  }, [search.keyword, search.sport, search.courtName, search.location, displayCourts]);
-
-  const featuredCount = filteredCourts.length;
+    const el = document.getElementById('booking');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -270,7 +271,7 @@ export default function HomePage({
                         <SelectContent>
                           <SelectItem value="all">Tất cả môn</SelectItem>
                           {displaySports.map((sport) => (
-                            <SelectItem key={sport.name} value={sport.name}>
+                            <SelectItem key={sport.id} value={sport.id}>
                               {sport.name}
                             </SelectItem>
                           ))}
@@ -342,10 +343,7 @@ export default function HomePage({
                     />
                   </div>
 
-                  <Button className="h-11 w-full gap-2" onClick={() => {
-                    const el = document.getElementById('booking');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}>
+                  <Button className="h-11 w-full gap-2" onClick={handleSearchClick}>
                     <CalendarDays className="h-4 w-4" />
                     Tìm sân trống ngay
                   </Button>
@@ -450,7 +448,7 @@ export default function HomePage({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() =>
+                onClick={() => {
                   setSearch({
                     keyword: "",
                     sport: "all",
@@ -458,8 +456,10 @@ export default function HomePage({
                     date: "",
                     courtName: "",
                     location: "",
-                  })
-                }
+                  });
+                  setFilters({ status: "ACTIVE" });
+                  setPage(1);
+                }}
               >
                 Xóa bộ lọc
               </Button>
@@ -472,12 +472,12 @@ export default function HomePage({
               <div className="col-span-full py-12 text-center text-muted-foreground">
                 Đang tải danh sách sân...
               </div>
-            ) : filteredCourts.length === 0 ? (
+            ) : displayCourts.length === 0 ? (
               <div className="col-span-full py-12 text-center text-muted-foreground">
                 Không tìm thấy sân phù hợp với bộ lọc.
               </div>
             ) : (
-              filteredCourts.map((court) => (
+              displayCourts.map((court) => (
               <Card
                 key={court.id}
                 className="group overflow-hidden border-border/60 bg-card/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/5"
@@ -782,12 +782,14 @@ export default function HomePage({
 
             <div>
               <p className="font-semibold">Tài khoản</p>
-              <div className="mt-4 flex flex-col gap-2">
-                <Button variant="outline" onClick={onLoginClick}>
-                  Đăng nhập
-                </Button>
-                <Button onClick={onRegisterClick}>Đăng ký</Button>
-              </div>
+              {!isAuthenticated && (
+                <div className="mt-4 flex flex-col gap-2">
+                  <Button variant="outline" onClick={onLoginClick}>
+                    Đăng nhập
+                  </Button>
+                  <Button onClick={onRegisterClick}>Đăng ký</Button>
+                </div>
+              )}
             </div>
           </div>
 

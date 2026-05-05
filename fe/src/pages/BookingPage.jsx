@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { courtService } from "@/services/courtService";
+import { useCourtQuery } from "@/hooks/queries/useCourtQueries";
 import { bookingService } from "@/services/bookingService";
 import { toast } from "react-toastify";
 import {
@@ -34,8 +34,7 @@ export default function BookingPage() {
   const courtId = searchParams.get("courtId");
   const { user, isAuthenticated } = useAuth();
 
-  const [court, setCourt] = useState(null);
-  const [loadingCourt, setLoadingCourt] = useState(true);
+  const { data: court, isLoading: loadingCourt } = useCourtQuery(courtId);
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
@@ -49,22 +48,6 @@ export default function BookingPage() {
     guestPhone: "",
     guestEmail: "",
   });
-
-  useEffect(() => {
-    if (courtId) {
-      courtService
-        .getCourtById(courtId)
-        .then((res) => {
-          if (res.success && res.data) {
-            setCourt(res.data);
-          }
-        })
-        .catch(console.error)
-        .finally(() => setLoadingCourt(false));
-    } else {
-      setLoadingCourt(false);
-    }
-  }, [courtId]);
 
   // Pre-fill guest info from logged-in user
   useEffect(() => {

@@ -22,6 +22,9 @@ import BookingPage from "./pages/BookingPage";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 import PaymentSuccessPage from "./pages/payment/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/payment/PaymentCancelPage";
+import ProfilePage from "./pages/ProfilePage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
@@ -36,6 +39,7 @@ const paypalOptions = {
 function AppContent() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const { isAuthenticated, fetchCurrentUser, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -103,6 +107,10 @@ function AppContent() {
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/profile" element={<ProtectedRoute />} >
+           <Route index element={<ProfilePage />} />
+        </Route>
         
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
@@ -124,7 +132,20 @@ function AppContent() {
           setIsLoginModalOpen(false);
           setIsRegisterModalOpen(true);
         }}
+        onForgotPassword={() => {
+          setIsLoginModalOpen(false);
+          setIsForgotPasswordOpen(true);
+        }}
         onSuccess={handleLoginSuccess}
+      />
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        onBackToLogin={() => {
+          setIsForgotPasswordOpen(false);
+          setIsLoginModalOpen(true);
+        }}
       />
 
       <RegisterModal

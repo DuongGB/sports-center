@@ -1,16 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { courtService } from "@/services/courtService";
 
-// Fetching lists
 export function useCourtsQuery(page = 1, size = 10, filters = {}) {
   return useQuery({
     queryKey: ["courts", page, size, filters],
     queryFn: () => courtService.getAllCourts(page, size, filters).then(res => res.data),
-    placeholderData: (previousData) => previousData, // keepPreviousData replacement in v5
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
-// Mutations
+export function useCourtQuery(id) {
+  return useQuery({
+    queryKey: ["court", id],
+    queryFn: () => courtService.getCourtById(id).then(res => res.data),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useCourtMutations() {
   const queryClient = useQueryClient();
 
@@ -25,6 +32,7 @@ export function useCourtMutations() {
     mutationFn: ({ id, formData }) => courtService.updateCourt(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courts"] });
+      queryClient.invalidateQueries({ queryKey: ["court"] });
     },
   });
 
@@ -32,6 +40,7 @@ export function useCourtMutations() {
     mutationFn: (id) => courtService.maintenanceCourt(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courts"] });
+      queryClient.invalidateQueries({ queryKey: ["court"] });
     },
   });
 

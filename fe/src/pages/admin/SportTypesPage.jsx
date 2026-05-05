@@ -2,34 +2,34 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSportTypes } from "@/hooks/useSportTypes";
-import { sportTypeService } from "@/services/sportTypeService";
+import { useSportTypeMutations } from "@/hooks/queries/useSportTypeQueries";
 import { X, Eye, Search, RefreshCcw } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function SportTypesPage() {
-  const [filters, setFilters] = useState({ keyword: "" });
+  const [sportTypeFilters, setSportTypeFilters] = useState({ keyword: "" });
   const [searchTerm, setSearchTerm] = useState("");
-  const { sportTypes, loading, page, totalPages, totalElements, fetchSportTypes, setPage } = useSportTypes();
+  const { sportTypes, loading, page, totalPages, totalElements, setPage, setFilters } = useSportTypes();
+  const { createSportTypeMut, updateSportTypeMut, deleteSportTypeMut } = useSportTypeMutations();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit' | 'view'
   const [formData, setFormData] = useState({ id: "", name: "", prices: [] });
   const [formError, setFormError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchSportTypes(page, 10, filters);
-  }, [page, fetchSportTypes, filters]);
+    setFilters(sportTypeFilters);
+  }, [sportTypeFilters, setFilters]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setFilters({ keyword: searchTerm });
+    setSportTypeFilters({ keyword: searchTerm });
     setPage(1);
   };
 
   const resetFilters = () => {
     setSearchTerm("");
-    setFilters({ keyword: "" });
+    setSportTypeFilters({ keyword: "" });
     setPage(1);
   };
 
@@ -65,7 +65,7 @@ export default function SportTypesPage() {
   };
 
   const handleCloseModal = () => {
-    if (!submitting) {
+    if (!createSportTypeMut.isPending && !updateSportTypeMut.isPending) {
       setIsModalOpen(false);
     }
   };
@@ -83,22 +83,19 @@ export default function SportTypesPage() {
       endTime: p.endTime.substring(0, 5)
     }));
 
-    setSubmitting(true);
-    setFormError("");
+    const payload = { name: formData.name.trim(), prices: formattedPrices };
+    
     try {
       if (modalMode === "add") {
-        await sportTypeService.createSportType({ name: formData.name.trim(), prices: formattedPrices });
+        await createSportTypeMut.mutateAsync(payload);
         toast.success("Thêm loại sân thành công");
       } else {
-        await sportTypeService.updateSportType(formData.id, { name: formData.name.trim(), prices: formattedPrices });
+        await updateSportTypeMut.mutateAsync({ id: formData.id, data: payload });
         toast.success("Cập nhật loại sân thành công");
       }
       setIsModalOpen(false);
-      fetchSportTypes(page); // Reload data
     } catch (error) {
       toast.error(error?.message || "Có lỗi xảy ra");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -109,8 +106,7 @@ export default function SportTypesPage() {
         <div className="flex gap-2 mt-2">
           <Button size="sm" variant="destructive" onClick={async () => {
               try {
-                await sportTypeService.deleteSportType(id);
-                fetchSportTypes(page);
+                await deleteSportTypeMut.mutateAsync(id);
                 toast.success("Xóa thành công");
               } catch (error) {
                 toast.error(error?.message || "Xóa thất bại");
@@ -140,7 +136,7 @@ export default function SportTypesPage() {
             />
           </form>
 
-          {filters.keyword && (
+          {sportTypeFilters.keyword && (
             <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
               <RefreshCcw className="h-4 w-4 mr-2" /> Làm mới
             </Button>
@@ -155,9 +151,9 @@ export default function SportTypesPage() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground font-medium">
           {loading ? "Đang tìm kiếm..." : (
-            filters.keyword ? 
-              `Tìm thấy ${totalElements} môn thể thao phù hợp` : 
-              `Tổng cộng ${totalElements} môn thể thao`
+            sportTypeFilters.keyword ? 
+              `Tìm thấy ${totalElements} loại sân phù hợp` : 
+              `Tổng cộng ${totalElements} loại sân`
           )}
         </p>
       </div>
@@ -262,7 +258,7 @@ export default function SportTypesPage() {
               </h2>
               <button
                 onClick={handleCloseModal}
-                disabled={submitting}
+                disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending}
                 className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
                 <X className="h-5 w-5" />
@@ -286,7 +282,7 @@ export default function SportTypesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value.trimStart() })}
                   placeholder="Ví dụ: Bóng đá mini"
-                  disabled={submitting || modalMode === "view"}
+                  disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending || modalMode === "view"}
                   className="border-input bg-input"
                 />
               </div>
@@ -308,29 +304,75 @@ export default function SportTypesPage() {
                 
                 {formData.prices.map((price, index) => (
                   <div key={index} className="flex items-center gap-2 mb-2">
-                    <Input
-                      type="time"
-                      value={price.startTime}
-                      onChange={(e) => {
-                        const newPrices = [...formData.prices];
-                        newPrices[index].startTime = e.target.value;
-                        setFormData({ ...formData, prices: newPrices });
-                      }}
-                      disabled={submitting || modalMode === "view"}
-                      className="w-full"
-                    />
+                    <div className="flex items-center gap-1 w-full">
+                      <select
+                        value={price.startTime.split(":")[0]}
+                        onChange={(e) => {
+                          const newPrices = [...formData.prices];
+                          const m = price.startTime.split(":")[1] || "00";
+                          newPrices[index].startTime = `${e.target.value}:${m}`;
+                          setFormData({ ...formData, prices: newPrices });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2 text-sm"
+                        disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending || modalMode === "view"}
+                      >
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <option key={i} value={i.toString().padStart(2, "0")}>
+                            {i.toString().padStart(2, "0")}h
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={price.startTime.split(":")[1] || "00"}
+                        onChange={(e) => {
+                          const newPrices = [...formData.prices];
+                          const h = price.startTime.split(":")[0] || "00";
+                          newPrices[index].startTime = `${h}:${e.target.value}`;
+                          setFormData({ ...formData, prices: newPrices });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2 text-sm"
+                        disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending || modalMode === "view"}
+                      >
+                        {["00", "15", "30", "45"].map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
                     <span className="text-muted-foreground">-</span>
-                    <Input
-                      type="time"
-                      value={price.endTime}
-                      onChange={(e) => {
-                        const newPrices = [...formData.prices];
-                        newPrices[index].endTime = e.target.value;
-                        setFormData({ ...formData, prices: newPrices });
-                      }}
-                      disabled={submitting || modalMode === "view"}
-                      className="w-full"
-                    />
+                    <div className="flex items-center gap-1 w-full">
+                      <select
+                        value={price.endTime.split(":")[0]}
+                        onChange={(e) => {
+                          const newPrices = [...formData.prices];
+                          const m = price.endTime.split(":")[1] || "00";
+                          newPrices[index].endTime = `${e.target.value}:${m}`;
+                          setFormData({ ...formData, prices: newPrices });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2 text-sm"
+                        disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending || modalMode === "view"}
+                      >
+                        {Array.from({ length: 25 }).map((_, i) => (
+                          <option key={i} value={i === 24 ? "23" : i.toString().padStart(2, "0")}>
+                            {i === 24 ? "24" : i.toString().padStart(2, "0")}h
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={price.endTime.split(":")[1] || "00"}
+                        onChange={(e) => {
+                          const newPrices = [...formData.prices];
+                          const h = price.endTime.split(":")[0] || "00";
+                          newPrices[index].endTime = `${h}:${e.target.value}`;
+                          setFormData({ ...formData, prices: newPrices });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2 text-sm"
+                        disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending || modalMode === "view"}
+                      >
+                        {["00", "15", "30", "45"].map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
                     <Input
                       type="number"
                       min="0"
@@ -342,7 +384,7 @@ export default function SportTypesPage() {
                         setFormData({ ...formData, prices: newPrices });
                       }}
                       placeholder="Giá (VNĐ)"
-                      disabled={submitting || modalMode === "view"}
+                      disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending || modalMode === "view"}
                       className="w-full"
                     />
                     {modalMode !== "view" && (
@@ -367,12 +409,12 @@ export default function SportTypesPage() {
               </div>
 
               <div className="pt-4 flex justify-end gap-3">
-                <Button type="button" variant={modalMode === "view" ? "default" : "outline"} onClick={handleCloseModal} disabled={submitting}>
+                <Button type="button" variant={modalMode === "view" ? "default" : "outline"} onClick={handleCloseModal} disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending}>
                   {modalMode === "view" ? "Đóng" : "Hủy"}
                 </Button>
                 {modalMode !== "view" && (
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? "Đang lưu..." : "Lưu Thay Đổi"}
+                  <Button type="submit" disabled={createSportTypeMut.isPending || updateSportTypeMut.isPending}>
+                    {createSportTypeMut.isPending || updateSportTypeMut.isPending ? "Đang lưu..." : "Lưu Thay Đổi"}
                   </Button>
                 )}
               </div>

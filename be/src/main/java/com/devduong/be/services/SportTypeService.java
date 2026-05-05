@@ -95,45 +95,56 @@ public class SportTypeService {
         return sportTypeMapper.toSportTypeResponse(savedSportType);
     }
 
-    // TODO: Update sport type
     @Transactional
     public SportTypeResponse updateSportType(UUID id, SportTypeRequest request) {
-        SportType sportType = sportTypeRepository.findById(id).orElseThrow();
 
-        if (!sportType.getName().equals(request.name()) && sportTypeRepository.findByName(request.name()).isPresent()) {
+        SportType sportType = sportTypeRepository.findById(id)
+                .orElseThrow();
+
+        if (!sportType.getName().equals(request.name()) &&
+                sportTypeRepository.findByName(request.name()).isPresent()) {
             throw new AppException(ErrorCode.SPORT_TYPE_EXISTS);
         }
 
-        // 1. Cập nhật tên Sport Type
+        // 1. Update name
         sportType.setName(request.name());
-        SportType savedSportType = sportTypeRepository.save(sportType);
 
-        // 2. Cập nhật bảng giá (Xóa giá cũ, thêm giá mới)
-        List<CourtPrice> existingPrices = courtPriceRepository.findBySportTypeId(id);
-        if (!existingPrices.isEmpty()) {
-            courtPriceRepository.deleteAll(existingPrices);
-        }
+        // 2. Update courtPrices (QUAN TRỌNG)
+        List<CourtPrice> currentPrices = sportType.getCourtPrices();
 
+        // clear list cũ (Hibernate sẽ tự delete orphan)
+        currentPrices.clear();
+
+        // add list mới
         if (request.prices() != null && !request.prices().isEmpty()) {
-            List<CourtPrice> prices = request.prices().stream()
-                    .map(p -> CourtPrice.builder()
-                            .sportType(savedSportType)
-                            .startTime(p.startTime())
-                            .endTime(p.endTime())
-                            .price(p.price())
-                            .build())
-                    .toList();
-            List<CourtPrice> savedPrices = courtPriceRepository.saveAll(prices);
-            savedSportType.setCourtPrices(savedPrices);
+            for (var p : request.prices()) {
+                CourtPrice cp = CourtPrice.builder()
+                        .sportType(sportType) // cực kỳ quan trọng
+                        .startTime(p.startTime())
+                        .endTime(p.endTime())
+                        .price(p.price())
+                        .build();
+
+                currentPrices.add(cp);
+            }
         }
 
-        return sportTypeMapper.toSportTypeResponse(savedSportType);
+        // KHÔNG cần save courtPriceRepository
+        // chỉ cần save sportType là đủ (cascade ALL)
+
+        SportType saved = sportTypeRepository.save(sportType);
+
+        return sportTypeMapper.toSportTypeResponse(saved);
     }
 
-    // TODO: Delete sport type
     @Transactional
     public void deleteSportType(UUID id) {
         SportType sportType = sportTypeRepository.findById(id).orElseThrow();
+
+        // Check if there are courts associated with this sport type
+        if (sportType.getCourts() != null && !sportType.getCourts().isEmpty()) {
+            throw new AppException(ErrorCode.SPORT_TYPE_IN_USE);
+        }
 
         // Xóa bảng giá trước để tránh lỗi khóa ngoại (nếu không dùng Cascade)
         List<CourtPrice> existingPrices = courtPriceRepository.findBySportTypeId(id);
