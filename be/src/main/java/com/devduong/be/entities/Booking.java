@@ -64,6 +64,10 @@ public class Booking {
     @Column(nullable = false)
     BookingStatus bookingStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false)
+    com.devduong.be.enums.PaymentMethod paymentMethod;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt;
 

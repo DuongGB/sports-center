@@ -11,5 +11,6 @@ export const courtService = {
   // Placeholders for future CRUD
   createCourt: (formData) => apiCall(`/courts`, { method: "POST", body: formData }),
   updateCourt: (id, formData) => apiCall(`/courts/${id}`, { method: "PUT", body: formData }),
-  maintenanceCourt: (id) => apiCall(`/courts/${id}/maintenance`, { method: "POST" })
+  maintenanceCourt: (id) => apiCall(`/courts/${id}/maintenance`, { method: "POST" }),
+  getCourtById: (id) => apiCall(`/courts/${id}`, { method: "GET" })
 };

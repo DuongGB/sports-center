@@ -62,6 +62,7 @@ public class SecurityConfig {
         return new String[]{
                 "/api/auth/**",
                 "/api/booking/**",
+                "/api/payment/paypal/**",
         };
     }
 

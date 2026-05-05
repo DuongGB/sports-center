@@ -21,6 +21,7 @@ import com.devduong.be.repositories.*;
 import com.devduong.be.services.payment.PaymentStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +44,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class BookingService {
     BookingRepository bookingRepository;
@@ -50,26 +52,40 @@ public class BookingService {
     CourtPriceRepository courtPriceRepository;
     UserRepository userRepository;
     BookingGuestRepository bookingGuestRepository;
+    PaymentRepository paymentRepository;
     List<PaymentStrategy> paymentStrategies;
     BookingMapper bookingMapper;
 
     // TODO: Đặt sân
     @Transactional
     public BookingResponse createBooking(BookingRequest request, String loggedInUserId) {
-        // 1. Check time hợp lệ
+        LocalDateTime startDateTime = LocalDateTime.of(request.bookingDate(), request.startTime());
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 1. Check đặt sân trong quá khứ
+        if (startDateTime.isBefore(now)) {
+            throw new AppException(ErrorCode.INVALID_TIME_RANGE);
+        }
+
+        // 2. Check time hợp lệ (giờ bắt đầu < giờ kết thúc)
         if (!request.startTime().isBefore(request.endTime())) {
             throw new AppException(ErrorCode.INVALID_TIME_RANGE);
         }
-        // 2. Check sân có tồn tại không
+
+        // 3. Check sân có tồn tại không
         Court court = courtRepository.findById(request.courtId())
                 .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
-        // 3. Check sân có nằm trong giờ mở cửa của sân không
-        if (request.startTime().isBefore(court.getOpenTime()) || request.endTime().isAfter(court.getCloseTime())) {
+
+        // 4. Check sân có nằm trong giờ mở cửa của sân không
+        LocalTime open = court.getOpenTime() != null ? court.getOpenTime() : LocalTime.MIN;
+        LocalTime close = court.getCloseTime() != null ? court.getCloseTime() : LocalTime.MAX;
+
+        if (request.startTime().isBefore(open) || request.endTime().isAfter(close)) {
             throw new AppException(ErrorCode.COURT_CLOSED);
         }
-        LocalDateTime startDateTime = LocalDateTime.of(request.bookingDate(), request.startTime());
+
         LocalDateTime endDateTime = LocalDateTime.of(request.bookingDate(), request.endTime());
-        // 4. Check trùng lịch đặt sân
+        // 5. Check trùng lịch đặt sân
         boolean isOverlapping = bookingRepository.existsOverlappingBooking(
                 request.courtId(), request.bookingDate(), request.startTime(), request.endTime()
         );
@@ -86,6 +102,7 @@ public class BookingService {
                 .endTime(request.endTime())
                 .totalPrice(totalPrice)
                 .bookingStatus(BookingStatus.PENDING)
+                .paymentMethod(request.paymentMethod())
                 .build();
         // 7. Xử lý User/ Guest
         if (loggedInUserId != null) {
@@ -199,7 +216,35 @@ public class BookingService {
         if (!oldPendingBookings.isEmpty()) {
             oldPendingBookings.forEach(b -> b.setBookingStatus(BookingStatus.CONFIRMED));
             bookingRepository.saveAll(oldPendingBookings);
-            System.out.println("Auto-confirmed " + oldPendingBookings.size() + " bookings.");
+            log.info("Auto-confirmed {} bookings.", oldPendingBookings.size());
+        }
+    }
+
+    // TODO: Tự động hủy booking PayPal nếu không thanh toán sau 10p
+    @Scheduled(fixedRate = 60000) // Chạy mỗi phút
+    @Transactional
+    public void autoCancelUnpaidPaypalBookings() {
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
+        List<Payment> expiredPayments = paymentRepository.findByPaymentStatusAndPaymentDateBefore(
+                com.devduong.be.enums.PaymentStatus.PENDING, threshold
+        );
+
+        if (!expiredPayments.isEmpty()) {
+            for (Payment payment : expiredPayments) {
+                if (payment.getPaymentMethod() == PaymentMethod.PAYPAL) {
+                    Booking booking = payment.getBooking();
+                    if (booking.getBookingStatus() == BookingStatus.PENDING) {
+                        booking.setBookingStatus(BookingStatus.CANCELLED);
+                        booking.setCancelledAt(LocalDateTime.now());
+                        bookingRepository.save(booking);
+                        
+                        payment.setPaymentStatus(com.devduong.be.enums.PaymentStatus.FAILED);
+                        paymentRepository.save(payment);
+                        
+                        log.info("Auto-cancelled unpaid PayPal booking: {}", booking.getId());
+                    }
+                }
+            }
         }
     }
 
@@ -223,6 +268,13 @@ public class BookingService {
                             ? booking.getUser().getPhone()
                             : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
                     
+                    PaymentMethod method = booking.getPaymentMethod();
+                    if (method == null) {
+                        method = paymentRepository.findByBookingId(booking.getId())
+                                .map(Payment::getPaymentMethod)
+                                .orElse(com.devduong.be.enums.PaymentMethod.CASH);
+                    }
+
                     return new BookingResponse(
                             booking.getId(),
                             booking.getCourt().getId(),
@@ -235,7 +287,7 @@ public class BookingService {
                             customerName,
                             customerPhone,
                             null, // paymentId
-                            null, // paymentMethod
+                            method,
                             null, // paymentStatus
                             null, // paymentUrl
                             booking.getCreatedAt()

@@ -252,6 +252,7 @@ export default function BookingsPage() {
                 <th className="px-4 py-4 font-semibold">Sân</th>
                 <th className="px-4 py-4 font-semibold">Ngày đặt</th>
                 <th className="px-4 py-4 font-semibold">Giờ</th>
+                <th className="px-4 py-4 font-semibold">Thanh toán</th>
                 <th className="px-4 py-4 font-semibold">Tổng tiền</th>
                 <th className="px-4 py-4 font-semibold">Trạng thái</th>
                 <th className="px-4 py-4 font-semibold text-right">Thao tác</th>
@@ -292,6 +293,15 @@ export default function BookingsPage() {
                       <td className="px-4 py-4 text-muted-foreground">{b.bookingDate || "N/A"}</td>
                       <td className="px-4 py-4 text-muted-foreground">
                         {formatTime(b.startTime)} - {formatTime(b.endTime)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                          b.paymentMethod === 'PAYPAL' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                          b.paymentMethod === 'MOMO' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                          {b.paymentMethod || "CASH"}
+                        </span>
                       </td>
                       <td className="px-4 py-4 font-bold text-primary">{formatPrice(b.totalPrice)}</td>
                       <td className="px-4 py-4">

@@ -20,8 +20,18 @@ import CourtsPage from "./pages/admin/CourtsPage";
 import BookingsPage from "./pages/admin/BookingsPage";
 import BookingPage from "./pages/BookingPage";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
+import PaymentSuccessPage from "./pages/payment/PaymentSuccessPage";
+import PaymentCancelPage from "./pages/payment/PaymentCancelPage";
+
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 const queryClient = new QueryClient();
+
+const paypalOptions = {
+  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID,
+  currency: "USD",
+  intent: "capture",
+};
 
 function AppContent() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -91,6 +101,8 @@ function AppContent() {
         
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+        <Route path="/payment/success" element={<PaymentSuccessPage />} />
+        <Route path="/payment/cancel" element={<PaymentCancelPage />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
@@ -132,9 +144,11 @@ export default function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
-        <ReactQueryDevtools initialIsOpen={false} />
-        <ToastContainer position="top-right" autoClose={3000} />
+        <PayPalScriptProvider options={paypalOptions}>
+          <AppContent />
+          <ReactQueryDevtools initialIsOpen={false} />
+          <ToastContainer position="top-right" autoClose={3000} />
+        </PayPalScriptProvider>
       </QueryClientProvider>
     </Provider>
   );

@@ -25,6 +25,8 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
+import PayPalButton from "@/components/payment/PayPalButton";
+import PayPalRedirectButton from "@/components/payment/PayPalRedirectButton";
 
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
@@ -36,6 +38,7 @@ export default function BookingPage() {
   const [loadingCourt, setLoadingCourt] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [isPaid, setIsPaid] = useState(false);
 
   const [formData, setFormData] = useState({
     bookingDate: "",
@@ -50,11 +53,10 @@ export default function BookingPage() {
   useEffect(() => {
     if (courtId) {
       courtService
-        .getAllCourts(1, 100)
+        .getCourtById(courtId)
         .then((res) => {
-          if (res.success && res.data?.data) {
-            const found = res.data.data.find((c) => c.id === courtId);
-            setCourt(found || null);
+          if (res.success && res.data) {
+            setCourt(res.data);
           }
         })
         .catch(console.error)
@@ -91,6 +93,10 @@ export default function BookingPage() {
       toast.error("Vui lòng nhập tên và số điện thoại");
       return;
     }
+    if (!isAuthenticated && formData.paymentMethod === "PAYPAL" && !formData.guestEmail) {
+      toast.error("Vui lòng nhập email khi chọn thanh toán qua PayPal");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -123,8 +129,45 @@ export default function BookingPage() {
     }
   };
 
+  const timeToDecimal = (t) => {
+    if (!t) return 0;
+    const [h, m] = t.split(":").map(Number);
+    return h + m / 60;
+  };
+
+  const calculateTotalPrice = () => {
+    if (!court || !formData.startTime || !formData.endTime) return 0;
+
+    const start = timeToDecimal(formData.startTime);
+    const end = timeToDecimal(formData.endTime);
+
+    if (end <= start) return 0;
+
+    let total = 0;
+    // Iterate through every 30-minute interval
+    for (let current = start; current < end; current += 0.5) {
+      const currentPrice = court.prices?.find((p) => {
+        const pStart = timeToDecimal(p.startTime);
+        const pEnd = timeToDecimal(p.endTime);
+        return current >= pStart && current < pEnd;
+      });
+
+      if (currentPrice) {
+        total += currentPrice.price * 0.5;
+      }
+    }
+    return total;
+  };
+
+  const totalPrice = calculateTotalPrice();
+
   const formatPrice = (p) =>
     p != null ? p.toLocaleString("vi-VN") + "đ" : "N/A";
+
+  const formatTime24h = (time) => {
+    if (!time) return "";
+    return time.substring(0, 5);
+  };
 
   if (loadingCourt) {
     return (
@@ -161,12 +204,24 @@ export default function BookingPage() {
                 {formatPrice(bookingSuccess.totalPrice)}
               </p>
               <p>
-                <strong>Trạng thái:</strong>{" "}
-                <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                  Chờ xác nhận
+                <strong>Trạng thái đơn:</strong>{" "}
+                <span className={`px-2 py-0.5 text-xs rounded-full ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                  {isPaid ? 'Đã thanh toán' : 'Chờ xác nhận/Thanh toán'}
                 </span>
               </p>
             </div>
+
+            {/* PayPal Section */}
+            {bookingSuccess.paymentMethod === "PAYPAL" && !isPaid && (
+              <div className="pt-4 space-y-3">
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Vui lòng thanh toán qua PayPal để hoàn tất:</p>
+                <PayPalRedirectButton 
+                  amount={Math.round(bookingSuccess.totalPrice / 25000)} // Giả sử tỷ giá 25k/USD
+                  bookingId={bookingSuccess.id}
+                />
+              </div>
+            )}
+
             <div className="pt-4 flex flex-col gap-2">
               <Button onClick={() => navigate("/")} className="w-full">
                 Về trang chủ
@@ -175,6 +230,7 @@ export default function BookingPage() {
                 variant="outline"
                 onClick={() => {
                   setBookingSuccess(null);
+                  setIsPaid(false);
                   setFormData((prev) => ({
                     ...prev,
                     bookingDate: "",
@@ -237,27 +293,42 @@ export default function BookingPage() {
                       {court.closeTime?.substring(0, 5)}
                     </span>
                   </div>
+
+                  {/* Hourly prices moved here */}
+                  {court.prices && court.prices.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <p className="text-sm font-bold flex items-center gap-2">
+                        <span className="w-1 h-4 bg-primary rounded-full" />
+                        Bảng giá theo khung giờ:
+                      </p>
+                      <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-muted/50 border-b border-border">
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Khung giờ</th>
+                              <th className="px-3 py-2 text-right font-medium text-muted-foreground">Đơn giá</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {court.prices.map((p, idx) => (
+                              <tr key={idx} className="hover:bg-primary/5 transition-colors">
+                                <td className="px-3 py-2 text-foreground font-medium">
+                                  {formatTime24h(p.startTime)} - {formatTime24h(p.endTime)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-primary font-bold">
+                                  {formatPrice(p.price)}/giờ
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-sm text-muted-foreground">
                     Loại sân: <strong>{court.sportTypeName}</strong>
                   </div>
-                  {court.prices && court.prices.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Bảng giá:</p>
-                      {court.prices.map((p, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between text-sm bg-muted/50 rounded-lg px-3 py-2"
-                        >
-                          <span className="text-muted-foreground">
-                            {p.startTime} - {p.endTime}
-                          </span>
-                          <span className="font-semibold text-primary">
-                            {formatPrice(p.price)}/giờ
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -309,25 +380,73 @@ export default function BookingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Giờ bắt đầu</label>
-                    <Input
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) =>
-                        setFormData({ ...formData, startTime: e.target.value })
-                      }
-                      required
-                    />
+                    <div className="flex gap-1">
+                      <select
+                        value={formData.startTime.split(":")[0] || ""}
+                        onChange={(e) => {
+                          const h = e.target.value;
+                          const m = formData.startTime.split(":")[1] || "00";
+                          setFormData({ ...formData, startTime: `${h}:${m}` });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2"
+                        required
+                      >
+                        <option value="">Giờ</option>
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <option key={i} value={i.toString().padStart(2, "0")}>
+                            {i.toString().padStart(2, "0")}h
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.startTime.split(":")[1] || "00"}
+                        onChange={(e) => {
+                          const m = e.target.value;
+                          const h = formData.startTime.split(":")[0] || "00";
+                          setFormData({ ...formData, startTime: `${h}:${m}` });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2"
+                        required
+                      >
+                        <option value="00">00</option>
+                        <option value="30">30</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Giờ kết thúc</label>
-                    <Input
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) =>
-                        setFormData({ ...formData, endTime: e.target.value })
-                      }
-                      required
-                    />
+                    <div className="flex gap-1">
+                      <select
+                        value={formData.endTime.split(":")[0] || ""}
+                        onChange={(e) => {
+                          const h = e.target.value;
+                          const m = formData.endTime.split(":")[1] || "00";
+                          setFormData({ ...formData, endTime: `${h}:${m}` });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2"
+                        required
+                      >
+                        <option value="">Giờ</option>
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <option key={i} value={i.toString().padStart(2, "0")}>
+                            {i.toString().padStart(2, "0")}h
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.endTime.split(":")[1] || "00"}
+                        onChange={(e) => {
+                          const m = e.target.value;
+                          const h = formData.endTime.split(":")[0] || "00";
+                          setFormData({ ...formData, endTime: `${h}:${m}` });
+                        }}
+                        className="w-full rounded-md border border-input bg-input px-2 py-2"
+                        required
+                      >
+                        <option value="00">00</option>
+                        <option value="30">30</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -368,7 +487,7 @@ export default function BookingPage() {
                     <div className="space-y-2">
                       <label className="text-sm font-medium flex items-center gap-1">
                         <Mail className="h-4 w-4 text-muted-foreground" />
-                        Email (tùy chọn)
+                        Email {formData.paymentMethod === "PAYPAL" ? <span className="text-red-500">*</span> : "(tùy chọn)"}
                       </label>
                       <Input
                         type="email"
@@ -415,6 +534,24 @@ export default function BookingPage() {
                     <option value="PAYPAL">PayPal</option>
                   </select>
                 </div>
+
+                {/* Price summary */}
+                {totalPrice > 0 && (
+                  <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Thời gian:</span>
+                      <span className="font-medium">
+                        {(timeToDecimal(formData.endTime) - timeToDecimal(formData.startTime)).toFixed(1)} giờ
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-primary/10">
+                      <span className="text-base font-bold">Tổng tạm tính:</span>
+                      <span className="text-xl font-black text-primary">
+                        {formatPrice(totalPrice)}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
