@@ -21,7 +21,9 @@ import java.util.UUID;
  * @version:    1.0
  */
 @Entity
-@Table(name = "user_oauth_account")
+@Table(name = "user_oauth_account", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"provider", "provider_user_id"})
+})
 @Getter
 @Setter
 @AllArgsConstructor
@@ -43,7 +45,7 @@ public class UserOauthAccount {
     @Column(name = "provider_user_id")
     String providerUserId;
 
-    @Column(unique = true)
+    @Column
     String email;
 
     @Column(name = "linked_at")

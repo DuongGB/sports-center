@@ -199,7 +199,7 @@ export default function LoginModal({
             <Button 
               type="button" 
               variant="outline" 
-              className="w-full bg-white text-black hover:bg-gray-50 border-gray-300"
+              className="w-full bg-white text-black hover:bg-gray-50 border-gray-300 dark:bg-slate-900 dark:text-white dark:border-slate-800 dark:hover:bg-slate-800"
               onClick={() => window.location.href = "http://localhost:8080/oauth2/authorize/google"}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ export default function LoginModal({
             <Button 
               type="button" 
               variant="outline" 
-              className="w-full bg-[#1877F2] text-white hover:bg-[#166fe5] border-transparent"
+              className="w-full bg-[#1877F2] text-white hover:bg-[#166fe5] border-transparent dark:bg-[#0866FF] dark:hover:bg-[#0055e5]"
               onClick={() => window.location.href = "http://localhost:8080/oauth2/authorize/facebook"}
             >
               <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">

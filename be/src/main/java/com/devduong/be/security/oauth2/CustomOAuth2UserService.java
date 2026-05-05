@@ -61,6 +61,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } else {
             throw new OAuth2AuthenticationException("Unsupported provider: " + registrationId);
         }
+
+        if (oAuth2UserInfo.getEmail() == null || oAuth2UserInfo.getEmail().isEmpty()) {
+            throw new OAuth2AuthenticationException("Email not found from " + registrationId);
+        }
+
         // 1.Check account OAuth2 đã được link chưa
         Optional<UserOauthAccount> userOauthAccountOpt = userOauthAccountRepository
                 .findByProviderAndProviderUserId(provider, oAuth2UserInfo.getId());
