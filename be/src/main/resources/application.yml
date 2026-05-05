@@ -23,11 +23,11 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: profile, email
             redirect-uri: http://localhost:8080/login/oauth2/code/google
-#          facebook:
-#            client-id: ${FACEBOOK_CLIENT_ID}
-#            client-secret: ${FACEBOOK_CLIENT_SECRET}
-#            scope: public_profile, email
-#            redirect-uri:
+          facebook:
+            client-id: ${FACEBOOK_CLIENT_ID}
+            client-secret: ${FACEBOOK_CLIENT_SECRET}
+            scope: public_profile, email
+            redirect-uri: http://localhost:8080/login/oauth2/code/facebook
 app:
   oauth2:
     # Sau khi người dùng đăng nhập thành công, họ sẽ được chuyển hướng đến URL này
