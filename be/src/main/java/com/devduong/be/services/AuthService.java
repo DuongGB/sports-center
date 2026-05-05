@@ -145,7 +145,7 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.phone(), request.password())
+                    new UsernamePasswordAuthenticationToken(request.identifier(), request.password())
             );
         } catch (AuthenticationException e) {
             // Bắt lỗi xác thực (sai mật khẩu/số điện thoại) từ Spring Security
@@ -153,7 +153,7 @@ public class AuthService {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
         }
 
-        User user = userRepository.findByPhone(request.phone())
+        User user = userRepository.findByPhoneOrEmail(request.identifier(), request.identifier())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         String accessToken = jwtService.generateAccessToken(user);

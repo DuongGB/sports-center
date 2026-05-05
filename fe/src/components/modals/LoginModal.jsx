@@ -16,7 +16,7 @@ export default function LoginModal({
   const { loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    phone: "",
+    identifier: "",
     password: "",
   });
   const [formError, setFormError] = useState("");
@@ -24,7 +24,7 @@ export default function LoginModal({
 
   const handleChange = (e) => {
     let { name, value } = e.target;
-    if (name === "phone" || name === "password") {
+    if (name === "identifier" || name === "password") {
       value = value.trim();
     }
     setFormData((prev) => ({
@@ -37,19 +37,24 @@ export default function LoginModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.phone || !formData.password) {
+    if (!formData.identifier || !formData.password) {
       setFormError("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
-    if (!/^0\d{9}$/.test(formData.phone)) {
-      setFormError("Số điện thoại phải bắt đầu bằng 0 và có 10 chữ số");
+    // Kiểm tra nếu là số điện thoại thì phải đúng định dạng
+    const isPhone = /^0\d{9}$/.test(formData.identifier);
+    // Kiểm tra nếu là email thì phải đúng định dạng
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.identifier);
+
+    if (!isPhone && !isEmail) {
+      setFormError("Vui lòng nhập số điện thoại hoặc email hợp lệ");
       return;
     }
 
     try {
       await dispatch(loginUser(formData)).unwrap();
-      setFormData({ phone: "", password: "" });
+      setFormData({ identifier: "", password: "" });
       setFormError("");
       onSuccess?.();
     } catch (err) {
@@ -82,21 +87,21 @@ export default function LoginModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Phone Input */}
+          {/* Identifier Input */}
           <div className="space-y-2">
             <label
-              htmlFor="phone"
+              htmlFor="identifier"
               className="text-sm font-medium text-foreground"
             >
-              Số Điện Thoại
+              Số Điện Thoại hoặc Email
             </label>
             <Input
-              id="phone"
-              type="tel"
-              name="phone"
-              value={formData.phone}
+              id="identifier"
+              type="text"
+              name="identifier"
+              value={formData.identifier}
               onChange={handleChange}
-              placeholder="0356309561"
+              placeholder="0356309561 hoặc example@gmail.com"
               disabled={loading}
               className="border-input bg-input"
             />
