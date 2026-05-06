@@ -24,7 +24,9 @@ import PaymentSuccessPage from "./pages/payment/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/payment/PaymentCancelPage";
 import ProfilePage from "./pages/ProfilePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ChatPage from "./pages/admin/ChatPage";
 import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
+import ChatWidget from "./components/chat/ChatWidget";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
@@ -121,6 +123,7 @@ function AppContent() {
             <Route path="sport-types" element={<SportTypesPage />} />
             <Route path="courts" element={<CourtsPage />} />
             <Route path="bookings" element={<BookingsPage />} />
+            <Route path="chat" element={<ChatPage />} />
           </Route>
         </Route>
       </Routes>
@@ -157,6 +160,9 @@ function AppContent() {
         }}
         onSuccess={handleRegisterSuccess}
       />
+
+      {!isAdminRoute && user?.roles?.includes("ADMIN") === false && <ChatWidget />}
+      {!isAdminRoute && !user && <ChatWidget />}
     </>
   );
 }

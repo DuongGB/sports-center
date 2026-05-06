@@ -63,6 +63,8 @@ public class SecurityConfig {
                 "/api/auth/**",
                 "/api/booking/**",
                 "/api/payment/paypal/**",
+                "/api/v1/chat/**",
+                "/ws/**"
         };
     }
 

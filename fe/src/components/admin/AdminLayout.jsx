@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, LogOut, Dumbbell, Map, CalendarDays, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, Dumbbell, Map, CalendarDays, Menu, X, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -19,6 +19,7 @@ const AdminLayout = () => {
     { name: "Loại Sân", path: "/admin/sport-types", icon: Dumbbell },
     { name: "Sân Bãi", path: "/admin/courts", icon: Map },
     { name: "Đặt Sân", path: "/admin/bookings", icon: CalendarDays },
+    { name: "Tin Nhắn", path: "/admin/chat", icon: MessageCircle },
   ];
 
   return (
