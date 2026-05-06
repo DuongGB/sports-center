@@ -204,6 +204,23 @@ export default function ChatWidget() {
                     const isMe =
                       (isAuthenticated && msg.senderId === user?.id) ||
                       (!isAuthenticated && msg.senderType === "GUEST");
+                    const isBot = msg.senderType === "BOT";
+
+                    if (isBot) {
+                      return (
+                        <div key={msg.id || index} className="flex justify-center my-2">
+                          <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl px-4 py-2 max-w-[90%]">
+                            <span className="text-base">🤖</span>
+                            <div>
+                              <div className="text-sm text-indigo-700 dark:text-indigo-300">{msg.content}</div>
+                              <div className="text-[10px] text-indigo-400 mt-0.5">
+                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div key={msg.id || index} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>

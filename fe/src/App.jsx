@@ -27,6 +27,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ChatPage from "./pages/admin/ChatPage";
 import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
 import ChatWidget from "./components/chat/ChatWidget";
+import AIChatWidget from "./components/chat/AIChatWidget";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
@@ -161,8 +162,18 @@ function AppContent() {
         onSuccess={handleRegisterSuccess}
       />
 
-      {!isAdminRoute && user?.roles?.includes("ADMIN") === false && <ChatWidget />}
-      {!isAdminRoute && !user && <ChatWidget />}
+      {!isAdminRoute && user?.roles?.includes("ADMIN") === false && (
+        <>
+          <ChatWidget />
+          <AIChatWidget />
+        </>
+      )}
+      {!isAdminRoute && !user && (
+        <>
+          <ChatWidget />
+          <AIChatWidget />
+        </>
+      )}
     </>
   );
 }

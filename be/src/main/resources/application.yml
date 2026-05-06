@@ -58,3 +58,9 @@ paypal:
     id: ${PAYPAL_CLIENT_ID}
     secret: ${PAYPAL_CLIENT_SECRET}
   mode: sandbox # Hoặc 'live' cho môi trường sản xuất
+
+# Configuration for Gemini AI
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  model: gemini-2.0-flash
+  api-url: https://generativelanguage.googleapis.com/v1beta

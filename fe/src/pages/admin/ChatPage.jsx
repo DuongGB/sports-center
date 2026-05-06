@@ -227,6 +227,25 @@ export default function ChatPage() {
               ) : (
                 messages.map((msg, index) => {
                   const isAdmin = msg.senderType === "ADMIN";
+                  const isBot = msg.senderType === "BOT";
+
+                  if (isBot) {
+                    return (
+                      <div key={msg.id || index} className="flex justify-center my-2">
+                        <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl px-5 py-2.5 max-w-[85%]">
+                          <span className="text-lg">🤖</span>
+                          <div>
+                            <span className="inline-block px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded text-[10px] font-semibold mb-1">BOT</span>
+                            <div className="text-sm text-indigo-700 dark:text-indigo-300">{msg.content}</div>
+                            <div className="text-xs text-indigo-400 mt-0.5 text-right">
+                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={msg.id || index} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                       <div

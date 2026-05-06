@@ -6,6 +6,7 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), svgr()],
+  envDir: "../",
   resolve: {
     alias: {
       "@": path.resolve("./src"),

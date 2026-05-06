@@ -48,6 +48,8 @@ public class ChatService {
     @Transactional
     public MessageResponse sendMessage(ChatMessageRequest request) {
         Conversation conversation = null;
+        boolean isNewConversation = false;
+
         if (request.getConversationId() != null && !request.getConversationId().isEmpty()) {
             conversation = conversationRepository.findById(request.getConversationId())
                     .orElse(null);
@@ -55,6 +57,7 @@ public class ChatService {
 
         if (conversation == null) {
             // Tạo mới conversation
+            isNewConversation = true;
             conversation = new Conversation();
             if (request.getSenderId() != null && request.getSenderType() == SenderType.USER) {
                 User user = userRepository.findById(request.getSenderId()).orElse(null);
@@ -96,7 +99,34 @@ public class ChatService {
         messagingTemplate.convertAndSend("/topic/chat/admin", response);
         messagingTemplate.convertAndSend("/topic/chat/conversation/" + conversation.getId(), response);
 
+        // Auto-reply BOT khi conversation mới được tạo bởi GUEST hoặc USER
+        if (isNewConversation && (request.getSenderType() == SenderType.GUEST || request.getSenderType() == SenderType.USER)) {
+            sendAutoReply(conversation);
+        }
+
         return response;
+    }
+
+    private void sendAutoReply(Conversation conversation) {
+        String autoReplyContent = "Đây là tin nhắn tự động. Chúng tôi sẽ phản hồi lại trong thời gian sớm nhất để hỗ trợ";
+
+        Message botMessage = new Message();
+        botMessage.setConversation(conversation);
+        botMessage.setSenderType(SenderType.BOT);
+        botMessage.setContent(autoReplyContent);
+        botMessage.setIsRead(true);
+        botMessage = messageRepository.save(botMessage);
+
+        // Cập nhật conversation
+        conversation.setLastMessage(autoReplyContent);
+        conversation.setLastMessageAt(LocalDateTime.now());
+        conversationRepository.save(conversation);
+
+        MessageResponse botResponse = toMessageResponse(botMessage);
+
+        // Gửi qua websocket
+        messagingTemplate.convertAndSend("/topic/chat/admin", botResponse);
+        messagingTemplate.convertAndSend("/topic/chat/conversation/" + conversation.getId(), botResponse);
     }
 
     @Transactional

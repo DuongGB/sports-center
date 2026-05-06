@@ -1,9 +1,12 @@
 package com.devduong.be.controllers;
 
+import com.devduong.be.dtos.request.AIChatRequest;
 import com.devduong.be.dtos.request.ChatMessageRequest;
+import com.devduong.be.dtos.response.AIChatResponse;
 import com.devduong.be.dtos.response.ConversationResponse;
 import com.devduong.be.dtos.response.MessageResponse;
 import com.devduong.be.enums.SenderType;
+import com.devduong.be.services.AIChatService;
 import com.devduong.be.services.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -18,6 +21,7 @@ import java.util.List;
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class ChatController {
     ChatService chatService;
+    AIChatService aiChatService;
 
     @GetMapping("/conversations")
     public ResponseEntity<List<ConversationResponse>> getConversations() {
@@ -51,4 +55,10 @@ public class ChatController {
         ConversationResponse res = chatService.getConversationByUserId(userId);
         return res != null ? ResponseEntity.ok(res) : ResponseEntity.notFound().build();
     }
+
+    @PostMapping("/ai")
+    public ResponseEntity<AIChatResponse> aiChat(@RequestBody AIChatRequest request) {
+        return ResponseEntity.ok(aiChatService.processQuestion(request.getMessage()));
+    }
 }
+
