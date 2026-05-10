@@ -9,5 +9,6 @@ import org.mapstruct.Mapping;
 public interface ReviewMapper {
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "user.fullName", target = "userName")
+    @Mapping(source = "court.name", target = "courtName")
     ReviewResponse toReviewResponse(Review review);
 }

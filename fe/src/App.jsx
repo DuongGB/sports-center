@@ -30,6 +30,7 @@ import MyBookingsPage from "./pages/MyBookingsPage";
 import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
 import ChatWidget from "./components/chat/ChatWidget";
 import AIChatWidget from "./components/chat/AIChatWidget";
+import CourtDetailPage from "./pages/CourtDetailPage";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
@@ -109,6 +110,7 @@ function AppContent() {
         />
         
         <Route path="/booking" element={<BookingPage />} />
+        <Route path="/court/:id" element={<CourtDetailPage />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />

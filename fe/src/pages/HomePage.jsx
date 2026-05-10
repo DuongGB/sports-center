@@ -544,7 +544,10 @@ export default function HomePage({
                 key={court.id}
                 className="group overflow-hidden border-border/60 bg-card/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/5"
               >
-                <div className="relative aspect-[4/3] overflow-hidden">
+                <div 
+                  className="relative aspect-[4/3] overflow-hidden cursor-pointer"
+                  onClick={() => navigate(`/court/${court.id}`)}
+                >
                   <img
                     src={court.image}
                     alt={court.name}
@@ -566,8 +569,8 @@ export default function HomePage({
 
                 <CardHeader className="space-y-2">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-xl">{court.name}</CardTitle>
+                    <div className="cursor-pointer" onClick={() => navigate(`/court/${court.id}`)}>
+                      <CardTitle className="text-xl hover:text-primary transition-colors">{court.name}</CardTitle>
                       <CardDescription className="mt-1 flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
                         {court.location}

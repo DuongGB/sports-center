@@ -118,4 +118,16 @@ public class ReviewService {
         courtRepository.save(court);
         reviewRepository.delete(review);
     }
+
+    @Transactional
+    public ReviewResponse replyToReview(UUID id, String reply) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
+
+        review.setAdminReply(reply);
+        review.setRepliedAt(java.time.LocalDateTime.now());
+
+        Review savedReview = reviewRepository.save(review);
+        return reviewMapper.toReviewResponse(savedReview);
+    }
 }

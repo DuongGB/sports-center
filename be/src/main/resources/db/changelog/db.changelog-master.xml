@@ -5,6 +5,9 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
 
-    <includeAll path="db/changelog/changes/" relativeToChangelogFile="false"/>
+    <!-- Explicitly include files to ensure correct ordering and processing -->
+    <include file="db/changelog/changes/001-initial-schema.sql"/>
+    <include file="db/changelog/changes/002-create-reviews-table.sql"/>
+    <include file="db/changelog/changes/003-add-reply-to-reviews.xml"/>
 
 </databaseChangeLog>

@@ -73,6 +73,7 @@ public enum ErrorCode {
     COURT_CLOSED(6008, "Sân đã đóng cửa trong khung giờ này", HttpStatus.BAD_REQUEST),
     BOOKING_NOT_COMPLETED(6009, "Chỉ có thể đánh giá các đơn đặt sân đã hoàn tất", HttpStatus.BAD_REQUEST),
     ALREADY_REVIEWED(6010, "Đơn đặt sân này đã được đánh giá trước đó", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_FOUND(6011, "Không tìm thấy đánh giá", HttpStatus.NOT_FOUND),
 
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR);

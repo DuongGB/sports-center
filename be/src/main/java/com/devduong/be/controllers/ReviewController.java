@@ -59,4 +59,16 @@ public class ReviewController {
                 .message("Review deleted successfully")
                 .build());
     }
+
+    @PatchMapping("/{id}/reply")
+    public ResponseEntity<ApiResponse<ReviewResponse>> replyToReview(
+            @PathVariable UUID id,
+            @RequestBody String reply) {
+        return ResponseEntity.ok(ApiResponse.<ReviewResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Review replied successfully")
+                .data(reviewService.replyToReview(id, reply))
+                .build());
+    }
 }

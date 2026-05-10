@@ -41,6 +41,12 @@ public class Review {
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt;
 
+    @Column(name = "admin_reply", columnDefinition = "TEXT")
+    String adminReply;
+
+    @Column(name = "replied_at")
+    LocalDateTime repliedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -15,4 +15,10 @@ export const reviewService = {
 
   deleteReview: (id) =>
     apiCall(`/reviews/${id}`, { method: "DELETE" }),
+
+  replyToReview: (id, reply) =>
+    apiCall(`/reviews/${id}/reply`, {
+      method: "PATCH",
+      body: reply, // Sending as raw string if the backend expects @RequestBody String
+    }),
 };

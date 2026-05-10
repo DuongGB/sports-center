@@ -39,5 +39,12 @@ export function useReviewMutations() {
     },
   });
 
-  return { deleteReviewMut, createReviewMut };
+  const replyReviewMut = useMutation({
+    mutationFn: ({ id, reply }) => reviewService.replyToReview(id, reply),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
+    },
+  });
+
+  return { deleteReviewMut, createReviewMut, replyReviewMut };
 }
