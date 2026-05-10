@@ -71,6 +71,8 @@ public enum ErrorCode {
     MISSING_PHONE_NUMBER(6006, "Yêu cầu số điện thoại để đặt sân", HttpStatus.BAD_REQUEST),
     INVALID_TIME_RANGE(6007, "Khoảng thời gian không hợp lệ", HttpStatus.BAD_REQUEST),
     COURT_CLOSED(6008, "Sân đã đóng cửa trong khung giờ này", HttpStatus.BAD_REQUEST),
+    BOOKING_NOT_COMPLETED(6009, "Chỉ có thể đánh giá các đơn đặt sân đã hoàn tất", HttpStatus.BAD_REQUEST),
+    ALREADY_REVIEWED(6010, "Đơn đặt sân này đã được đánh giá trước đó", HttpStatus.BAD_REQUEST),
 
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR);

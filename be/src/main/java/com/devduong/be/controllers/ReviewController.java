@@ -1,0 +1,50 @@
+package com.devduong.be.controllers;
+
+import com.devduong.be.common.ApiResponse;
+import com.devduong.be.dtos.request.ReviewRequest;
+import com.devduong.be.dtos.response.ReviewResponse;
+import com.devduong.be.services.ReviewService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/reviews")
+@RequiredArgsConstructor
+public class ReviewController {
+    private final ReviewService reviewService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<ReviewResponse>> createReview(@RequestBody @Valid ReviewRequest request) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(ApiResponse.<ReviewResponse>builder()
+                .data(reviewService.createReview(request, userId))
+                .build());
+    }
+
+    @GetMapping("/court/{courtId}")
+    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getCourtReviews(@PathVariable UUID courtId) {
+        return ResponseEntity.ok(ApiResponse.<List<ReviewResponse>>builder()
+                .data(reviewService.getCourtReviews(courtId))
+                .build());
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getAllReviews() {
+        return ResponseEntity.ok(ApiResponse.<List<ReviewResponse>>builder()
+                .data(reviewService.getAllReviews())
+                .build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteReview(@PathVariable UUID id) {
+        reviewService.deleteReview(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .build());
+    }
+}

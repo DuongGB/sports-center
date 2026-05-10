@@ -53,6 +53,7 @@ public class BookingService {
     UserRepository userRepository;
     BookingGuestRepository bookingGuestRepository;
     PaymentRepository paymentRepository;
+    ReviewRepository reviewRepository;
     List<PaymentStrategy> paymentStrategies;
     BookingMapper bookingMapper;
 
@@ -274,6 +275,7 @@ public class BookingService {
                                 .map(Payment::getPaymentMethod)
                                 .orElse(com.devduong.be.enums.PaymentMethod.CASH);
                     }
+                    boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
 
                     return new BookingResponse(
                             booking.getId(),
@@ -290,7 +292,8 @@ public class BookingService {
                             method,
                             null, // paymentStatus
                             null, // paymentUrl
-                            booking.getCreatedAt()
+                            booking.getCreatedAt(),
+                            isReviewed
                     );
                 })
                 .toList();
@@ -301,6 +304,47 @@ public class BookingService {
                 bookingPage.getTotalElements(),
                 responses
         );
+    }
+
+    public List<BookingResponse> getMyBookings(String userId) {
+        return bookingRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(booking -> {
+                    String customerName = booking.getUser() != null
+                            ? booking.getUser().getFullName()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : "N/A");
+                    String customerPhone = booking.getUser() != null
+                            ? booking.getUser().getPhone()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
+
+                    PaymentMethod method = booking.getPaymentMethod();
+                    if (method == null) {
+                        method = paymentRepository.findByBookingId(booking.getId())
+                                .map(Payment::getPaymentMethod)
+                                .orElse(com.devduong.be.enums.PaymentMethod.CASH);
+                    }
+
+                    boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
+
+                    return new BookingResponse(
+                            booking.getId(),
+                            booking.getCourt().getId(),
+                            booking.getCourt().getName(),
+                            booking.getBookingDate(),
+                            booking.getStartTime(),
+                            booking.getEndTime(),
+                            booking.getTotalPrice(),
+                            booking.getBookingStatus(),
+                            customerName,
+                            customerPhone,
+                            null, // paymentId
+                            method,
+                            null, // paymentStatus
+                            null, // paymentUrl
+                            booking.getCreatedAt(),
+                            isReviewed
+                    );
+                })
+                .toList();
     }
 
 }

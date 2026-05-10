@@ -41,6 +41,7 @@ public record BookingResponse(
         PaymentStatus paymentStatus,
         String paymentUrl,
 
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean isReviewed
 ) {
 }

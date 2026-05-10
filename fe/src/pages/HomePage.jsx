@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   ArrowRight,
@@ -34,6 +35,8 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import CourtReviewsModal from "@/components/modals/CourtReviewsModal";
+import { bookingService } from "@/services/bookingService";
 
 const navLinks = [
   { label: "Trang chủ", href: "#home" },
@@ -97,6 +100,26 @@ export default function HomePage({
   });
 
   const navigate = useNavigate();
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [selectedCourtForReviews, setSelectedCourtForReviews] = useState(null);
+  const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchRecentBookings();
+    }
+  }, [isAuthenticated]);
+
+  const fetchRecentBookings = async () => {
+    try {
+      const response = await bookingService.getMyBookings();
+      if (response.success) {
+        setRecentBookings(response.data.slice(0, 3)); // Only show last 3
+      }
+    } catch (error) {
+      console.error("Failed to fetch bookings", error);
+    }
+  };
 
   const { courts, loading: courtsLoading, page, totalPages, totalElements: totalCourts, setPage, setFilters } = useCourts();
   const { sportTypes, loading: sportTypesLoading, totalElements: totalSportTypes } = useSportTypes();
@@ -139,7 +162,8 @@ export default function HomePage({
       : "Liên hệ",
     location: court.location,
     status: court.status === "ACTIVE" ? "available" : court.status === "MAINTENANCE" ? "maintenance" : "inactive",
-    rating: 4.8,
+    rating: court.averageRating || 0,
+    totalReviews: court.totalReviews || 0,
     image: court.courtImages && court.courtImages.length > 0 
       ? court.courtImages[0] 
       : "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
@@ -377,6 +401,44 @@ export default function HomePage({
             </div>
           </div>
         </section>
+        
+        {/* Recent Bookings Section (Only for logged in users) */}
+        {isAuthenticated && recentBookings.length > 0 && (
+          <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 border-b border-border/40">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold">Lịch sử đặt sân gần đây</h2>
+                <p className="text-sm text-muted-foreground">Các hoạt động mới nhất của bạn trên hệ thống.</p>
+              </div>
+              <Button asChild variant="link" size="sm">
+                <Link to="/my-bookings">Xem tất cả</Link>
+              </Button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recentBookings.map((booking) => (
+                <Card key={booking.id} className="bg-card/50 hover:bg-card transition-colors cursor-pointer" onClick={() => navigate("/my-bookings")}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {booking.courtName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm line-clamp-1">{booking.courtName}</p>
+                        <p className="text-xs text-muted-foreground">{booking.bookingDate} • {booking.startTime.slice(0,5)}</p>
+                      </div>
+                    </div>
+                    {booking.bookingStatus === "COMPLETED" && !booking.isReviewed && (
+                      <Badge className="bg-amber-500 hover:bg-amber-600 text-[10px] px-2 py-0">Đánh giá</Badge>
+                    )}
+                    {booking.bookingStatus === "COMPLETED" && booking.isReviewed && (
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Sports Categories */}
         <section
@@ -511,9 +573,15 @@ export default function HomePage({
                         {court.location}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-300">
+                    <div 
+                      className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-300 cursor-pointer hover:bg-amber-500/20 transition-colors"
+                      onClick={() => {
+                        setSelectedCourtForReviews(court);
+                        setIsReviewsModalOpen(true);
+                      }}
+                    >
                       <Star className="h-4 w-4 fill-current" />
-                      {court.rating}
+                      {court.rating} {court.totalReviews > 0 && <span className="text-xs opacity-70">({court.totalReviews})</span>}
                     </div>
                   </div>
                 </CardHeader>
@@ -798,6 +866,13 @@ export default function HomePage({
           </div>
         </div>
       </footer>
+      {selectedCourtForReviews && (
+        <CourtReviewsModal
+          isOpen={isReviewsModalOpen}
+          onClose={() => setIsReviewsModalOpen(false)}
+          court={selectedCourtForReviews}
+        />
+      )}
     </div>
   );
 }

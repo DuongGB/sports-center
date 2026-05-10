@@ -29,6 +29,8 @@ public record CourtResponse(
         CourtStatus status,
         List<String> courtImages,
         List<CourtAvailabilityResponse> availabilities,
-        List<CourtPriceResponse> prices
+        List<CourtPriceResponse> prices,
+        Double averageRating,
+        Integer totalReviews
 ) {
 }

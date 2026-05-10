@@ -25,6 +25,8 @@ import PaymentCancelPage from "./pages/payment/PaymentCancelPage";
 import ProfilePage from "./pages/ProfilePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ChatPage from "./pages/admin/ChatPage";
+import ReviewManagementPage from "./pages/admin/ReviewManagementPage";
+import MyBookingsPage from "./pages/MyBookingsPage";
 import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
 import ChatWidget from "./components/chat/ChatWidget";
 import AIChatWidget from "./components/chat/AIChatWidget";
@@ -114,6 +116,9 @@ function AppContent() {
         <Route path="/profile" element={<ProtectedRoute />} >
            <Route index element={<ProfilePage />} />
         </Route>
+        <Route path="/my-bookings" element={<ProtectedRoute />} >
+           <Route index element={<MyBookingsPage />} />
+        </Route>
         
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
@@ -124,6 +129,7 @@ function AppContent() {
             <Route path="sport-types" element={<SportTypesPage />} />
             <Route path="courts" element={<CourtsPage />} />
             <Route path="bookings" element={<BookingsPage />} />
+            <Route path="reviews" element={<ReviewManagementPage />} />
             <Route path="chat" element={<ChatPage />} />
           </Route>
         </Route>

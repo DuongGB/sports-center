@@ -111,4 +111,29 @@ public class BookingController {
                 .message("Batch processing successful")
                 .build());
     }
+
+    @GetMapping("/my-bookings")
+    public ResponseEntity<ApiResponse<?>> getMyBookings() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                userId = ((UserPrincipal) principal).getId();
+            } else if (principal instanceof String) {
+                userId = (String) principal;
+            }
+        }
+        
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get my bookings successful")
+                .data(bookingService.getMyBookings(userId))
+                .build());
+    }
 }

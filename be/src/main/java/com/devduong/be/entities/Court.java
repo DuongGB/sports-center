@@ -59,5 +59,11 @@ public class Court {
 
     @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
     List<CourtImage> courtImages;
+
+    @Column(name = "average_rating")
+    Double averageRating = 0.0;
+
+    @Column(name = "total_reviews")
+    Integer totalReviews = 0;
 }
 

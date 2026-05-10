@@ -88,6 +88,9 @@ export default function Header({
                 <Link to="/profile">
                   <Button variant="ghost" size="sm">Trang cá nhân</Button>
                 </Link>
+                <Link to="/my-bookings">
+                  <Button variant="ghost" size="sm">Lịch sử đặt sân</Button>
+                </Link>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   Đăng xuất
                 </Button>
@@ -159,6 +162,9 @@ export default function Header({
                 <div className="flex flex-col gap-2 mt-2 px-2">
                   <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">Trang cá nhân</Button>
+                  </Link>
+                  <Link to="/my-bookings" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">Lịch sử đặt sân</Button>
                   </Link>
                   <Button
                     variant="outline"

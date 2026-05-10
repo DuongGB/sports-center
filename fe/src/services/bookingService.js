@@ -21,4 +21,6 @@ export const bookingService = {
       method: "PUT", 
       body: JSON.stringify({ ids, action }) 
     }),
+  getMyBookings: () =>
+    apiCall("/booking/my-bookings", { method: "GET" }),
 };
