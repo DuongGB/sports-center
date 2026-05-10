@@ -7,45 +7,27 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Send, Search, User, Phone, MessageCircle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import { useConversations, useMessages } from "../../hooks/queries/useChatQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
 export default function ChatPage() {
-  const [conversations, setConversations] = useState([]);
   const [selectedConvId, setSelectedConvId] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [search, setSearch] = useState("");
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: conversations = [], isLoading: loadingConvs } = useConversations();
+  const { data: messages = [], isLoading: loadingMsgs } = useMessages(selectedConvId);
   
   const messagesEndRef = useRef(null);
   const stompClient = useRef(null);
 
-  // Lấy danh sách conversation
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const data = await chatService.getConversations();
-        setConversations(data || []);
-      } catch (error) {
-        console.error("Lỗi lấy danh sách chat:", error);
-      }
-    };
-    fetchConversations();
-  }, []);
-
-  // Lấy tin nhắn khi chọn conversation
+  // Đánh dấu đã đọc khi chọn conversation
   useEffect(() => {
     if (selectedConvId) {
-      const fetchMessages = async () => {
-        try {
-          const history = await chatService.getMessages(selectedConvId);
-          setMessages(history || []);
-          // Đánh dấu đã đọc
-          await chatService.markAsRead(selectedConvId, "ADMIN");
-        } catch (error) {
-          console.error("Lỗi lấy tin nhắn:", error);
-        }
-      };
-      fetchMessages();
+      chatService.markAsRead(selectedConvId, "ADMIN").catch(console.error);
     }
   }, [selectedConvId]);
 
@@ -61,31 +43,36 @@ export default function ChatPage() {
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
       onConnect: () => {
-        // Lắng nghe tin nhắn mới chung để update danh sách conversation
         client.subscribe("/topic/chat/admin", (msg) => {
           const newMsg = JSON.parse(msg.body);
           
-          // Cập nhật messages nếu đang mở đúng conversation
+          // Cập nhật messages cache nếu đang mở đúng conversation
           if (selectedConvId === newMsg.conversationId) {
-            setMessages((prev) => {
+            queryClient.setQueryData(["chat", "messages", newMsg.conversationId], (old) => {
+              const prev = old || [];
               if (prev.find((m) => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
-            // Gọi api update read status (không cần await)
             chatService.markAsRead(newMsg.conversationId, "ADMIN");
           }
 
-          // Cập nhật lại conversation list
-          setConversations((prev) => {
+          // Cập nhật conversations cache
+          queryClient.setQueryData(["chat", "conversations"], (old) => {
+            const prev = old || [];
             const index = prev.findIndex((c) => c.id === newMsg.conversationId);
             let updatedList = [...prev];
+            
             if (index !== -1) {
-              const updatedConv = { ...updatedList[index], lastMessage: newMsg.content, lastMessageAt: newMsg.createdAt };
+              const updatedConv = { 
+                ...updatedList[index], 
+                lastMessage: newMsg.content, 
+                lastMessageAt: newMsg.createdAt 
+              };
               updatedList.splice(index, 1);
               updatedList.unshift(updatedConv);
             } else {
-              // Nếu là conversation mới thì phải gọi API để lấy đủ dữ liệu, hoặc reload
-              chatService.getConversations().then(setConversations);
+              // Reload conversations if it's a new one we don't have
+              queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
             }
             return updatedList;
           });
@@ -114,20 +101,27 @@ export default function ChatPage() {
       };
 
       const sentMsg = await chatService.sendMessage(payload);
-      setMessages((prev) => {
+      
+      // Cập nhật messages cache
+      queryClient.setQueryData(["chat", "messages", selectedConvId], (old) => {
+        const prev = old || [];
         if (prev.find((m) => m.id === sentMsg.id)) return prev;
         return [...prev, sentMsg];
       });
+
       setNewMessage("");
 
-      // Cập nhật local conversation list ngay lập tức
-      setConversations((prev) => {
+      // Cập nhật conversations cache
+      queryClient.setQueryData(["chat", "conversations"], (old) => {
+        const prev = old || [];
         const index = prev.findIndex((c) => c.id === selectedConvId);
         let updatedList = [...prev];
         if (index !== -1) {
-          updatedList[index].lastMessage = sentMsg.content;
-          updatedList[index].lastMessageAt = sentMsg.createdAt;
-          // đưa lên đầu
+          updatedList[index] = {
+            ...updatedList[index],
+            lastMessage: sentMsg.content,
+            lastMessageAt: sentMsg.createdAt
+          };
           const target = updatedList.splice(index, 1)[0];
           updatedList.unshift(target);
         }
@@ -165,7 +159,12 @@ export default function ChatPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
+          {loadingConvs ? (
+            <div className="flex flex-col items-center justify-center h-40 space-y-2">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <p className="text-xs text-muted-foreground">Đang tải cuộc trò chuyện...</p>
+            </div>
+          ) : filteredConversations.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">Không tìm thấy cuộc trò chuyện nào</div>
           ) : (
             filteredConversations.map((c) => {
@@ -220,7 +219,12 @@ export default function ChatPage() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.length === 0 ? (
+              {loadingMsgs ? (
+                <div className="flex flex-col items-center justify-center h-full space-y-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Đang tải tin nhắn...</p>
+                </div>
+              ) : messages.length === 0 ? (
                 <div className="text-center text-muted-foreground mt-10">
                   Chưa có tin nhắn nào.
                 </div>

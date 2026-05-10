@@ -5,10 +5,11 @@ import java.util.UUID;
 
 public record ReviewResponse(
         UUID id,
-        UUID userId,
+        String userId,
         String userName,
         Integer rating,
         String comment,
         LocalDateTime createdAt
 ) {
 }
+

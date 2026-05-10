@@ -22,7 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAllReviewsQuery, useReviewMutations } from "@/hooks/queries/useReviewQueries";
+import {
+  useAllReviewsQuery,
+  useReviewMutations,
+} from "@/hooks/queries/useReviewQueries";
 
 export default function ReviewManagementPage() {
   const [deleteId, setDeleteId] = useState(null);
@@ -39,7 +42,7 @@ export default function ReviewManagementPage() {
       onError: (error) => {
         toast.error(error.message || "Xóa đánh giá thất bại");
         setDeleteId(null);
-      }
+      },
     });
   };
 
@@ -100,7 +103,11 @@ export default function ReviewManagementPage() {
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[300px] truncate">
-                    {review.comment || <span className="text-muted-foreground italic">(Không có nhận xét)</span>}
+                    {review.comment || (
+                      <span className="text-muted-foreground italic">
+                        (Không có nhận xét)
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-muted-foreground text-sm">
@@ -130,12 +137,16 @@ export default function ReviewManagementPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa đánh giá?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Điểm đánh giá của sân sẽ được tính toán lại sau khi xóa.
+              Hành động này không thể hoàn tác. Điểm đánh giá của sân sẽ được
+              tính toán lại sau khi xóa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-rose-500 hover:bg-rose-600">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-rose-500 hover:bg-rose-600"
+            >
               Xác nhận xóa
             </AlertDialogAction>
           </AlertDialogFooter>

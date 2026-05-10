@@ -23,6 +23,9 @@ public class ReviewController {
     public ResponseEntity<ApiResponse<ReviewResponse>> createReview(@RequestBody @Valid ReviewRequest request) {
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(ApiResponse.<ReviewResponse>builder()
+                .success(true)
+                .code(201)
+                .message("Review created successfully")
                 .data(reviewService.createReview(request, userId))
                 .build());
     }
@@ -30,6 +33,9 @@ public class ReviewController {
     @GetMapping("/court/{courtId}")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getCourtReviews(@PathVariable UUID courtId) {
         return ResponseEntity.ok(ApiResponse.<List<ReviewResponse>>builder()
+                .success(true)
+                .code(200)
+                .message("Court reviews retrieved successfully")
                 .data(reviewService.getCourtReviews(courtId))
                 .build());
     }
@@ -37,6 +43,9 @@ public class ReviewController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getAllReviews() {
         return ResponseEntity.ok(ApiResponse.<List<ReviewResponse>>builder()
+                .success(true)
+                .code(200)
+                .message("All reviews retrieved successfully")
                 .data(reviewService.getAllReviews())
                 .build());
     }
@@ -45,6 +54,9 @@ public class ReviewController {
     public ResponseEntity<ApiResponse<Void>> deleteReview(@PathVariable UUID id) {
         reviewService.deleteReview(id);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .code(200)
+                .message("Review deleted successfully")
                 .build());
     }
 }
