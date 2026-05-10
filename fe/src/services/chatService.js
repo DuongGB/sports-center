@@ -3,7 +3,7 @@ import { apiCall } from "../config/api";
 export const chatService = {
   getGuestConversation: async (phone) => {
     try {
-      const response = await apiCall(`/v1/chat/conversations/guest/${phone}`);
+      const response = await apiCall(`/chat/conversations/guest/${phone}`);
       return response.data || response;
     } catch (error) {
       return null;
@@ -12,7 +12,7 @@ export const chatService = {
 
   getUserConversation: async (userId) => {
     try {
-      const response = await apiCall(`/v1/chat/conversations/user/${userId}`);
+      const response = await apiCall(`/chat/conversations/user/${userId}`);
       return response.data || response;
     } catch (error) {
       return null;
@@ -20,24 +20,29 @@ export const chatService = {
   },
 
   getMessages: async (conversationId) => {
-    const response = await apiCall(`/v1/chat/conversations/${conversationId}/messages`);
+    const response = await apiCall(
+      `/chat/conversations/${conversationId}/messages`,
+    );
     return response.data || response;
   },
 
   getConversations: async () => {
-    const response = await apiCall("/v1/chat/conversations");
+    const response = await apiCall("/chat/conversations");
     return response.data || response;
   },
 
   markAsRead: async (conversationId, userType) => {
-    const response = await apiCall(`/v1/chat/conversations/${conversationId}/read?userType=${userType}`, {
-      method: "PUT",
-    });
+    const response = await apiCall(
+      `/chat/conversations/${conversationId}/read?userType=${userType}`,
+      {
+        method: "PUT",
+      },
+    );
     return response.data || response;
   },
 
   sendMessage: async (data) => {
-    const response = await apiCall("/v1/chat/messages", {
+    const response = await apiCall("/chat/messages", {
       method: "POST",
       body: JSON.stringify(data),
     });

@@ -4,9 +4,9 @@ spring:
 
   # Configuration for PostgreSQL database
   datasource:
-    url: jdbc:postgresql://localhost:5432/sportsdb
-    username: postgres
-    password: root
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
