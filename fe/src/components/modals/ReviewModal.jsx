@@ -10,13 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "react-toastify";
-import { reviewService } from "@/services/reviewService";
+import { useReviewMutations } from "@/hooks/queries/useReviewQueries";
 
 export default function ReviewModal({ isOpen, onClose, booking, onSuccess }) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { createReviewMut } = useReviewMutations();
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -24,26 +24,22 @@ export default function ReviewModal({ isOpen, onClose, booking, onSuccess }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await reviewService.createReview({
-        bookingId: booking.id,
-        rating,
-        comment,
-      });
-
-      if (response.success) {
+    createReviewMut.mutate({
+      bookingId: booking.id,
+      rating,
+      comment,
+    }, {
+      onSuccess: () => {
         toast.success("Cảm ơn bạn đã đánh giá!");
         onSuccess?.();
         onClose();
-      } else {
-        toast.error(response.message || "Đánh giá thất bại");
+        setRating(0);
+        setComment("");
+      },
+      onError: (error) => {
+        toast.error(error.message || "Đánh giá thất bại");
       }
-    } catch (error) {
-      toast.error(error.message || "Đánh giá thất bại");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -86,11 +82,11 @@ export default function ReviewModal({ isOpen, onClose, booking, onSuccess }) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
+          <Button variant="ghost" onClick={onClose} disabled={createReviewMut.isPending}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Đang gửi..." : "Gửi đánh giá"}
+          <Button onClick={handleSubmit} disabled={createReviewMut.isPending}>
+            {createReviewMut.isPending ? "Đang gửi..." : "Gửi đánh giá"}
           </Button>
         </DialogFooter>
       </DialogContent>

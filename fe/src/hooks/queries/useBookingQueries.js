@@ -6,6 +6,7 @@ export function useBookingsQuery(page = 1, size = 10, filters = {}) {
     queryKey: ["bookings", page, size, filters],
     queryFn: () => bookingService.getAllBookings(page, size, filters).then(res => res.data),
     placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

@@ -6,31 +6,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Star, User, Calendar } from "lucide-react";
-import { reviewService } from "@/services/reviewService";
+import { useCourtReviewsQuery } from "@/hooks/queries/useReviewQueries";
 
 export default function CourtReviewsModal({ isOpen, onClose, court }) {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isOpen && court?.id) {
-      fetchReviews();
-    }
-  }, [isOpen, court]);
-
-  const fetchReviews = async () => {
-    setLoading(true);
-    try {
-      const response = await reviewService.getCourtReviews(court.id);
-      if (response.success) {
-        setReviews(response.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch reviews", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: reviews = [], isLoading } = useCourtReviewsQuery(court?.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -48,7 +27,7 @@ export default function CourtReviewsModal({ isOpen, onClose, court }) {
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto pr-2 mt-4 space-y-4">
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>

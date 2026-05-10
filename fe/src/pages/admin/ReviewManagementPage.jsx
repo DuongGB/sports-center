@@ -22,45 +22,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAllReviewsQuery, useReviewMutations } from "@/hooks/queries/useReviewQueries";
 
 export default function ReviewManagementPage() {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
 
-  useEffect(() => {
-    fetchReviews();
-  }, []);
-
-  const fetchReviews = async () => {
-    setLoading(true);
-    try {
-      const response = await reviewService.getAllReviews();
-      if (response.success) {
-        setReviews(response.data);
-      }
-    } catch (error) {
-      console.error("Không thể tải danh sách đánh giá", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: reviews = [], isLoading } = useAllReviewsQuery();
+  const { deleteReviewMut } = useReviewMutations();
 
   const handleDelete = async () => {
-    try {
-      const response = await reviewService.deleteReview(deleteId);
-      if (response.success) {
+    deleteReviewMut.mutate(deleteId, {
+      onSuccess: () => {
         toast.success("Đã xóa đánh giá thành công");
-        fetchReviews();
+        setDeleteId(null);
+      },
+      onError: (error) => {
+        toast.error(error.message || "Xóa đánh giá thất bại");
+        setDeleteId(null);
       }
-    } catch (error) {
-      toast.error(error.message || "Xóa đánh giá thất bại");
-    } finally {
-      setDeleteId(null);
-    }
+    });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
