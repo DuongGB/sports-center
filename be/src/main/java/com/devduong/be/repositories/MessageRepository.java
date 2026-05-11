@@ -19,4 +19,6 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     @Modifying
     @Query("UPDATE Message m SET m.isRead = true WHERE m.conversation.id = :conversationId AND m.senderType != :senderType")
     void markAsReadByConversationIdAndSenderTypeNot(@Param("conversationId") String conversationId, @Param("senderType") com.devduong.be.enums.SenderType senderType);
+
+    long countByConversationIdAndSenderTypeNotAndIsReadFalse(String conversationId, com.devduong.be.enums.SenderType senderType);
 }

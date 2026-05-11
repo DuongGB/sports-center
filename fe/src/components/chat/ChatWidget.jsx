@@ -99,7 +99,7 @@ export default function ChatWidget() {
       const client = new Client({
         webSocketFactory: () => socket,
         reconnectDelay: 5000,
-        onConnect: () => {
+        onConnect: async () => {
           client.subscribe(
             `/topic/chat/conversation/${conversationId}`,
             (msg) => {
@@ -110,6 +110,13 @@ export default function ChatWidget() {
               });
             },
           );
+          
+          try {
+            const history = await chatService.getMessages(conversationId);
+            setMessages(history);
+          } catch (error) {
+            console.error("Failed to fetch messages on WS connect", error);
+          }
         },
       });
 

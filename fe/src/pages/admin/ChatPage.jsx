@@ -24,12 +24,19 @@ export default function ChatPage() {
   const messagesEndRef = useRef(null);
   const stompClient = useRef(null);
 
-  // Đánh dấu đã đọc khi chọn conversation
+  const selectedConvIdRef = useRef(selectedConvId);
+  
   useEffect(() => {
+    selectedConvIdRef.current = selectedConvId;
     if (selectedConvId) {
       chatService.markAsRead(selectedConvId, "ADMIN").catch(console.error);
+      // Đánh dấu đã đọc trong cache local
+      queryClient.setQueryData(["chat", "conversations"], (old) => {
+        if (!old) return old;
+        return old.map(c => c.id === selectedConvId ? { ...c, unreadCount: 0 } : c);
+      });
     }
-  }, [selectedConvId]);
+  }, [selectedConvId, queryClient]);
 
   // Cuộn xuống dòng tin nhắn mới nhất
   useEffect(() => {
@@ -45,9 +52,10 @@ export default function ChatPage() {
       onConnect: () => {
         client.subscribe("/topic/chat/admin", (msg) => {
           const newMsg = JSON.parse(msg.body);
+          const currentSelectedId = selectedConvIdRef.current;
           
           // Cập nhật messages cache nếu đang mở đúng conversation
-          if (selectedConvId === newMsg.conversationId) {
+          if (currentSelectedId === newMsg.conversationId) {
             queryClient.setQueryData(["chat", "messages", newMsg.conversationId], (old) => {
               const prev = old || [];
               if (prev.find((m) => m.id === newMsg.id)) return prev;
@@ -62,17 +70,35 @@ export default function ChatPage() {
             const index = prev.findIndex((c) => c.id === newMsg.conversationId);
             let updatedList = [...prev];
             
+            const isUnread = currentSelectedId !== newMsg.conversationId && newMsg.senderType !== "ADMIN" && newMsg.senderType !== "BOT";
+
             if (index !== -1) {
+              const prevUnreadCount = updatedList[index].unreadCount || 0;
               const updatedConv = { 
                 ...updatedList[index], 
                 lastMessage: newMsg.content, 
-                lastMessageAt: newMsg.createdAt 
+                lastMessageAt: newMsg.createdAt,
+                unreadCount: isUnread ? prevUnreadCount + 1 : prevUnreadCount
               };
               updatedList.splice(index, 1);
               updatedList.unshift(updatedConv);
             } else {
-              // Reload conversations if it's a new one we don't have
-              queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+              // Create a temporary conversation object to show immediately
+              const tempConv = {
+                id: newMsg.conversationId,
+                guestName: newMsg.senderType === "GUEST" ? newMsg.senderName : null,
+                userFullName: newMsg.senderType === "USER" ? newMsg.senderName : null,
+                guestPhone: newMsg.senderType === "GUEST" ? "Khách mới" : null,
+                lastMessage: newMsg.content,
+                lastMessageAt: newMsg.createdAt,
+                unreadCount: isUnread ? 1 : 0
+              };
+              updatedList.unshift(tempConv);
+              
+              // Also fetch to get full details (like phone number) in background
+              setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+              }, 1000);
             }
             return updatedList;
           });
@@ -86,7 +112,7 @@ export default function ChatPage() {
     return () => {
       client.deactivate();
     };
-  }, [selectedConvId]);
+  }, [queryClient]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -180,14 +206,23 @@ export default function ChatPage() {
                   }`}
                 >
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-semibold text-sm line-clamp-1">{name} {isGuest && "(Khách)"}</span>
-                    {c.lastMessageAt && (
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                        {formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: true, locale: vi })}
-                      </span>
-                    )}
+                    <span className="font-semibold text-sm line-clamp-1 flex items-center gap-2">
+                      {name} {isGuest && "(Khách)"}
+                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      {c.lastMessageAt && (
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                          {formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: true, locale: vi })}
+                        </span>
+                      )}
+                      {c.unreadCount > 0 && (
+                        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] font-bold text-white bg-red-500 rounded-full mt-0.5 shadow-sm">
+                          {c.unreadCount > 99 ? '99+' : c.unreadCount}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-1">
+                  <p className={`text-sm line-clamp-1 ${c.unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                     {c.lastMessage || "Chưa có tin nhắn"}
                   </p>
                 </div>

@@ -147,6 +147,8 @@ public class ChatService {
     }
 
     private ConversationResponse toConversationResponse(Conversation c) {
+        long unreadCount = messageRepository.countByConversationIdAndSenderTypeNotAndIsReadFalse(c.getId(), SenderType.ADMIN);
+        
         ConversationResponse.ConversationResponseBuilder builder = ConversationResponse.builder()
                 .id(c.getId())
                 .guestPhone(c.getGuestPhone())
@@ -154,7 +156,8 @@ public class ChatService {
                 .lastMessage(c.getLastMessage())
                 .lastMessageAt(c.getLastMessageAt())
                 .createdAt(c.getCreatedAt())
-                .updatedAt(c.getUpdatedAt());
+                .updatedAt(c.getUpdatedAt())
+                .unreadCount(unreadCount);
 
         if (c.getUser() != null) {
             builder.userId(c.getUser().getId())

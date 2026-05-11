@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Provider } from "react-redux";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { store } from "./store/store";
@@ -108,22 +114,25 @@ function AppContent() {
             )
           }
         />
-        
+
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/court/:id" element={<CourtDetailPage />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/profile" element={<ProtectedRoute />} >
-           <Route index element={<ProfilePage />} />
+        <Route path="/profile" element={<ProtectedRoute />}>
+          <Route index element={<ProfilePage />} />
         </Route>
-        <Route path="/my-bookings" element={<ProtectedRoute />} >
-           <Route index element={<MyBookingsPage />} />
+        <Route path="/my-bookings" element={<ProtectedRoute />}>
+          <Route index element={<MyBookingsPage />} />
         </Route>
-        
+
         {/* Admin Routes */}
-        <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+        <Route
+          path="/admin"
+          element={<ProtectedRoute allowedRoles={["ADMIN"]} />}
+        >
           <Route element={<AdminLayout />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
@@ -192,7 +201,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <PayPalScriptProvider options={paypalOptions}>
           <AppContent />
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           <ToastContainer position="top-right" autoClose={3000} />
         </PayPalScriptProvider>
       </QueryClientProvider>

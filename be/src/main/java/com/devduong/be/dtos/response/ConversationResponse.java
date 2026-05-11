@@ -22,4 +22,5 @@ public class ConversationResponse {
     LocalDateTime lastMessageAt;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
+    Long unreadCount;
 }
