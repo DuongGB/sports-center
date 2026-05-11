@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { X, Eye, CheckCircle, XCircle, Search, Filter, RefreshCcw } from "lucide-react";
 import { useBookingsQuery, useBookingMutations } from "@/hooks/queries/useBookingQueries";
 import { formatDate } from "@/utils/dateUtils";
-import { toast } from "react-toastify";
+import { showToast } from "@/utils/toast";
 
 const statusMap = {
   PENDING: { 
@@ -86,23 +86,16 @@ export default function BookingsPage() {
     if (selectedIds.length === 0) return;
     
     const actionLabel = action === "CONFIRM" ? "xác nhận" : "hủy";
-    toast.info(
-      <div>
-        <p>Thực hiện {actionLabel} {selectedIds.length} đơn đã chọn?</p>
-        <div className="flex gap-2 mt-2">
-          <Button size="sm" onClick={() => {
-            batchProcessMut.mutate({ ids: selectedIds, action }, {
-              onSuccess: () => {
-                toast.success(`Đã ${actionLabel} hàng loạt thành công!`);
-                setSelectedIds([]);
-              }
-            });
-            toast.dismiss();
-          }}>Xác nhận</Button>
-          <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
-        </div>
-      </div>,
-      { autoClose: false, closeOnClick: false }
+    showToast.confirm(
+      `Thực hiện ${actionLabel} ${selectedIds.length} đơn đã chọn?`,
+      () => {
+        batchProcessMut.mutate({ ids: selectedIds, action }, {
+          onSuccess: () => {
+            showToast.success(`Đã ${actionLabel} hàng loạt thành công!`);
+            setSelectedIds([]);
+          }
+        });
+      }
     );
   };
 
@@ -115,38 +108,24 @@ export default function BookingsPage() {
   };
 
   const handleConfirm = (booking) => {
-    toast.info(
-      <div>
-        <p>Xác nhận đơn đặt sân này?</p>
-        <div className="flex gap-2 mt-2">
-          <Button size="sm" onClick={() => {
-            confirmBookingMut.mutate(booking.id, {
-              onSuccess: () => toast.success("Đã xác nhận đơn đặt sân!")
-            });
-            toast.dismiss();
-          }}>Xác nhận</Button>
-          <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
-        </div>
-      </div>,
-      { autoClose: false, closeOnClick: false }
+    showToast.confirm(
+      "Xác nhận đơn đặt sân này?",
+      () => {
+        confirmBookingMut.mutate(booking.id, {
+          onSuccess: () => showToast.success("Đã xác nhận đơn đặt sân!")
+        });
+      }
     );
   };
 
   const handleCancel = (booking) => {
-    toast.info(
-      <div>
-        <p>Hủy đơn đặt sân này?</p>
-        <div className="flex gap-2 mt-2">
-          <Button size="sm" variant="destructive" onClick={() => {
-            cancelBookingMut.mutate(booking.id, {
-              onSuccess: () => toast.success("Đã hủy đơn đặt sân!")
-            });
-            toast.dismiss();
-          }}>Hủy đơn</Button>
-          <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Đóng</Button>
-        </div>
-      </div>,
-      { autoClose: false, closeOnClick: false }
+    showToast.confirm(
+      "Hủy đơn đặt sân này?",
+      () => {
+        cancelBookingMut.mutate(booking.id, {
+          onSuccess: () => showToast.success("Đã hủy đơn đặt sân!")
+        });
+      }
     );
   };
 

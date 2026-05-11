@@ -14,5 +14,5 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
     Optional<Conversation> findByGuestPhone(String guestPhone);
 
     @Query("SELECT c FROM Conversation c ORDER BY c.lastMessageAt DESC")
-    List<Conversation> findAllOrderByLastMessageAtDesc();
+    org.springframework.data.domain.Page<Conversation> findAllOrderByLastMessageAtDesc(org.springframework.data.domain.Pageable pageable);
 }

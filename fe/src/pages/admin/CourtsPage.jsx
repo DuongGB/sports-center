@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { MapPin, X, Eye, Search, Filter, RefreshCcw } from "lucide-react";
 import { useCourtsQuery, useCourtMutations } from "@/hooks/queries/useCourtQueries";
 import { useSportTypesQuery } from "@/hooks/queries/useSportTypeQueries";
-import { toast } from "react-toastify";
+import { showToast } from "@/utils/toast";
 
 export default function CourtsPage() {
   const [filters, setFilters] = useState({ keyword: "", status: "", sportTypeId: "" });
@@ -95,45 +95,31 @@ export default function CourtsPage() {
 
   const handleMaintenanceToggle = (item) => {
     if (item.status === "ACTIVE") {
-      toast.info(
-        <div>
-          <p>Chuyển sân này sang trạng thái bảo trì?</p>
-          <div className="flex gap-2 mt-2">
-            <Button size="sm" onClick={() => { 
-                maintenanceCourtMut.mutate(item.id, {
-                  onSuccess: () => toast.success("Đã chuyển sang bảo trì!")
-                }); 
-                toast.dismiss(); 
-              }}>Xác nhận</Button>
-            <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
-          </div>
-        </div>,
-        { autoClose: false, closeOnClick: false }
+      showToast.confirm(
+        "Chuyển sân này sang trạng thái bảo trì?",
+        () => {
+          maintenanceCourtMut.mutate(item.id, {
+            onSuccess: () => showToast.success("Đã chuyển sang bảo trì!")
+          });
+        }
       );
     } else {
-      toast.info(
-        <div>
-          <p>Chuyển sân này sang trạng thái hoạt động?</p>
-          <div className="flex gap-2 mt-2">
-            <Button size="sm" onClick={() => { 
-                const payload = new FormData();
-                payload.append("data", new Blob([JSON.stringify({ 
-                  name: item.name, 
-                  location: item.location, 
-                  sportTypeId: item.sportTypeId, 
-                  openTime: item.openTime,
-                  closeTime: item.closeTime,
-                  status: "ACTIVE" 
-                })], { type: "application/json" }));
-                updateCourtMut.mutate({ id: item.id, formData: payload }, {
-                  onSuccess: () => toast.success("Đã chuyển sang hoạt động!")
-                });
-                toast.dismiss(); 
-              }}>Xác nhận</Button>
-            <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
-          </div>
-        </div>,
-        { autoClose: false, closeOnClick: false }
+      showToast.confirm(
+        "Chuyển sân này sang trạng thái hoạt động?",
+        () => {
+          const payload = new FormData();
+          payload.append("data", new Blob([JSON.stringify({ 
+            name: item.name, 
+            location: item.location, 
+            sportTypeId: item.sportTypeId, 
+            openTime: item.openTime,
+            closeTime: item.closeTime,
+            status: "ACTIVE" 
+          })], { type: "application/json" }));
+          updateCourtMut.mutate({ id: item.id, formData: payload }, {
+            onSuccess: () => showToast.success("Đã chuyển sang hoạt động!")
+          });
+        }
       );
     }
   };
@@ -141,7 +127,7 @@ export default function CourtsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.location || !formData.sportTypeId) {
-      toast.error("Vui lòng nhập đầy đủ các thông tin bắt buộc");
+      showToast.error("Vui lòng nhập đầy đủ các thông tin bắt buộc");
       return;
     }
     
@@ -172,14 +158,14 @@ export default function CourtsPage() {
     try {
       if (modalMode === "add") {
         await createCourtMut.mutateAsync(payload);
-        toast.success("Tạo sân thành công");
+        showToast.success("Tạo sân thành công");
       } else {
         await updateCourtMut.mutateAsync({ id: formData.id, formData: payload });
-        toast.success("Cập nhật sân thành công");
+        showToast.success("Cập nhật sân thành công");
       }
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error?.message || "Có lỗi xảy ra");
+      showToast.error(error?.message || "Có lỗi xảy ra");
     }
   };
 

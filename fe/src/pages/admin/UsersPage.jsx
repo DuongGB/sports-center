@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useUsers } from "@/hooks/useUsers";
 import { X, Eye, Search, Filter, RefreshCcw } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
+import { showToast } from "@/utils/toast";
 
 export default function UsersPage() {
   const [userFilters, setUserFilters] = useState({ keyword: "", status: "" });
@@ -63,10 +64,10 @@ export default function UsersPage() {
           phone: editForm.phone,
         },
       });
-      import("react-toastify").then(({ toast }) => toast.success("Cập nhật thành công"));
+      showToast.success("Cập nhật thành công");
       setIsEditModalOpen(false);
     } catch (error) {
-      import("react-toastify").then(({ toast }) => toast.error(error?.message || "Cập nhật thất bại"));
+      showToast.error(error?.message || "Cập nhật thất bại");
     } finally {
       setSubmitting(false);
     }

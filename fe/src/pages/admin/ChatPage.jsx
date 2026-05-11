@@ -5,11 +5,12 @@ import SockJS from "sockjs-client/dist/sockjs";
 import { API_BASE_URL, WS_URL } from "../../config/api";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Send, Search, User, Phone, MessageCircle } from "lucide-react";
+import { Send, Search, User, Phone, MessageCircle, ArrowLeft, Trash2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import { useConversations, useMessages } from "../../hooks/queries/useChatQueries";
+import { useConversations, useMessages, useDeleteConversation } from "../../hooks/queries/useChatQueries";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { showToast } from "@/utils/toast";
 
 export default function ChatPage() {
   const [selectedConvId, setSelectedConvId] = useState(null);
@@ -18,8 +19,14 @@ export default function ChatPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: conversations = [], isLoading: loadingConvs } = useConversations();
+  const [page, setPage] = useState(0);
+
+  const { data, isLoading: loadingConvs } = useConversations(page, 6);
   const { data: messages = [], isLoading: loadingMsgs } = useMessages(selectedConvId);
+  const deleteMutation = useDeleteConversation();
+
+  const conversations = data?.content || [];
+  const totalPages = data?.totalPages || 0;
   
   const messagesEndRef = useRef(null);
   const stompClient = useRef(null);
@@ -31,12 +38,15 @@ export default function ChatPage() {
     if (selectedConvId) {
       chatService.markAsRead(selectedConvId, "ADMIN").catch(console.error);
       // Đánh dấu đã đọc trong cache local
-      queryClient.setQueryData(["chat", "conversations"], (old) => {
-        if (!old) return old;
-        return old.map(c => c.id === selectedConvId ? { ...c, unreadCount: 0 } : c);
+      queryClient.setQueryData(["chat", "conversations", page], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          content: oldData.content.map(c => c.id === selectedConvId ? { ...c, unreadCount: 0 } : c)
+        };
       });
     }
-  }, [selectedConvId, queryClient]);
+  }, [selectedConvId, queryClient, page]);
 
   // Cuộn xuống dòng tin nhắn mới nhất
   useEffect(() => {
@@ -65,11 +75,13 @@ export default function ChatPage() {
           }
 
           // Cập nhật conversations cache
-          queryClient.setQueryData(["chat", "conversations"], (old) => {
-            const prev = old || [];
+          queryClient.setQueryData(["chat", "conversations", page], (oldData) => {
+            if (!oldData) return oldData;
+            
+            const prev = oldData.content || [];
             const index = prev.findIndex((c) => c.id === newMsg.conversationId);
             let updatedList = [...prev];
-            
+
             const isUnread = currentSelectedId !== newMsg.conversationId && newMsg.senderType !== "ADMIN" && newMsg.senderType !== "BOT";
 
             if (index !== -1) {
@@ -83,24 +95,23 @@ export default function ChatPage() {
               updatedList.splice(index, 1);
               updatedList.unshift(updatedConv);
             } else {
-              // Create a temporary conversation object to show immediately
-              const tempConv = {
-                id: newMsg.conversationId,
-                guestName: newMsg.senderType === "GUEST" ? newMsg.senderName : null,
-                userFullName: newMsg.senderType === "USER" ? newMsg.senderName : null,
-                guestPhone: newMsg.senderType === "GUEST" ? "Khách mới" : null,
-                lastMessage: newMsg.content,
-                lastMessageAt: newMsg.createdAt,
-                unreadCount: isUnread ? 1 : 0
-              };
-              updatedList.unshift(tempConv);
-              
-              // Also fetch to get full details (like phone number) in background
+              if (page === 0) {
+                const tempConv = {
+                  id: newMsg.conversationId,
+                  guestName: newMsg.senderType === "GUEST" ? newMsg.senderName : null,
+                  userFullName: newMsg.senderType === "USER" ? newMsg.senderName : null,
+                  guestPhone: newMsg.senderType === "GUEST" ? "Khách mới" : null,
+                  lastMessage: newMsg.content,
+                  lastMessageAt: newMsg.createdAt,
+                  unreadCount: isUnread ? 1 : 0
+                };
+                updatedList.unshift(tempConv);
+              }
               setTimeout(() => {
                 queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
               }, 1000);
             }
-            return updatedList;
+            return { ...oldData, content: updatedList };
           });
         });
       },
@@ -138,8 +149,10 @@ export default function ChatPage() {
       setNewMessage("");
 
       // Cập nhật conversations cache
-      queryClient.setQueryData(["chat", "conversations"], (old) => {
-        const prev = old || [];
+      queryClient.setQueryData(["chat", "conversations", page], (oldData) => {
+        if (!oldData) return oldData;
+        
+        const prev = oldData.content || [];
         const index = prev.findIndex((c) => c.id === selectedConvId);
         let updatedList = [...prev];
         if (index !== -1) {
@@ -151,7 +164,7 @@ export default function ChatPage() {
           const target = updatedList.splice(index, 1)[0];
           updatedList.unshift(target);
         }
-        return updatedList;
+        return { ...oldData, content: updatedList };
       });
     } catch (error) {
       console.error("Gửi tin nhắn lỗi:", error);
@@ -166,10 +179,27 @@ export default function ChatPage() {
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId);
 
+  const handleDelete = (convId) => {
+    showToast.confirm(
+      "Bạn có chắc chắn muốn xóa cuộc trò chuyện này không?",
+      () => {
+        deleteMutation.mutate(convId, {
+          onSuccess: () => {
+            if (selectedConvId === convId) {
+              setSelectedConvId(null);
+            }
+            showToast.success("Đã xóa cuộc trò chuyện");
+          }
+        });
+      },
+      "Xóa"
+    );
+  };
+
   return (
-    <div className="flex h-[calc(100vh-8rem)] bg-background rounded-lg border shadow-sm overflow-hidden">
+    <div className="flex h-[calc(100vh-8rem)] bg-background rounded-lg border shadow-sm overflow-hidden relative">
       {/* Sidebar danh sách chat */}
-      <div className="w-80 border-r flex flex-col bg-card">
+      <div className={`w-full md:w-80 border-r flex flex-col bg-card ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold mb-4">Hỗ trợ khách hàng</h2>
           <div className="relative">
@@ -184,7 +214,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {loadingConvs ? (
             <div className="flex flex-col items-center justify-center h-40 space-y-2">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -229,27 +259,64 @@ export default function ChatPage() {
               );
             })
           )}
+          
+          {totalPages > 1 && (
+            <div className="p-4 flex items-center justify-between border-t border-muted/50">
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-3 py-1.5 text-sm bg-muted text-foreground hover:bg-muted/80 rounded-md transition-colors disabled:opacity-50"
+              >
+                Trước
+              </button>
+              <span className="text-sm text-muted-foreground">
+                Trang {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-3 py-1.5 text-sm bg-muted text-foreground hover:bg-muted/80 rounded-md transition-colors disabled:opacity-50"
+              >
+                Sau
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col bg-muted/10">
+      <div className={`flex-1 flex flex-col bg-muted/10 ${!selectedConvId ? 'hidden md:flex' : 'flex'}`}>
         {selectedConvId && selectedConv ? (
           <>
             {/* Header */}
-            <div className="h-16 border-b flex items-center px-6 bg-card">
-              <div className="flex-1">
-                <h3 className="font-bold text-lg">
-                  {selectedConv.userFullName || selectedConv.guestName || "Khách ẩn danh"}
-                </h3>
-                <div className="flex items-center text-sm text-muted-foreground space-x-4">
-                  {selectedConv.userFullName ? (
-                    <span className="flex items-center"><User className="w-4 h-4 mr-1"/> Thành viên</span>
-                  ) : (
-                    <span className="flex items-center"><Phone className="w-4 h-4 mr-1"/> {selectedConv.guestPhone}</span>
-                  )}
+            <div className="h-16 border-b flex items-center justify-between px-4 md:px-6 bg-card">
+              <div className="flex items-center">
+                <button 
+                  className="md:hidden mr-3 p-1.5 bg-muted rounded-full hover:bg-muted/80"
+                  onClick={() => setSelectedConvId(null)}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h3 className="font-bold text-lg">
+                    {selectedConv.userFullName || selectedConv.guestName || "Khách ẩn danh"}
+                  </h3>
+                  <div className="flex items-center text-sm text-muted-foreground space-x-4">
+                    {selectedConv.userFullName ? (
+                      <span className="flex items-center"><User className="w-4 h-4 mr-1"/> Thành viên</span>
+                    ) : (
+                      <span className="flex items-center"><Phone className="w-4 h-4 mr-1"/> {selectedConv.guestPhone}</span>
+                    )}
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={() => handleDelete(selectedConv.id)}
+                className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"
+                title="Xóa cuộc trò chuyện"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Messages */}

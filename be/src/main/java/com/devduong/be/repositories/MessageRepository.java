@@ -21,4 +21,8 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     void markAsReadByConversationIdAndSenderTypeNot(@Param("conversationId") String conversationId, @Param("senderType") com.devduong.be.enums.SenderType senderType);
 
     long countByConversationIdAndSenderTypeNotAndIsReadFalse(String conversationId, com.devduong.be.enums.SenderType senderType);
+
+    @Modifying
+    @Query("DELETE FROM Message m WHERE m.conversation.id = :conversationId")
+    void deleteByConversationId(@Param("conversationId") String conversationId);
 }

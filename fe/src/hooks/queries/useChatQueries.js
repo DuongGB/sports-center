@@ -1,13 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { chatService } from "@/services/chatService";
 
 const DEFAULT_STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
-export function useConversations() {
+export function useConversations(page = 0, size = 6) {
   return useQuery({
-    queryKey: ["chat", "conversations"],
-    queryFn: () => chatService.getConversations(),
+    queryKey: ["chat", "conversations", page],
+    queryFn: () => chatService.getConversations(page, size),
     staleTime: DEFAULT_STALE_TIME,
+    keepPreviousData: true,
+  });
+}
+
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => chatService.deleteConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+    },
   });
 }
 

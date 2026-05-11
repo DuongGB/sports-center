@@ -26,8 +26,15 @@ export const chatService = {
     return response.data || response;
   },
 
-  getConversations: async () => {
-    const response = await apiCall("/chat/conversations");
+  getConversations: async (pageParam = 0, size = 5) => {
+    const response = await apiCall(`/chat/conversations?page=${pageParam}&size=${size}`);
+    return response.data || response;
+  },
+
+  deleteConversation: async (conversationId) => {
+    const response = await apiCall(`/chat/conversations/${conversationId}`, {
+      method: "DELETE",
+    });
     return response.data || response;
   },
 

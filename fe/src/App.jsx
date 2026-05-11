@@ -37,6 +37,7 @@ import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
 import ChatWidget from "./components/chat/ChatWidget";
 import AIChatWidget from "./components/chat/AIChatWidget";
 import CourtDetailPage from "./pages/CourtDetailPage";
+import { useTheme } from "./components/theme-provider";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
@@ -196,13 +197,19 @@ function AppContent() {
 }
 
 export default function App() {
+  const { theme } = useTheme();
+
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <PayPalScriptProvider options={paypalOptions}>
           <AppContent />
           {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-          <ToastContainer position="top-right" autoClose={3000} />
+          <ToastContainer 
+            position="top-right" 
+            autoClose={3000} 
+            theme={theme === "system" ? "light" : theme}
+          />
         </PayPalScriptProvider>
       </QueryClientProvider>
     </Provider>

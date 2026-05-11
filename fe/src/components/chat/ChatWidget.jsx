@@ -42,10 +42,10 @@ export default function ChatWidget() {
     theirMsgBorder: isDark ? "#475569" : "#e2e8f0",
     theirMsgTime: isDark ? "#94a3b8" : "#94a3b8",
     // BOT bubble
-    botBg: isDark ? "rgba(79,70,229,0.25)" : "#eef2ff",
-    botBorder: isDark ? "#4338ca" : "#c7d2fe",
-    botText: isDark ? "#a5b4fc" : "#4338ca",
-    botTime: isDark ? "#6366f1" : "#818cf8",
+    botBg: isDark ? "rgba(79,70,229,0.25)" : "#f1f5f9",
+    botBorder: isDark ? "#4338ca" : "#e2e8f0",
+    botText: isDark ? "#f1f5f9" : "#1e293b",
+    botTime: isDark ? "#94a3b8" : "#94a3b8",
     // Input area
     inputAreaBg: isDark ? "#1e293b" : "#ffffff",
     inputAreaBorder: isDark ? "#334155" : "#e2e8f0",

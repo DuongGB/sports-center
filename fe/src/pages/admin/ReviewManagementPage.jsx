@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, Trash2, MessageSquare, User, Calendar, Eye, Reply } from "lucide-react";
-import { toast } from "react-toastify";
+import { showToast } from "@/utils/toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,22 +43,26 @@ export default function ReviewManagementPage() {
   const { data: reviews = [], isLoading } = useAllReviewsQuery();
   const { deleteReviewMut, replyReviewMut } = useReviewMutations();
 
-  const handleDelete = async () => {
-    deleteReviewMut.mutate(deleteId, {
-      onSuccess: () => {
-        toast.success("Đã xóa đánh giá thành công");
-        setDeleteId(null);
+  const handleDeleteClick = (id) => {
+    showToast.confirm(
+      "Bạn có chắc chắn muốn xóa đánh giá này? Hành động này không thể hoàn tác.",
+      () => {
+        deleteReviewMut.mutate(id, {
+          onSuccess: () => {
+            showToast.success("Đã xóa đánh giá thành công");
+          },
+          onError: (error) => {
+            showToast.error(error.message || "Xóa đánh giá thất bại");
+          },
+        });
       },
-      onError: (error) => {
-        toast.error(error.message || "Xóa đánh giá thất bại");
-        setDeleteId(null);
-      },
-    });
+      "Xóa"
+    );
   };
 
   const handleReply = () => {
     if (!replyText.trim()) {
-      toast.error("Vui lòng nhập nội dung phản hồi");
+      showToast.error("Vui lòng nhập nội dung phản hồi");
       return;
     }
 
@@ -66,12 +70,12 @@ export default function ReviewManagementPage() {
       { id: replyReview.id, reply: replyText },
       {
         onSuccess: () => {
-          toast.success("Phản hồi thành công");
+          showToast.success("Phản hồi thành công");
           setReplyReview(null);
           setReplyText("");
         },
         onError: (error) => {
-          toast.error(error.message || "Phản hồi thất bại");
+          showToast.error(error.message || "Phản hồi thất bại");
         },
       }
     );
@@ -178,7 +182,7 @@ export default function ReviewManagementPage() {
                       variant="ghost"
                       size="icon"
                       className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                      onClick={() => setDeleteId(review.id)}
+                      onClick={() => handleDeleteClick(review.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -190,27 +194,7 @@ export default function ReviewManagementPage() {
         </Table>
       </div>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa đánh giá?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Điểm đánh giá của sân sẽ được
-              tính toán lại sau khi xóa.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-rose-500 hover:bg-rose-600"
-            >
-              Xác nhận xóa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
 
       {/* View Detail Modal */}
       <Dialog open={!!viewReview} onOpenChange={() => setViewReview(null)}>

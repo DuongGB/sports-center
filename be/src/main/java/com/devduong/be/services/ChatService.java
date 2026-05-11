@@ -33,10 +33,20 @@ public class ChatService {
     UserRepository userRepository;
     SimpMessagingTemplate messagingTemplate;
 
-    public List<ConversationResponse> getConversations() {
-        return conversationRepository.findAllOrderByLastMessageAtDesc().stream()
-                .map(this::toConversationResponse)
-                .collect(Collectors.toList());
+    public org.springframework.data.domain.Page<ConversationResponse> getConversations(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return conversationRepository.findAllOrderByLastMessageAtDesc(pageable)
+                .map(this::toConversationResponse);
+    }
+
+    @Transactional
+    public void deleteConversation(String conversationId) {
+        // Delete attachments
+        attachmentRepository.deleteByMessageConversationId(conversationId);
+        // Delete messages
+        messageRepository.deleteByConversationId(conversationId);
+        // Delete conversation
+        conversationRepository.deleteById(conversationId);
     }
 
     public List<MessageResponse> getMessages(String conversationId) {

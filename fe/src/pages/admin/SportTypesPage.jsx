@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useSportTypes } from "@/hooks/useSportTypes";
 import { useSportTypeMutations } from "@/hooks/queries/useSportTypeQueries";
 import { X, Eye, Search, RefreshCcw } from "lucide-react";
-import { toast } from "react-toastify";
+import { showToast } from "@/utils/toast";
 
 export default function SportTypesPage() {
   const [sportTypeFilters, setSportTypeFilters] = useState({ keyword: "" });
@@ -73,7 +73,7 @@ export default function SportTypesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      toast.error("Tên môn thể thao không được để trống");
+      showToast.error("Tên môn thể thao không được để trống");
       return;
     }
 
@@ -88,35 +88,29 @@ export default function SportTypesPage() {
     try {
       if (modalMode === "add") {
         await createSportTypeMut.mutateAsync(payload);
-        toast.success("Thêm loại sân thành công");
+        showToast.success("Thêm loại sân thành công");
       } else {
         await updateSportTypeMut.mutateAsync({ id: formData.id, data: payload });
-        toast.success("Cập nhật loại sân thành công");
+        showToast.success("Cập nhật loại sân thành công");
       }
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error?.message || "Có lỗi xảy ra");
+      showToast.error(error?.message || "Có lỗi xảy ra");
     }
   };
 
   const handleDelete = (id) => {
-    toast.info(
-      <div>
-        <p>Bạn có chắc chắn muốn xóa môn thể thao này?</p>
-        <div className="flex gap-2 mt-2">
-          <Button size="sm" variant="destructive" onClick={async () => {
-              try {
-                await deleteSportTypeMut.mutateAsync(id);
-                toast.success("Xóa thành công");
-              } catch (error) {
-                toast.error(error?.message || "Xóa thất bại");
-              }
-              toast.dismiss();
-          }}>Xác nhận</Button>
-          <Button size="sm" variant="outline" onClick={() => toast.dismiss()}>Hủy</Button>
-        </div>
-      </div>,
-      { autoClose: false, closeOnClick: false }
+    showToast.confirm(
+      "Bạn có chắc chắn muốn xóa môn thể thao này?",
+      async () => {
+        try {
+          await deleteSportTypeMut.mutateAsync(id);
+          showToast.success("Xóa thành công");
+        } catch (error) {
+          showToast.error(error?.message || "Xóa thất bại");
+        }
+      },
+      "Xóa"
     );
   };
 

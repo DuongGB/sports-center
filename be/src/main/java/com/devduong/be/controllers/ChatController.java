@@ -24,8 +24,16 @@ public class ChatController {
     AIChatService aiChatService;
 
     @GetMapping("/conversations")
-    public ResponseEntity<List<ConversationResponse>> getConversations() {
-        return ResponseEntity.ok(chatService.getConversations());
+    public ResponseEntity<org.springframework.data.domain.Page<ConversationResponse>> getConversations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        return ResponseEntity.ok(chatService.getConversations(page, size));
+    }
+
+    @DeleteMapping("/conversations/{conversationId}")
+    public ResponseEntity<Void> deleteConversation(@PathVariable String conversationId) {
+        chatService.deleteConversation(conversationId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/conversations/{conversationId}/messages")
