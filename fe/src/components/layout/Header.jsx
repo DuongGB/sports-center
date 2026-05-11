@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Menu, X, Dumbbell } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const navLinks = [
   { label: "Trang chủ", href: "#home" },
@@ -23,11 +23,28 @@ export default function Header({
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     setMobileMenuOpen(false);
     onLogout?.();
+  };
+
+  const handleNavClick = (e, href) => {
+    e.preventDefault();
+    if (location.pathname !== "/") {
+      navigate(`/${href}`);
+      setTimeout(() => {
+        const el = document.querySelector(href);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -52,7 +69,8 @@ export default function Header({
             <a
               key={link.label}
               href={link.href}
-              className="rounded-full px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={(e) => handleNavClick(e, link.href)}
+              className="rounded-full px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
             >
               {link.label}
             </a>
@@ -130,8 +148,8 @@ export default function Header({
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  onClick={(e) => handleNavClick(e, link.href)}
+                  className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted cursor-pointer"
                 >
                   {link.label}
                 </a>
