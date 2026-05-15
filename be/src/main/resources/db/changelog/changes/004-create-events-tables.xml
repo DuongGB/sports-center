@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
+
+    <changeSet id="004-create-events-table" author="devduong">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="events"/>
+            </not>
+        </preConditions>
+        <createTable tableName="events">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scope" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)" defaultValue="DRAFT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_datetime" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_datetime" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="discount_percent" type="DECIMAL"/>
+            <column name="discount_amount" type="DECIMAL"/>
+            <column name="block_reason" type="VARCHAR(500)"/>
+            <column name="created_by" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="events" baseColumnNames="created_by"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_events_created_by"/>
+
+        <createIndex tableName="events" indexName="idx_events_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="events" indexName="idx_events_start_datetime">
+            <column name="start_datetime"/>
+        </createIndex>
+        <createIndex tableName="events" indexName="idx_events_end_datetime">
+            <column name="end_datetime"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="004-create-event-targets-table" author="devduong">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="event_targets"/>
+            </not>
+        </preConditions>
+        <createTable tableName="event_targets">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sport_type_id" type="UUID"/>
+            <column name="court_id" type="UUID"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="event_targets" baseColumnNames="event_id"
+                                 referencedTableName="events" referencedColumnNames="id"
+                                 constraintName="fk_event_targets_event"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="event_targets" baseColumnNames="sport_type_id"
+                                 referencedTableName="sport_types" referencedColumnNames="id"
+                                 constraintName="fk_event_targets_sport_type"/>
+        <addForeignKeyConstraint baseTableName="event_targets" baseColumnNames="court_id"
+                                 referencedTableName="courts" referencedColumnNames="id"
+                                 constraintName="fk_event_targets_court"/>
+
+        <createIndex tableName="event_targets" indexName="idx_event_targets_event_id">
+            <column name="event_id"/>
+        </createIndex>
+        <createIndex tableName="event_targets" indexName="idx_event_targets_sport_type_id">
+            <column name="sport_type_id"/>
+        </createIndex>
+        <createIndex tableName="event_targets" indexName="idx_event_targets_court_id">
+            <column name="court_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

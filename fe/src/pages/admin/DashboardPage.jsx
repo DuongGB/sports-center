@@ -11,6 +11,8 @@ import {
   Clock3,
   BarChart3,
   Loader2,
+  Download,
+  FileText,
 } from "lucide-react";
 import {
   useRevenueOverview,
@@ -110,6 +112,8 @@ function ChartSkeleton({ className = "" }) {
 export default function DashboardPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [exportType, setExportType] = useState("year");
+  const [exportValue, setExportValue] = useState(new Date().getMonth()); // Default to current month index if month type selected
 
   const { data: overview, isLoading: loadingOverview } = useRevenueOverview();
   const { data: monthlyData, isLoading: loadingMonthly } = useMonthlyRevenue(selectedYear);
@@ -118,6 +122,82 @@ export default function DashboardPage() {
   const { data: sportTypeData, isLoading: loadingSportType } = useRevenueBySportType();
   const { data: topCourts, isLoading: loadingTopCourts } = useTopCourts(5);
   const { data: recentBookings, isLoading: loadingRecent } = useRecentBookings();
+
+  // ===== Export Logic =====
+  const handleExportReport = () => {
+    if (!monthlyData) return;
+
+    let reportTitle = "";
+    let dataRows = [];
+    let totalRevenue = 0;
+
+    const allMonths = monthlyData || [];
+
+    if (exportType === "year") {
+      reportTitle = `NĂM ${selectedYear}`;
+      dataRows = allMonths.map((m, idx) => {
+        const rev = m.revenue || 0;
+        totalRevenue += rev;
+        return [idx + 1, m.monthLabel, `${rev}`];
+      });
+    } else if (exportType === "month") {
+      const mIdx = Number(exportValue);
+      const mData = allMonths[mIdx];
+      reportTitle = `${mData.monthLabel.toUpperCase()} - NĂM ${selectedYear}`;
+      totalRevenue = mData.revenue || 0;
+      dataRows = [[1, mData.monthLabel, `${totalRevenue}`]];
+    } else if (exportType === "quarter") {
+      const qIdx = Number(exportValue);
+      const qMonths = [qIdx * 3, qIdx * 3 + 1, qIdx * 3 + 2];
+      reportTitle = `QUÝ ${qIdx + 1} - NĂM ${selectedYear}`;
+
+      qMonths.forEach((mIdx, i) => {
+        const mData = allMonths[mIdx];
+        const rev = mData ? mData.revenue || 0 : 0;
+        totalRevenue += rev;
+        dataRows.push([i + 1, mData ? mData.monthLabel : `Tháng ${mIdx + 1}`, `${rev}`]);
+      });
+    }
+
+    const csvContent = [
+      ["TRUNG TÂM THỂ THAO SPORTS CENTER"],
+      ["Địa chỉ: Số 12 Nguyễn Văn Bảo, Phường 4, Gò Vấp, TP.HCM"],
+      ["Điện thoại: 0123 456 789"],
+      [],
+      ["BÁO CÁO DOANH THU " + reportTitle],
+      ["Ngày lập báo cáo: " + new Date().toLocaleDateString("vi-VN")],
+      [],
+      ["STT", "Thời gian", "Doanh thu (VNĐ)"],
+      ...dataRows,
+      [],
+      ["TỔNG CỘNG:", "", `${totalRevenue}`],
+      [],
+      [],
+      ["", "", "Người lập biểu"],
+      ["", "", "(Ký và ghi rõ họ tên)"],
+    ]
+      .map((e) => e.join(","))
+      .join("\n");
+
+    const blob = new Blob(["\ufeff" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+
+    const fileBaseName =
+      exportType === "year"
+        ? `Bao_cao_nam_${selectedYear}`
+        : exportType === "month"
+          ? `Bao_cao_thang_${Number(exportValue) + 1}_${selectedYear}`
+          : `Bao_cao_quy_${Number(exportValue) + 1}_${selectedYear}`;
+
+    link.setAttribute("download", `${fileBaseName}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // ===== Stats Cards =====
   const statCards = overview
@@ -170,17 +250,73 @@ export default function DashboardPage() {
             Tổng quan doanh thu và thống kê hoạt động
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Năm:</span>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="rounded-lg border border-input bg-input px-3 py-1.5 text-sm text-foreground"
-          >
-            {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-4 bg-muted/30 p-2 rounded-xl border border-border/50">
+          {/* Year Selector */}
+          <div className="flex items-center gap-2 px-3 py-1.5 border-r border-border/50 last:border-0">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Năm:</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer"
+            >
+              {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Export Type Selector */}
+          <div className="flex items-center gap-2 px-3 py-1.5 border-r border-border/50 last:border-0">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Báo cáo:</span>
+            <select
+              value={exportType}
+              onChange={(e) => setExportType(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="year">Cả năm</option>
+              <option value="quarter">Theo quý</option>
+              <option value="month">Theo tháng</option>
+            </select>
+          </div>
+
+          {/* Value Selector (Conditional) */}
+          {exportType !== "year" && (
+            <div className="flex items-center gap-2 px-3 py-1.5 border-r border-border/50 last:border-0">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                {exportType === "month" ? "Tháng:" : "Quý:"}
+              </span>
+              <select
+                value={exportValue}
+                onChange={(e) => setExportValue(Number(e.target.value))}
+                className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer min-w-[80px]"
+              >
+                {exportType === "month"
+                  ? Array.from({ length: 12 }).map((_, i) => (
+                      <option key={i} value={i}>
+                        Tháng {i + 1}
+                      </option>
+                    ))
+                  : [1, 2, 3, 4].map((q) => (
+                      <option key={q} value={q - 1}>
+                        Quý {q}
+                      </option>
+                    ))}
+              </select>
+            </div>
+          )}
+
+          {/* Export Button */}
+          <div className="pl-2">
+            <button
+              onClick={() => handleExportReport()}
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 active:scale-95 transition-all shadow-md shadow-emerald-600/20"
+            >
+              <Download className="h-4 w-4" />
+              <span>Xuất Excel</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -264,19 +400,19 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  opacity={0.4}
+                  stroke="var(--color-border)"
+                  opacity={0.5}
                 />
                 <XAxis
                   dataKey="monthLabel"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                   tickFormatter={(v) => formatCurrency(v)}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -308,20 +444,20 @@ export default function DashboardPage() {
               <BarChart data={weeklyData || []} barCategoryGap="20%">
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  opacity={0.4}
+                  stroke="var(--color-border)"
+                  opacity={0.5}
                   vertical={false}
                 />
                 <XAxis
                   dataKey="dayLabel"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                   tickFormatter={(v) => formatCurrency(v)}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -419,15 +555,15 @@ export default function DashboardPage() {
               <BarChart data={sportTypeData || []} layout="vertical" barCategoryGap="18%">
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  opacity={0.4}
+                  stroke="var(--color-border)"
+                  opacity={0.5}
                   horizontal={false}
                 />
                 <XAxis
                   type="number"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                   tickFormatter={(v) => formatCurrency(v)}
                 />
                 <YAxis
@@ -435,7 +571,7 @@ export default function DashboardPage() {
                   dataKey="sportTypeName"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                   width={100}
                 />
                 <Tooltip content={<CustomTooltip />} />

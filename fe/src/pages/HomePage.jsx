@@ -30,6 +30,7 @@ import {
   MapPin,
   Search,
   ShieldCheck,
+  Sparkles,
   Star,
   Trophy,
   Users,
@@ -198,55 +199,59 @@ export default function HomePage({
       <main id="home">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_24%),linear-gradient(to_bottom,_transparent,_transparent_60%,rgba(2,6,23,0.02))]" />
+          <div className="absolute inset-0 -z-10 hero-3d-bg grid-pattern" />
+          {/* Floating 3D sport emojis */}
+          <div className="absolute top-20 left-[8%] text-5xl floating opacity-60 pointer-events-none select-none" aria-hidden="true">⚽</div>
+          <div className="absolute top-40 right-[12%] text-4xl floating-reverse opacity-50 pointer-events-none select-none" aria-hidden="true">🏸</div>
+          <div className="absolute bottom-20 left-[15%] text-4xl floating-slow opacity-40 pointer-events-none select-none" aria-hidden="true">🎾</div>
+          <div className="absolute bottom-32 right-[20%] text-5xl floating opacity-30 pointer-events-none select-none" aria-hidden="true">🏀</div>
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-24">
             <div className="flex flex-col justify-center">
-              <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                <Zap className="h-4 w-4" />
+              <div className="slide-up mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary shimmer">
+                <Sparkles className="h-4 w-4" />
                 Đặt sân nhanh trong vài giây
               </div>
 
-              <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                Nền tảng đặt sân thể thao đa môn cho người chơi hiện đại.
+              <h1 className="slide-up-d1 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+                Nền tảng đặt sân thể thao đa môn cho <span className="gradient-text">người chơi hiện đại.</span>
               </h1>
 
-              <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+              <p className="slide-up-d2 mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                 Tìm sân nhanh, xem lịch trống theo thời gian thực, đặt chỗ đơn
                 giản và quản lý mọi thứ trên một trải nghiệm thương mại mượt mà,
                 tối ưu cho mobile, tablet và desktop.
               </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" className="gap-2">
+              <div className="slide-up-d3 mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="gap-2 btn-neon">
                   <a href="#booking">
                     Đặt sân ngay
                     <ArrowRight className="h-4 w-4" />
                   </a>
                 </Button>
-                <Button asChild variant="outline" size="lg">
+                <Button asChild variant="outline" size="lg" className="glass-card border-primary/20">
                   <a href="#sports">Khám phá môn thể thao</a>
                 </Button>
               </div>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {stats.map((item) => (
-                  <Card
+              <div className="slide-up-d4 mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {stats.map((item, i) => (
+                  <div
                     key={item.label}
-                    className="border-border/60 bg-card/80"
+                    className="glass-card rounded-2xl p-5 gradient-border"
+                    style={{ animationDelay: `${i * 0.1}s` }}
                   >
-                    <CardContent className="p-5">
-                      <div className="text-2xl font-semibold">{item.value}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {item.label}
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <div className="text-2xl font-bold gradient-text">{item.value}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {item.label}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
 
             <div className="lg:pl-6">
-              <Card className="overflow-hidden border-border/60 bg-card/90 shadow-2xl shadow-black/5">
+              <Card className="perspective-stage overflow-hidden glass-card depth-shadow rounded-2xl">
                 <CardHeader className="space-y-2 border-b border-border/60 bg-muted/30">
                   <CardTitle className="text-xl">
                     Tìm sân phù hợp trong vài bước
@@ -440,10 +445,13 @@ export default function HomePage({
           </section>
         )}
 
+        {/* Section Glow Divider */}
+        <div className="section-glow-divider mx-auto max-w-4xl" />
+
         {/* Sports Categories */}
         <section
           id="sports"
-          className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+          className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
         >
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
@@ -467,13 +475,13 @@ export default function HomePage({
               </div>
             ) : (
               displaySports.map((sport) => (
-                <Card
+                <div
                   key={sport.name}
-                  className="group border-border/60 bg-card/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5"
+                  className="card-3d group"
                 >
-                  <CardContent className="p-6">
+                  <div className="card-3d-inner glass-card rounded-2xl p-6 gradient-border">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-3xl">
+                      <div className="sport-icon-3d h-14 w-14 text-3xl">
                         {sport.icon}
                       </div>
                       <div className="flex-1">
@@ -483,12 +491,15 @@ export default function HomePage({
                         </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))
             )}
           </div>
         </section>
+
+        {/* Section Glow Divider */}
+        <div className="section-glow-divider mx-auto max-w-4xl" />
 
         {/* Featured Courts */}
         <section
@@ -540,9 +551,9 @@ export default function HomePage({
               </div>
             ) : (
               displayCourts.map((court) => (
-              <Card
+              <div
                 key={court.id}
-                className="group overflow-hidden border-border/60 bg-card/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/5"
+                className="card-3d group overflow-hidden rounded-2xl glass-card depth-shadow"
               >
                 <div 
                   className="relative aspect-[4/3] overflow-hidden cursor-pointer"
@@ -551,7 +562,7 @@ export default function HomePage({
                   <img
                     src={court.image}
                     alt={court.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover parallax-zoom"
                   />
                   <div className="absolute left-4 top-4 flex items-center gap-2">
                     <span
@@ -604,7 +615,7 @@ export default function HomePage({
                   <div className="flex items-center justify-between border-t border-border/60 pt-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Giá thuê</p>
-                      <p className="text-xl font-semibold text-primary">
+                      <p className="text-xl font-semibold gradient-text-emerald">
                         {court.price}
                       </p>
                     </div>
@@ -619,7 +630,7 @@ export default function HomePage({
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </div>
             )))}
           </div>
 
@@ -646,10 +657,13 @@ export default function HomePage({
           )}
         </section>
 
+        {/* Section Glow Divider */}
+        <div className="section-glow-divider mx-auto max-w-4xl" />
+
         {/* Pricing Section */}
         <section
           id="pricing"
-          className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+          className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
         >
           <div className="mb-8">
             <p className="text-sm font-medium text-primary">Bảng giá</p>
@@ -659,28 +673,30 @@ export default function HomePage({
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            {pricePlans.map((plan) => (
-              <Card key={plan.title} className="border-border/60 bg-card/80">
-                <CardContent className="space-y-3 p-6">
+            {pricePlans.map((plan, i) => (
+              <div key={plan.title} className={`card-3d ${i === 1 ? 'scale-105 z-10' : ''}`}>
+                <div className={`card-3d-inner glass-card rounded-2xl p-6 space-y-3 gradient-border ${i === 1 ? 'ring-2 ring-primary/20' : ''}`}>
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <div className="sport-icon-3d h-10 w-10">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                    </div>
                     <h3 className="text-lg font-semibold">{plan.title}</h3>
                   </div>
-                  <div className="text-3xl font-semibold text-primary">
+                  <div className="text-3xl font-bold gradient-text">
                     {plan.price}
                   </div>
                   <p className="text-sm leading-6 text-muted-foreground">
                     {plan.note}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </section>
 
         {/* Why Choose Us */}
         <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid gap-4 rounded-[2rem] border border-border/60 bg-gradient-to-r from-primary/10 via-background to-emerald-500/10 p-6 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:p-10">
+          <div className="grid gap-4 rounded-[2rem] glass-card p-6 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:p-10 gradient-border">
             <div>
               <p className="text-sm font-medium text-primary">
                 Tại sao chọn chúng tôi
@@ -695,8 +711,8 @@ export default function HomePage({
               </p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-4">
-                  <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                <div className="flex items-start gap-3 glass-card rounded-2xl p-4">
+                  <div className="sport-icon-3d rounded-xl p-2">
                     <Users className="h-4 w-4" />
                   </div>
                   <div>
@@ -707,8 +723,8 @@ export default function HomePage({
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-4">
-                  <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                <div className="flex items-start gap-3 glass-card rounded-2xl p-4">
+                  <div className="sport-icon-3d rounded-xl p-2">
                     <Trophy className="h-4 w-4" />
                   </div>
                   <div>
@@ -722,12 +738,12 @@ export default function HomePage({
             </div>
 
             <div className="grid gap-4">
-              <div className="rounded-2xl border border-border/60 bg-card/80 p-5">
+              <div className="glass-card rounded-2xl p-5 gradient-border">
                 <p className="text-sm text-muted-foreground">
                   Tính năng nổi bật
                 </p>
                 <div className="mt-3 flex items-center gap-3">
-                  <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                  <div className="sport-icon-3d rounded-xl p-2">
                     <Clock3 className="h-4 w-4" />
                   </div>
                   <div>
@@ -740,9 +756,9 @@ export default function HomePage({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border/60 bg-card/80 p-5">
+              <div className="glass-card rounded-2xl p-5 gradient-border">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                  <div className="sport-icon-3d rounded-xl p-2">
                     <Zap className="h-4 w-4" />
                   </div>
                   <div>
@@ -762,7 +778,9 @@ export default function HomePage({
           id="contact"
           className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"
         >
-          <div className="rounded-[2rem] border border-border/60 bg-card/90 p-6 sm:p-8 lg:p-10">
+          <div className="rounded-[2rem] glass-card p-6 sm:p-8 lg:p-10 gradient-border relative overflow-hidden">
+            {/* Floating decorative elements */}
+            <div className="absolute top-6 right-8 text-4xl floating-slow opacity-20 pointer-events-none select-none" aria-hidden="true">🏆</div>
             <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
                 <p className="text-sm font-medium text-primary">Liên hệ</p>
@@ -775,33 +793,33 @@ export default function HomePage({
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <Button asChild size="lg">
+                  <Button asChild size="lg" className="btn-neon">
                     <a href="#booking">Xem sân trống</a>
                   </Button>
-                  <Button asChild variant="outline" size="lg">
+                  <Button asChild variant="outline" size="lg" className="glass-card">
                     <a href="tel:0356309561">Gọi tư vấn</a>
                   </Button>
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+                <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm text-muted-foreground">Hotline</p>
                   <p className="mt-2 text-lg font-semibold">0356 309 561</p>
                 </div>
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+                <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="mt-2 text-lg font-semibold">
                     contact@sportscenter.vn
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+                <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm text-muted-foreground">Địa chỉ</p>
                   <p className="mt-2 text-lg font-semibold">
                     123 Đường ABC, Quận 1, TP.HCM
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+                <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm text-muted-foreground">Hỗ trợ</p>
                   <p className="mt-2 text-lg font-semibold">24/7 Online</p>
                 </div>
@@ -812,12 +830,13 @@ export default function HomePage({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/60 bg-muted/20">
+      <footer className="relative overflow-hidden border-t border-border/60 hero-3d-bg">
+        <div className="absolute inset-0 grid-pattern pointer-events-none" />
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-4">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl btn-neon">
                   <Dumbbell className="h-5 w-5" />
                 </div>
                 <div>
@@ -864,7 +883,7 @@ export default function HomePage({
             </div>
           </div>
 
-          <div className="mt-8 border-t border-border/60 pt-6 text-sm text-muted-foreground">
+          <div className="mt-8 border-t section-glow-divider pt-6 text-sm text-muted-foreground">
             © 2026 Sports Center. All rights reserved.
           </div>
         </div>

@@ -28,7 +28,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 @PreAuthorize("hasRole('ADMIN')")
-public class RevenueController {
+public class  RevenueController {
     RevenueService revenueService;
 
     @GetMapping("/overview")
