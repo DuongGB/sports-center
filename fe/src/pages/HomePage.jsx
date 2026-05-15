@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import CourtReviewsModal from "@/components/modals/CourtReviewsModal";
 import { bookingService } from "@/services/bookingService";
+import { eventService } from "@/services/eventService";
 
 const navLinks = [
   { label: "Trang chủ", href: "#home" },
@@ -104,12 +105,19 @@ export default function HomePage({
   const [recentBookings, setRecentBookings] = useState([]);
   const [selectedCourtForReviews, setSelectedCourtForReviews] = useState(null);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+  const [activeEvents, setActiveEvents] = useState([]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchRecentBookings();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    eventService.getActiveEvents().then(res => {
+      setActiveEvents(res.data || []);
+    }).catch(console.error);
+  }, []);
 
   const fetchRecentBookings = async () => {
     try {
@@ -211,6 +219,45 @@ export default function HomePage({
                 <Sparkles className="h-4 w-4" />
                 Đặt sân nhanh trong vài giây
               </div>
+
+              {/* Event Banners */}
+              {activeEvents.length > 0 && (
+                <div className="slide-up-d1 mb-6 grid gap-3 max-w-2xl">
+                  {activeEvents.map((ev, i) => (
+                    <div key={ev.id} className="relative overflow-hidden glass-card rounded-xl border border-primary/30 p-3 depth-shadow group" style={{ animationDelay: `${i * 0.1}s` }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center text-primary floating">
+                            <Zap className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">{ev.name}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{ev.description || "Ưu đãi đặc biệt đang diễn ra"}</p>
+                          </div>
+                        </div>
+                        <div className="text-left sm:text-right shrink-0 ml-13 sm:ml-0">
+                          {ev.type === "DISCOUNT_PERCENT" && (
+                            <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold px-3 py-1 shadow-lg">
+                              Giảm {ev.discountPercent}%
+                            </Badge>
+                          )}
+                          {ev.type === "DISCOUNT_FIXED" && (
+                            <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold px-3 py-1 shadow-lg">
+                              Giảm {Number(ev.discountAmount).toLocaleString("vi-VN")}đ
+                            </Badge>
+                          )}
+                          {ev.type === "BLOCK_BOOKING" && (
+                            <Badge variant="destructive" className="text-sm font-bold px-3 py-1">
+                              Thông báo
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <h1 className="slide-up-d1 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
                 Nền tảng đặt sân thể thao đa môn cho <span className="gradient-text">người chơi hiện đại.</span>

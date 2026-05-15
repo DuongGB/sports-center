@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { chatService } from "@/services/chatService";
 
-const DEFAULT_STALE_TIME = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_STALE_TIME = 10 * 60 * 1000; // 10 minutes, WebSocket will handle real-time sync
 
 export function useConversations(page = 0, size = 6) {
   return useQuery({
@@ -27,6 +27,6 @@ export function useMessages(conversationId) {
     queryKey: ["chat", "messages", conversationId],
     queryFn: () => chatService.getMessages(conversationId),
     enabled: !!conversationId,
-    staleTime: 2 * 60 * 1000, // 2 minutes for messages
+    staleTime: 10 * 60 * 1000, // 10 minutes, WebSocket provides real-time updates
   });
 }

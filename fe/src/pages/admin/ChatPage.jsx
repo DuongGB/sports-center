@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { chatService } from "../../services/chatService";
-import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client/dist/sockjs";
-import { API_BASE_URL, WS_URL } from "../../config/api";
+import { API_BASE_URL } from "../../config/api";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Send, Search, User, Phone, MessageCircle, ArrowLeft, Trash2 } from "lucide-react";
@@ -29,13 +27,23 @@ export default function ChatPage() {
   const totalPages = data?.totalPages || 0;
   
   const messagesEndRef = useRef(null);
-  const stompClient = useRef(null);
-
   const selectedConvIdRef = useRef(selectedConvId);
   
+  // Đồng bộ ID cuộc trò chuyện hiện tại lên queryCache để AdminLayout (chứa WebSocket) biết được
+  useEffect(() => {
+    queryClient.setQueryData(["activeChatId"], selectedConvId);
+    return () => queryClient.setQueryData(["activeChatId"], null);
+  }, [selectedConvId, queryClient]);
+
   useEffect(() => {
     selectedConvIdRef.current = selectedConvId;
-    if (selectedConvId) {
+    if (!selectedConvId) return;
+
+    const cachedPage = queryClient.getQueryData(["chat", "conversations", page]);
+    const conv = cachedPage?.content?.find(c => c.id === selectedConvId);
+
+    // Chỉ gọi API markAsRead nếu thực sự có tin nhắn chưa đọc
+    if (conv && conv.unreadCount > 0) {
       chatService.markAsRead(selectedConvId, "ADMIN").catch(console.error);
       // Đánh dấu đã đọc trong cache local
       queryClient.setQueryData(["chat", "conversations", page], (oldData) => {
@@ -46,84 +54,15 @@ export default function ChatPage() {
         };
       });
     }
-  }, [selectedConvId, queryClient, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConvId]);
 
   // Cuộn xuống dòng tin nhắn mới nhất
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Kết nối WebSocket (Admin subscribe tất cả hoặc có kênh riêng báo có tin nhắn mới)
-  useEffect(() => {
-    const socket = new SockJS(`${WS_URL}`);
-    const client = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 5000,
-      onConnect: () => {
-        client.subscribe("/topic/chat/admin", (msg) => {
-          const newMsg = JSON.parse(msg.body);
-          const currentSelectedId = selectedConvIdRef.current;
-          
-          // Cập nhật messages cache nếu đang mở đúng conversation
-          if (currentSelectedId === newMsg.conversationId) {
-            queryClient.setQueryData(["chat", "messages", newMsg.conversationId], (old) => {
-              const prev = old || [];
-              if (prev.find((m) => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
-            chatService.markAsRead(newMsg.conversationId, "ADMIN");
-          }
-
-          // Cập nhật conversations cache
-          queryClient.setQueryData(["chat", "conversations", page], (oldData) => {
-            if (!oldData) return oldData;
-            
-            const prev = oldData.content || [];
-            const index = prev.findIndex((c) => c.id === newMsg.conversationId);
-            let updatedList = [...prev];
-
-            const isUnread = currentSelectedId !== newMsg.conversationId && newMsg.senderType !== "ADMIN" && newMsg.senderType !== "BOT";
-
-            if (index !== -1) {
-              const prevUnreadCount = updatedList[index].unreadCount || 0;
-              const updatedConv = { 
-                ...updatedList[index], 
-                lastMessage: newMsg.content, 
-                lastMessageAt: newMsg.createdAt,
-                unreadCount: isUnread ? prevUnreadCount + 1 : prevUnreadCount
-              };
-              updatedList.splice(index, 1);
-              updatedList.unshift(updatedConv);
-            } else {
-              if (page === 0) {
-                const tempConv = {
-                  id: newMsg.conversationId,
-                  guestName: newMsg.senderType === "GUEST" ? newMsg.senderName : null,
-                  userFullName: newMsg.senderType === "USER" ? newMsg.senderName : null,
-                  guestPhone: newMsg.senderType === "GUEST" ? "Khách mới" : null,
-                  lastMessage: newMsg.content,
-                  lastMessageAt: newMsg.createdAt,
-                  unreadCount: isUnread ? 1 : 0
-                };
-                updatedList.unshift(tempConv);
-              }
-              setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
-              }, 1000);
-            }
-            return { ...oldData, content: updatedList };
-          });
-        });
-      },
-    });
-
-    client.activate();
-    stompClient.current = client;
-
-    return () => {
-      client.deactivate();
-    };
-  }, [queryClient]);
+  // Kết nối WebSocket đã được chuyển sang AdminLayout để duy trì liên tục
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

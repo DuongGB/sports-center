@@ -1,26 +1,132 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, LogOut, Dumbbell, Map, CalendarDays, Menu, X, MessageCircle, Star } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  LogOut,
+  Dumbbell,
+  Map,
+  CalendarDays,
+  Menu,
+  X,
+  MessageCircle,
+  Star,
+  CalendarRange,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useQueryClient } from "@tanstack/react-query";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client/dist/sockjs";
+import { WS_URL } from "@/config/api";
+import { chatService } from "@/services/chatService";
 
 const AdminLayout = () => {
   const { logout, user } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user || !user.roles?.includes("ADMIN")) return;
+
+    const socket = new SockJS(`${WS_URL}`);
+    const client = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        client.subscribe("/topic/chat/admin", (msg) => {
+          const newMsg = JSON.parse(msg.body);
+          // Get the currently active chat from query cache (set by ChatPage)
+          const currentSelectedId = queryClient.getQueryData(["activeChatId"]);
+
+          // Update messages cache if viewing the active conversation
+          if (currentSelectedId === newMsg.conversationId) {
+            queryClient.setQueryData(
+              ["chat", "messages", newMsg.conversationId],
+              (old) => {
+                const prev = old || [];
+                if (prev.find((m) => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              },
+            );
+            chatService
+              .markAsRead(newMsg.conversationId, "ADMIN")
+              .catch(console.error);
+          }
+
+          // Update conversations list (page 0)
+          queryClient.setQueryData(["chat", "conversations", 0], (oldData) => {
+            if (!oldData) return oldData;
+
+            const prev = oldData.content || [];
+            const index = prev.findIndex((c) => c.id === newMsg.conversationId);
+            let updatedList = [...prev];
+
+            const isUnread =
+              currentSelectedId !== newMsg.conversationId &&
+              newMsg.senderType !== "ADMIN" &&
+              newMsg.senderType !== "BOT";
+
+            if (index !== -1) {
+              const prevUnreadCount = updatedList[index].unreadCount || 0;
+              const updatedConv = {
+                ...updatedList[index],
+                lastMessage: newMsg.content,
+                lastMessageAt: newMsg.createdAt,
+                unreadCount: isUnread ? prevUnreadCount + 1 : prevUnreadCount,
+              };
+              updatedList.splice(index, 1);
+              updatedList.unshift(updatedConv);
+            } else {
+              const tempConv = {
+                id: newMsg.conversationId,
+                guestName:
+                  newMsg.senderType === "GUEST" ? newMsg.senderName : null,
+                userFullName:
+                  newMsg.senderType === "USER" ? newMsg.senderName : null,
+                guestPhone: newMsg.senderType === "GUEST" ? "Khách mới" : null,
+                lastMessage: newMsg.content,
+                lastMessageAt: newMsg.createdAt,
+                unreadCount: isUnread ? 1 : 0,
+              };
+              updatedList.unshift(tempConv);
+              setTimeout(() => {
+                queryClient.invalidateQueries({
+                  queryKey: ["chat", "conversations", 0],
+                });
+              }, 1000);
+            }
+            return { ...oldData, content: updatedList };
+          });
+        });
+      },
+    });
+
+    client.activate();
+
+    return () => {
+      client.deactivate();
+    };
+  }, [queryClient, user]);
 
   const handleLogout = () => {
     logout();
   };
 
   const navItems = [
-    { name: "Bảng Điều Khiển", path: "/admin/dashboard", icon: LayoutDashboard },
+    {
+      name: "Bảng Điều Khiển",
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+    },
     { name: "Người Dùng", path: "/admin/users", icon: Users },
     { name: "Loại Sân", path: "/admin/sport-types", icon: Dumbbell },
     { name: "Sân Bãi", path: "/admin/courts", icon: Map },
     { name: "Đặt Sân", path: "/admin/bookings", icon: CalendarDays },
     { name: "Đánh Giá", path: "/admin/reviews", icon: Star },
     { name: "Tin Nhắn", path: "/admin/chat", icon: MessageCircle },
+    { name: "Sự Kiện", path: "/admin/events", icon: CalendarRange },
   ];
 
   return (
@@ -28,7 +134,10 @@ const AdminLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <Link to="/admin" className="text-xl font-bold bg-gradient-to-r from-teal-500 to-blue-500 bg-clip-text text-transparent">
+          <Link
+            to="/admin"
+            className="text-xl font-bold bg-gradient-to-r from-teal-500 to-blue-500 bg-clip-text text-transparent"
+          >
             Bảng Quản Trị
           </Link>
         </div>
@@ -36,7 +145,7 @@ const AdminLayout = () => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
-            
+
             return (
               <Link
                 key={item.path}
@@ -66,19 +175,28 @@ const AdminLayout = () => {
 
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/50 md:hidden backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out md:hidden flex flex-col ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out md:hidden flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         <div className="h-16 flex items-center justify-between px-6 border-b border-border">
-          <Link to="/admin" className="text-xl font-bold bg-gradient-to-r from-teal-500 to-blue-500 bg-clip-text text-transparent" onClick={() => setMobileMenuOpen(false)}>
+          <Link
+            to="/admin"
+            className="text-xl font-bold bg-gradient-to-r from-teal-500 to-blue-500 bg-clip-text text-transparent"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             Bảng Quản Trị
           </Link>
-          <button onClick={() => setMobileMenuOpen(false)} className="text-muted-foreground">
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-muted-foreground"
+          >
             <X size={24} />
           </button>
         </div>
@@ -86,7 +204,7 @@ const AdminLayout = () => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
-            
+
             return (
               <Link
                 key={item.path}
@@ -120,7 +238,10 @@ const AdminLayout = () => {
         {/* Header */}
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center md:hidden gap-3">
-            <button onClick={() => setMobileMenuOpen(true)} className="text-foreground">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="text-foreground"
+            >
               <Menu size={24} />
             </button>
             <span className="text-lg font-bold">Bảng Quản Trị</span>

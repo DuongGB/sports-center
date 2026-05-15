@@ -37,6 +37,7 @@ import ForgotPasswordModal from "./components/modals/ForgotPasswordModal";
 import ChatWidget from "./components/chat/ChatWidget";
 import AIChatWidget from "./components/chat/AIChatWidget";
 import CourtDetailPage from "./pages/CourtDetailPage";
+import EventsPage from "./pages/admin/EventsPage";
 import { useTheme } from "./components/theme-provider";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
@@ -142,6 +143,7 @@ function AppContent() {
             <Route path="courts" element={<CourtsPage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="reviews" element={<ReviewManagementPage />} />
+            <Route path="events" element={<EventsPage />} />
             <Route path="chat" element={<ChatPage />} />
           </Route>
         </Route>

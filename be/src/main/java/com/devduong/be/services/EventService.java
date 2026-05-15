@@ -141,9 +141,9 @@ public class EventService {
 
     /**
      * Scheduled job: tự động bật/tắt event theo thời gian.
-     * Chạy mỗi phút.
+     * Chạy mỗi 10 phút.
      */
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 600000)
     @Transactional
     public void autoUpdateEventStatuses() {
         LocalDateTime now = LocalDateTime.now();
