@@ -138,6 +138,27 @@ export default function BookingPage() {
 
     let totalOriginal = 0;
     let totalDiscounted = 0;
+    let isBlocked = false;
+
+    // Check if entire period is blocked by any event
+    activeEvents.forEach(event => {
+      if (event.type === "BLOCK_BOOKING") {
+        const applies = event.scope === "ALL_COURTS" || event.targets?.some(target => 
+          target.courtId === court.id || target.sportTypeId === court.sportTypeId
+        );
+        if (applies) {
+          // Check date-time overlap
+          const eventStart = new Date(event.startDatetime).getTime();
+          const eventEnd = new Date(event.endDatetime).getTime();
+          const bookingStart = new Date(`${formData.bookingDate}T${formData.startTime}`).getTime();
+          const bookingEnd = new Date(`${formData.bookingDate}T${formData.endTime}`).getTime();
+
+          if (bookingStart < eventEnd && bookingEnd > eventStart) {
+            isBlocked = true;
+          }
+        }
+      }
+    });
 
     // Iterate through every 30-minute interval
     for (let current = start; current < end; current += 0.5) {
@@ -154,7 +175,9 @@ export default function BookingPage() {
         // Apply best discount
         let bestDiscountedPrice = originalPriceSlot;
         activeEvents.forEach(event => {
-          const applies = event.targets?.some(target => 
+          if (event.type === "BLOCK_BOOKING") return;
+
+          const applies = event.scope === "ALL_COURTS" || event.targets?.some(target => 
             target.courtId === court.id || target.sportTypeId === court.sportTypeId
           );
 
@@ -163,9 +186,7 @@ export default function BookingPage() {
             if (event.type === "DISCOUNT_PERCENT") {
               discounted = originalPriceSlot * (1 - event.discountPercent / 100);
             } else if (event.type === "DISCOUNT_FIXED") {
-              // Note: Fixed discount per slot might be tricky if it's meant per booking, 
-              // but here we treat it as reduction of the base hourly price proportionally.
-              discounted = originalPriceSlot - (event.discountAmount / 2); // since we work in 0.5h slots
+              discounted = originalPriceSlot - (event.discountAmount / 2);
             }
             if (discounted < bestDiscountedPrice) bestDiscountedPrice = Math.max(0, discounted);
           }
@@ -176,7 +197,8 @@ export default function BookingPage() {
     return { 
       total: Math.round(totalDiscounted), 
       original: totalOriginal, 
-      discount: totalOriginal - totalDiscounted 
+      discount: totalOriginal - totalDiscounted,
+      isBlocked
     };
   };
 
@@ -335,7 +357,7 @@ export default function BookingPage() {
                           <tbody className="divide-y divide-border">
                             {court.prices.map((p, idx) => {
                                const discountInfo = activeEvents.find(ev => 
-                                 ev.targets?.some(t => t.courtId === court.id || t.sportTypeId === court.sportTypeId)
+                                 ev.scope === "ALL_COURTS" || ev.targets?.some(t => t.courtId === court.id || t.sportTypeId === court.sportTypeId)
                                );
                                const hasDiscount = discountInfo && (discountInfo.type === 'DISCOUNT_PERCENT' || discountInfo.type === 'DISCOUNT_FIXED');
                                let discountedPrice = p.price;
@@ -579,7 +601,15 @@ export default function BookingPage() {
                 </div>
 
                 {/* Price summary */}
-                {pricing.total > 0 && (
+                {pricing.isBlocked && (
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4 animate-in fade-in slide-in-from-top-2">
+                    <p className="text-sm font-bold text-destructive text-center">
+                      Sân đang có sự kiện/bảo trì trong khung giờ này. Vui lòng chọn khung giờ khác.
+                    </p>
+                  </div>
+                )}
+
+                {pricing.total > 0 && !pricing.isBlocked && (
                   <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 space-y-2 animate-in fade-in slide-in-from-top-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Thời gian:</span>
@@ -612,7 +642,7 @@ export default function BookingPage() {
 
                 <Button
                   type="submit"
-                  disabled={submitting || !court}
+                  disabled={submitting || !court || pricing.isBlocked}
                   className="w-full h-12 gap-2 text-base"
                 >
                   {submitting ? (

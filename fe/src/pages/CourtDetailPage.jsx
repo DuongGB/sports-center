@@ -53,7 +53,7 @@ export default function CourtDetailPage() {
     let hasDiscount = false;
 
     events.forEach(event => {
-      const applies = event.targets?.some(target => 
+      const applies = event.scope === "ALL_COURTS" || event.targets?.some(target => 
         target.courtId === court.id || target.sportTypeId === court.sportTypeId
       );
 

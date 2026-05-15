@@ -164,7 +164,7 @@ export default function HomePage({
 
     events.forEach(event => {
       // Check if this event applies to this court
-      const applies = event.targets?.some(target => 
+      const applies = event.scope === "ALL_COURTS" || event.targets?.some(target => 
         target.courtId === court.id || target.sportTypeId === court.sportTypeId
       );
 

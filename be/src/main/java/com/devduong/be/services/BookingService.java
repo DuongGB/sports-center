@@ -13,10 +13,7 @@ import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.dtos.response.PaymentExecutionResult;
 import com.devduong.be.entities.*;
-import com.devduong.be.enums.BookingStatus;
-import com.devduong.be.enums.EventStatus;
-import com.devduong.be.enums.EventType;
-import com.devduong.be.enums.PaymentMethod;
+import com.devduong.be.enums.*;
 
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.BookingMapper;
@@ -98,8 +95,25 @@ public class BookingService {
         if (isOverlapping) {
             throw new AppException(ErrorCode.COURT_ALREADY_BOOKED);
         }
-        // 5. Tính tổng tiền
-        double totalPrice = calculateTotalPrice(court.getId(), court.getSportType().getId(), request.startTime(), request.endTime());
+
+        // 6. Check sự kiện khóa sân (BLOCK_BOOKING)
+        LocalDateTime bookingStart = LocalDateTime.of(request.bookingDate(), request.startTime());
+        LocalDateTime bookingEnd = LocalDateTime.of(request.bookingDate(), request.endTime());
+        List<Event> overlappingEvents = eventRepository.findActiveEventsInRange(EventStatus.ACTIVE, bookingStart, bookingEnd);
+        
+        boolean isBlocked = overlappingEvents.stream()
+                .filter(e -> e.getType() == EventType.BLOCK_BOOKING)
+                .anyMatch(e -> (e.getScope() == EventScope.ALL_COURTS) || 
+                               e.getTargets().stream().anyMatch(t -> 
+                                    (t.getCourt() != null && t.getCourt().getId().equals(court.getId())) || 
+                                    (t.getSportType() != null && t.getSportType().getId().equals(court.getSportType().getId()))
+                               ));
+        if (isBlocked) {
+            throw new AppException(ErrorCode.COURT_ALREADY_BOOKED); // Hoặc tạo ErrorCode.COURT_BLOCKED
+        }
+
+        // 7. Tính tổng tiền
+        double totalPrice = calculateTotalPrice(court.getId(), court.getSportType().getId(), request.bookingDate(), request.startTime(), request.endTime());
 
         // 6. Tạo booking
         Booking booking = Booking.builder()
@@ -143,14 +157,16 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("Payment method not supported: " + method));
     }
 
-    private double calculateTotalPrice(UUID courtId, UUID sportTypeId, LocalTime start, LocalTime end) {
+    private double calculateTotalPrice(UUID courtId, UUID sportTypeId, LocalDate bookingDate, LocalTime start, LocalTime end) {
         List<CourtPrice> prices = courtPriceRepository.findBySportTypeId(sportTypeId);
         if (prices.isEmpty()) {
             throw new RuntimeException("Không tìm thấy bảng giá cho loại hình thể thao này");
         }
 
-        // Lấy tất cả sự kiện đang hoạt động
-        List<Event> activeEvents = eventRepository.findActiveEventsAtTime(EventStatus.ACTIVE, LocalDateTime.now());
+        // Lấy tất cả sự kiện đang hoạt động trong khoảng thời gian đặt sân
+        LocalDateTime bookingStart = LocalDateTime.of(bookingDate, start);
+        LocalDateTime bookingEnd = LocalDateTime.of(bookingDate, end);
+        List<Event> activeEvents = eventRepository.findActiveEventsInRange(EventStatus.ACTIVE, bookingStart, bookingEnd);
 
         double total = 0;
         LocalTime currentStart = start;
@@ -175,7 +191,8 @@ public class BookingService {
             // Tìm sự kiện giảm giá tốt nhất cho sân/loại hình này
             double bestDiscountedPrice = originalPrice;
             for (Event event : activeEvents) {
-                boolean matches = event.getTargets().stream().anyMatch(t -> 
+                boolean matches = (event.getScope() == EventScope.ALL_COURTS) ||
+                                  event.getTargets().stream().anyMatch(t -> 
                     (t.getCourt() != null && t.getCourt().getId().equals(courtId)) || 
                     (t.getSportType() != null && t.getSportType().getId().equals(sportTypeId))
                 );
