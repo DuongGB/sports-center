@@ -282,12 +282,7 @@ export default function CourtsPage() {
                         {item.openTime?.substring(0, 5) || "??:??"} - {item.closeTime?.substring(0, 5) || "??:??"}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 text-xs rounded-full font-bold inline-flex items-center gap-1.5 ${
-                          item.status === "ACTIVE" 
-                            ? "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50" 
-                            : "bg-orange-100 text-orange-800 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800/50"
-                        }`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${item.status === "ACTIVE" ? "bg-emerald-600" : "bg-orange-600"}`} />
+                        <span className={item.status === "ACTIVE" ? "status-badge status-active" : "status-badge status-pending"}>
                           {item.status}
                         </span>
                       </td>

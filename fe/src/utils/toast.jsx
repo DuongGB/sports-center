@@ -50,7 +50,7 @@ export const showToast = {
         closeOnClick: false,
         draggable: false,
         closeButton: false,
-        className: "border border-border shadow-2xl bg-card",
+        className: "liquid-glass-toast",
         bodyClassName: "p-0"
       }
     );

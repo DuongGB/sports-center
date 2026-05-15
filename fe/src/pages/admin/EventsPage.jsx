@@ -38,12 +38,10 @@ const EVENT_STATUS_LABELS = {
   CANCELLED: "Đã hủy",
 };
 const STATUS_COLORS = {
-  DRAFT:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  ACTIVE:
-    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  EXPIRED: "bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400",
-  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  DRAFT: "status-badge status-pending",
+  ACTIVE: "status-badge status-active",
+  EXPIRED: "status-badge status-expired",
+  CANCELLED: "status-badge status-cancelled",
 };
 
 const INITIAL_FORM = {
@@ -65,6 +63,7 @@ export default function EventsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("add");
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [originalStatus, setOriginalStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
@@ -86,6 +85,7 @@ export default function EventsPage() {
   const openAddModal = () => {
     setModalMode("add");
     setFormData(INITIAL_FORM);
+    setOriginalStatus(null);
     setIsModalOpen(true);
   };
 
@@ -108,6 +108,7 @@ export default function EventsPage() {
         courtId: t.courtId || "",
       })),
     });
+    setOriginalStatus(item.status);
     setIsModalOpen(true);
   };
 
@@ -120,44 +121,84 @@ export default function EventsPage() {
     e.preventDefault();
     if (!formData.name.trim())
       return showToast.error("Tên sự kiện không được để trống");
+    if (!formData.type)
+      return showToast.error("Vui lòng chọn loại sự kiện");
+    if (!formData.scope)
+      return showToast.error("Vui lòng chọn phạm vi áp dụng");
     if (!formData.startDatetime || !formData.endDatetime)
-      return showToast.error("Vui lòng chọn thời gian");
-    if (formData.scope !== "ALL_COURTS" && formData.targets.length === 0)
-      return showToast.error("Vui lòng thêm ít nhất 1 đối tượng áp dụng");
+      return showToast.error("Vui lòng chọn đầy đủ thời gian bắt đầu và kết thúc");
+    
+    const start = new Date(formData.startDatetime);
+    const end = new Date(formData.endDatetime);
+    const now = new Date();
 
-    setSubmitting(true);
-    try {
-      const payload = {
-        ...formData,
-        discountPercent: formData.discountPercent
-          ? Number(formData.discountPercent)
-          : null,
-        discountAmount: formData.discountAmount
-          ? Number(formData.discountAmount)
-          : null,
-        targets:
-          formData.scope === "ALL_COURTS"
-            ? []
-            : formData.targets.map((t) => ({
-                sportTypeId: t.sportTypeId || null,
-                courtId: t.courtId || null,
-              })),
-      };
-      delete payload.id;
+    if (end <= start)
+      return showToast.error("Thời gian kết thúc phải sau thời gian bắt đầu");
 
-      if (modalMode === "add") {
-        await eventService.createEvent(payload);
-        showToast.success("Tạo sự kiện thành công");
-      } else {
-        await eventService.updateEvent(formData.id, payload);
-        showToast.success("Cập nhật sự kiện thành công");
+    if (formData.status === "ACTIVE") {
+      if (end <= now) {
+        return showToast.error("Không thể kích hoạt sự kiện đã hết hạn");
       }
-      setIsModalOpen(false);
-      fetchEvents();
-    } catch (err) {
-      showToast.error(err.message);
-    } finally {
-      setSubmitting(false);
+      // Nếu là tạo mới hoặc đổi từ trạng thái khác sang ACTIVE
+      if (modalMode === "add" || originalStatus !== "ACTIVE") {
+        if (start < new Date(now.getTime() - 5 * 60000)) { // Cho phép trễ 5 phút
+          return showToast.error("Thời gian bắt đầu không được ở quá khứ khi kích hoạt sự kiện");
+        }
+      }
+    }
+
+    if (formData.scope !== "ALL_COURTS" && formData.targets.length === 0)
+      return showToast.error("Vui lòng thêm ít nhất 1 đối tượng áp dụng (Môn thể thao hoặc Sân cụ thể)");
+
+    const doSubmit = async () => {
+      setSubmitting(true);
+      try {
+        const payload = {
+          ...formData,
+          discountPercent: formData.discountPercent
+            ? Number(formData.discountPercent)
+            : null,
+          discountAmount: formData.discountAmount
+            ? Number(formData.discountAmount)
+            : null,
+          targets:
+            formData.scope === "ALL_COURTS"
+              ? []
+              : formData.targets.map((t) => ({
+                  sportTypeId: t.sportTypeId || null,
+                  courtId: t.courtId || null,
+                })),
+        };
+        delete payload.id;
+
+        if (modalMode === "add") {
+          await eventService.createEvent(payload);
+          showToast.success("Tạo sự kiện thành công");
+        } else {
+          await eventService.updateEvent(formData.id, payload);
+          showToast.success("Cập nhật sự kiện thành công");
+        }
+        setIsModalOpen(false);
+        fetchEvents();
+      } catch (err) {
+        showToast.error(err.message);
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    if (
+      modalMode === "edit" &&
+      originalStatus === "CANCELLED" &&
+      formData.status === "ACTIVE"
+    ) {
+      showToast.confirm(
+        "Sự kiện này đang bị hủy. Bạn có chắc chắn muốn kích hoạt lại?",
+        doSubmit,
+        "Kích hoạt lại",
+      );
+    } else {
+      doSubmit();
     }
   };
 
@@ -194,8 +235,11 @@ export default function EventsPage() {
   };
 
   const handleActivate = (ev) => {
+    const isCancelled = ev.status === "CANCELLED";
     showToast.confirm(
-      "Kích hoạt sự kiện này ngay bây giờ?",
+      isCancelled 
+        ? "Sự kiện này đang bị hủy. Bạn có chắc chắn muốn kích hoạt lại ngay bây giờ?" 
+        : "Kích hoạt sự kiện này ngay bây giờ?",
       async () => {
         try {
           const now = new Date();
@@ -347,7 +391,7 @@ export default function EventsPage() {
                       {ev.name}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                      <span className="status-badge status-completed">
                         <Tag className="h-3 w-3" /> {EVENT_TYPE_LABELS[ev.type]}
                       </span>
                     </td>
@@ -355,9 +399,7 @@ export default function EventsPage() {
                       {EVENT_SCOPE_LABELS[ev.scope]}
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[ev.status]}`}
-                      >
+                      <span className={STATUS_COLORS[ev.status]}>
                         {EVENT_STATUS_LABELS[ev.status]}
                       </span>
                     </td>
@@ -408,7 +450,7 @@ export default function EventsPage() {
                           <Ban className="w-4 h-4" />
                         </Button>
                       )}
-                      {ev.status === "DRAFT" && (
+                      {(ev.status === "DRAFT" || ev.status === "CANCELLED") && (
                         <Button
                           variant="ghost"
                           size="sm"

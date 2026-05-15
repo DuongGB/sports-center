@@ -3,7 +3,7 @@ import { chatService } from "../../services/chatService";
 import { API_BASE_URL } from "../../config/api";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Send, Search, User, Phone, MessageCircle, ArrowLeft, Trash2 } from "lucide-react";
+import { Send, Search, User, Phone, MessageCircle, ArrowLeft, Trash2, Bot, Sparkles } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useConversations, useMessages, useDeleteConversation } from "../../hooks/queries/useChatQueries";
 import { useQueryClient } from "@tanstack/react-query";
@@ -276,13 +276,18 @@ export default function ChatPage() {
 
                   if (isBot) {
                     return (
-                      <div key={msg.id || index} className="flex justify-center my-2">
-                        <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl px-5 py-2.5 max-w-[85%]">
-                          <span className="text-lg">🤖</span>
-                          <div>
-                            <span className="inline-block px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded text-[10px] font-semibold mb-1">BOT</span>
-                            <div className="text-sm text-indigo-700 dark:text-indigo-300">{msg.content}</div>
-                            <div className="text-xs text-indigo-400 mt-0.5 text-right">
+                      <div key={msg.id || index} className="flex gap-3 justify-start my-4 group">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0 shadow-sm border border-indigo-200/50 dark:border-indigo-700/30">
+                          <Bot className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div className="flex-1 space-y-1.5 max-w-[85%]">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">AI Assistant</span>
+                             <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                          </div>
+                          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-none px-4 py-2.5 shadow-sm">
+                            <div className="text-[14px] text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{msg.content}</div>
+                            <div className="text-[10px] text-slate-400 mt-2 text-right">
                               {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>

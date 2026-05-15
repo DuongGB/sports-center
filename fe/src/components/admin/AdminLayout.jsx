@@ -130,9 +130,9 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="h-screen bg-background text-foreground flex overflow-hidden">
+    <div className="h-screen admin-liquid-bg text-foreground flex overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col">
+      <aside className="w-64 liquid-glass-sidebar hidden md:flex flex-col z-10 relative">
         <div className="h-16 flex items-center px-6 border-b border-border">
           <Link
             to="/admin"
@@ -150,10 +150,10 @@ const AdminLayout = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg liquid-nav-item ${
                   isActive
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "liquid-nav-active"
+                    : "text-muted-foreground"
                 }`}
               >
                 <Icon size={20} />
@@ -183,7 +183,7 @@ const AdminLayout = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out md:hidden flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 liquid-glass-sidebar transform transition-transform duration-200 ease-in-out md:hidden flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="h-16 flex items-center justify-between px-6 border-b border-border">
           <Link
@@ -210,10 +210,10 @@ const AdminLayout = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg liquid-nav-item ${
                   isActive
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "liquid-nav-active"
+                    : "text-muted-foreground"
                 }`}
               >
                 <Icon size={20} />
@@ -234,9 +234,9 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden w-full relative z-0">
         {/* Header */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6">
+        <header className="h-16 liquid-glass-header flex items-center justify-between px-4 sm:px-6 relative z-10">
           <div className="flex items-center md:hidden gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -249,10 +249,10 @@ const AdminLayout = () => {
           <div className="hidden md:flex flex-1"></div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-sm font-medium text-foreground drop-shadow-sm">
               Xin chào, {user?.fullName || "Admin"}
             </span>
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+            <div className="w-8 h-8 rounded-full bg-blue-500/10 dark:bg-cyan-500/10 flex items-center justify-center text-blue-600 dark:text-cyan-400 font-bold avatar-glow backdrop-blur-md">
               {user?.fullName?.charAt(0) || "A"}
             </div>
           </div>

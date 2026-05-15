@@ -699,15 +699,16 @@ export default function DashboardPage() {
                           {b.customerName}
                         </p>
                         <span
-                          className={`shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                          className={`shrink-0 ${
                             b.bookingStatus === "CONFIRMED"
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              ? "status-badge status-active"
                               : b.bookingStatus === "PENDING"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                              ? "status-badge status-pending"
                               : b.bookingStatus === "CANCELLED"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              ? "status-badge status-cancelled"
+                              : "status-badge status-completed"
                           }`}
+                          style={{ fontSize: '10px', padding: '1px 8px' }}
                         >
                           {STATUS_LABELS[b.bookingStatus] || b.bookingStatus}
                         </span>

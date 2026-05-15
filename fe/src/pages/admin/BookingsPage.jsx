@@ -9,23 +9,19 @@ import { showToast } from "@/utils/toast";
 const statusMap = {
   PENDING: { 
     label: "Chờ xác nhận", 
-    style: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50",
-    dot: "bg-amber-600"
+    style: "status-badge status-pending",
   },
   CONFIRMED: { 
     label: "Đã xác nhận", 
-    style: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50",
-    dot: "bg-emerald-600"
+    style: "status-badge status-active",
   },
   CANCELLED: { 
     label: "Đã hủy", 
-    style: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50",
-    dot: "bg-red-600"
+    style: "status-badge status-cancelled",
   },
   COMPLETED: { 
     label: "Hoàn thành", 
-    style: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50",
-    dot: "bg-blue-600"
+    style: "status-badge status-completed",
   },
 };
 
@@ -255,7 +251,7 @@ export default function BookingsPage() {
                 </tr>
               ) : (
                 bookings.map((b) => {
-                  const status = statusMap[b.bookingStatus] || { label: b.bookingStatus, style: "bg-gray-100 text-gray-700", dot: "bg-gray-400" };
+                  const status = statusMap[b.bookingStatus] || { label: b.bookingStatus, style: "status-badge status-expired" };
                   return (
                     <tr key={b.id} className={`border-b border-border last:border-0 hover:bg-muted/50 transition-colors ${selectedIds.includes(b.id) ? 'bg-primary/5' : ''}`}>
                       <td className="px-4 py-4">
@@ -284,8 +280,7 @@ export default function BookingsPage() {
                       </td>
                       <td className="px-4 py-4 font-bold text-primary">{formatPrice(b.totalPrice)}</td>
                       <td className="px-4 py-4">
-                        <span className={`px-2.5 py-1 text-[11px] rounded-full font-bold border inline-flex items-center gap-1.5 ${status.style}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                        <span className={status.style}>
                           {status.label.toUpperCase()}
                         </span>
                       </td>

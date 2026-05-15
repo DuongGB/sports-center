@@ -37,7 +37,7 @@ public class EventService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        validateEventRequest(request);
+        validateEventRequest(request, null);
 
         Event event = Event.builder()
                 .name(request.name())
@@ -53,15 +53,13 @@ public class EventService {
                 .createdByUser(user)
                 .build();
 
-        Event savedEvent = eventRepository.save(event);
-
         // Tạo targets nếu scope không phải ALL_COURTS
         if (request.targets() != null && !request.targets().isEmpty()) {
-            List<EventTarget> targets = buildTargets(request.targets(), savedEvent);
-            eventTargetRepository.saveAll(targets);
-            savedEvent.setTargets(targets);
+            List<EventTarget> targets = buildTargets(request.targets(), event);
+            event.getTargets().addAll(targets);
         }
 
+        Event savedEvent = eventRepository.save(event);
         return eventMapper.toEventResponse(savedEvent);
     }
 
@@ -70,7 +68,7 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
-        validateEventRequest(request);
+        validateEventRequest(request, event.getStatus());
 
         event.setName(request.name());
         event.setDescription(request.description());
@@ -85,14 +83,11 @@ public class EventService {
         event.setDiscountAmount(request.discountAmount());
         event.setBlockReason(request.blockReason());
 
-        // Xóa targets cũ và tạo mới
-        eventTargetRepository.deleteByEventId(eventId);
+        // Cập nhật targets: dùng clear() và addAll() để tránh lỗi orphanRemoval
+        event.getTargets().clear();
         if (request.targets() != null && !request.targets().isEmpty()) {
             List<EventTarget> targets = buildTargets(request.targets(), event);
-            eventTargetRepository.saveAll(targets);
-            event.setTargets(targets);
-        } else {
-            event.setTargets(new ArrayList<>());
+            event.getTargets().addAll(targets);
         }
 
         Event savedEvent = eventRepository.save(event);
@@ -169,9 +164,26 @@ public class EventService {
 
     // ==================== PRIVATE METHODS ====================
 
-    private void validateEventRequest(EventRequest request) {
+    private void validateEventRequest(EventRequest request, EventStatus oldStatus) {
+        if (request.startDatetime() == null || request.endDatetime() == null) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
         if (request.endDatetime().isBefore(request.startDatetime())) {
             throw new AppException(ErrorCode.INVALID_TIME_RANGE);
+        }
+
+        // Nếu status là ACTIVE, kiểm tra xem đã quá hạn chưa
+        if (request.status() == EventStatus.ACTIVE) {
+            if (LocalDateTime.now().isAfter(request.endDatetime())) {
+                throw new AppException(ErrorCode.EVENT_EXPIRED);
+            }
+
+            // Nếu không phải đang là ACTIVE mà chuyển sang ACTIVE, hoặc tạo mới ACTIVE
+            // thì thời gian bắt đầu không được ở quá khứ
+            if (oldStatus != EventStatus.ACTIVE && request.startDatetime().isBefore(LocalDateTime.now().minusMinutes(5))) {
+                throw new AppException(ErrorCode.EVENT_START_TIME_INVALID);
+            }
         }
 
         // Validate scope vs targets

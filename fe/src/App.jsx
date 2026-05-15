@@ -211,6 +211,7 @@ export default function App() {
             position="top-right" 
             autoClose={3000} 
             theme={theme === "system" ? "light" : theme}
+            toastClassName="liquid-glass-toast"
           />
         </PayPalScriptProvider>
       </QueryClientProvider>

@@ -157,26 +157,22 @@ export default function UsersPage() {
                       {user.roles?.map((role) => (
                         <span
                           key={role}
-                          className={`px-2.5 py-1 text-[11px] rounded-md font-bold uppercase tracking-wider inline-block mr-1 ${
+                          className={`status-badge mr-1 ${
                             role === "ADMIN"
-                              ? "bg-blue-600 text-white"
-                              : "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                              ? "status-completed"
+                              : "status-expired"
                           }`}
+                          style={{ textTransform: 'uppercase' }}
                         >
                           {role}
                         </span>
                       ))}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-xs rounded-full font-bold inline-flex items-center gap-1.5 ${
-                        user.status === "ACTIVE" 
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50"
-                          : "bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50"
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-emerald-600" : "bg-red-600"}`} />
-                        {user.status || "N/A"}
-                      </span>
-                    </td>
+                      <td className="px-6 py-4">
+                        <span className={user.status === "ACTIVE" ? "status-badge status-active" : "status-badge status-cancelled"}>
+                          {user.status || "N/A"}
+                        </span>
+                      </td>
                     <td className="px-6 py-4 text-muted-foreground">
                       {formatDate(user.createdAt)}
                     </td>
