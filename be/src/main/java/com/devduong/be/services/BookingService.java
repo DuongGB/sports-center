@@ -14,7 +14,10 @@ import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.dtos.response.PaymentExecutionResult;
 import com.devduong.be.entities.*;
 import com.devduong.be.enums.BookingStatus;
+import com.devduong.be.enums.EventStatus;
+import com.devduong.be.enums.EventType;
 import com.devduong.be.enums.PaymentMethod;
+
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.BookingMapper;
 import com.devduong.be.repositories.*;
@@ -54,7 +57,9 @@ public class BookingService {
     BookingGuestRepository bookingGuestRepository;
     PaymentRepository paymentRepository;
     ReviewRepository reviewRepository;
+    EventRepository eventRepository;
     List<PaymentStrategy> paymentStrategies;
+
     BookingMapper bookingMapper;
 
     // TODO: Đặt sân
@@ -94,7 +99,8 @@ public class BookingService {
             throw new AppException(ErrorCode.COURT_ALREADY_BOOKED);
         }
         // 5. Tính tổng tiền
-        double totalPrice = calculateTotalPrice(court.getSportType().getId(), request.startTime(), request.endTime());
+        double totalPrice = calculateTotalPrice(court.getId(), court.getSportType().getId(), request.startTime(), request.endTime());
+
         // 6. Tạo booking
         Booking booking = Booking.builder()
                 .court(court)
@@ -137,11 +143,15 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("Payment method not supported: " + method));
     }
 
-    private double calculateTotalPrice(UUID sportTypeId, LocalTime start, LocalTime end) {
+    private double calculateTotalPrice(UUID courtId, UUID sportTypeId, LocalTime start, LocalTime end) {
         List<CourtPrice> prices = courtPriceRepository.findBySportTypeId(sportTypeId);
         if (prices.isEmpty()) {
             throw new RuntimeException("Không tìm thấy bảng giá cho loại hình thể thao này");
         }
+
+        // Lấy tất cả sự kiện đang hoạt động
+        List<Event> activeEvents = eventRepository.findActiveEventsAtTime(EventStatus.ACTIVE, LocalDateTime.now());
+
         double total = 0;
         LocalTime currentStart = start;
         while (currentStart.isBefore(end)) {
@@ -160,13 +170,35 @@ public class BookingService {
             LocalTime priceEnd = end.isBefore(applicablePrice.getEndTime()) ? end : applicablePrice.getEndTime();
             // Tính số phút nằm trong mốc giá này
             long minutes = Duration.between(currentStart, priceEnd).toMinutes();
-            // Công thức: (Giá 1 giờ/60) * số phút
-            total += (applicablePrice.getPrice() / 60.0) * minutes;
+            double originalPrice = (applicablePrice.getPrice() / 60.0) * minutes;
+
+            // Tìm sự kiện giảm giá tốt nhất cho sân/loại hình này
+            double bestDiscountedPrice = originalPrice;
+            for (Event event : activeEvents) {
+                boolean matches = event.getTargets().stream().anyMatch(t -> 
+                    (t.getCourt() != null && t.getCourt().getId().equals(courtId)) || 
+                    (t.getSportType() != null && t.getSportType().getId().equals(sportTypeId))
+                );
+                
+                if (matches) {
+                    double discounted = originalPrice;
+                    if (event.getType() == EventType.DISCOUNT_PERCENT) {
+                        discounted = originalPrice * (1 - event.getDiscountPercent().doubleValue() / 100.0);
+                    } else if (event.getType() == EventType.DISCOUNT_FIXED) {
+                        // Giảm tỉ lệ theo số phút (discountAmount là mức giảm cho 1 giờ)
+                        discounted = originalPrice - (event.getDiscountAmount().doubleValue() / 60.0) * minutes;
+                    }
+                    if (discounted < bestDiscountedPrice) bestDiscountedPrice = Math.max(0, discounted);
+                }
+            }
+
+            total += bestDiscountedPrice;
             // Di chuyển `currentStart` lên điểm kết thúc của mốc giá này để tiếp tục tính cho phần còn lại
             currentStart = priceEnd;
         }
         return Math.round(total);
     }
+
 
     // TODO: Hủy đặt sân
     @Transactional

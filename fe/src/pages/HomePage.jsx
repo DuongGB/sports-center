@@ -155,29 +155,76 @@ export default function HomePage({
     return "🎯";
   };
 
+  const calculateDiscountedPrice = (court, events) => {
+    if (!events || events.length === 0) return null;
+
+    let bestDiscount = null;
+    const originalPrice = court.prices && court.prices.length > 0 ? court.prices[0].price : 0;
+    if (originalPrice === 0) return null;
+
+    events.forEach(event => {
+      // Check if this event applies to this court
+      const applies = event.targets?.some(target => 
+        target.courtId === court.id || target.sportTypeId === court.sportTypeId
+      );
+
+      if (applies) {
+        let currentFinalPrice = originalPrice;
+        let discountVal = 0;
+
+        if (event.type === "DISCOUNT_PERCENT") {
+          discountVal = (originalPrice * event.discountPercent) / 100;
+          currentFinalPrice = originalPrice - discountVal;
+        } else if (event.type === "DISCOUNT_FIXED") {
+          discountVal = event.discountAmount;
+          currentFinalPrice = originalPrice - discountVal;
+        }
+
+        if (currentFinalPrice < (bestDiscount?.finalPrice ?? Infinity)) {
+          bestDiscount = { 
+            type: event.type, 
+            value: event.type === "DISCOUNT_PERCENT" ? event.discountPercent : event.discountAmount,
+            finalPrice: Math.max(0, currentFinalPrice),
+            originalPrice
+          };
+        }
+      }
+    });
+
+    return bestDiscount;
+  };
+
   const displaySports = sportTypes.map(st => ({
+
     id: st.id,
     name: st.name,
     icon: getSportIcon(st.name),
     description: "Khám phá sân chơi chất lượng cao và cơ sở vật chất tuyệt vời.",
   }));
 
-  const displayCourts = courts.map(court => ({
-    id: court.id,
-    name: court.name,
-    sport: court.sportTypeName || "Khác",
-    price: court.prices && court.prices.length > 0 
-      ? `${court.prices[0].price.toLocaleString()}đ/giờ` 
-      : "Liên hệ",
-    location: court.location,
-    status: court.status === "ACTIVE" ? "available" : court.status === "MAINTENANCE" ? "maintenance" : "inactive",
-    rating: court.averageRating || 0,
-    totalReviews: court.totalReviews || 0,
-    image: court.courtImages && court.courtImages.length > 0 
-      ? court.courtImages[0] 
-      : "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
-    tags: ["Mới cập nhật", "Giữ chỗ nhanh"],
-  }));
+  const displayCourts = courts.map(court => {
+    const discountInfo = calculateDiscountedPrice(court, activeEvents);
+    
+    return {
+      id: court.id,
+      name: court.name,
+      sport: court.sportTypeName || "Khác",
+      price: court.prices && court.prices.length > 0 
+        ? `${court.prices[0].price.toLocaleString()}đ/giờ` 
+        : "Liên hệ",
+      originalPrice: court.prices && court.prices.length > 0 ? court.prices[0].price : 0,
+      discountInfo,
+      location: court.location,
+      status: court.status === "ACTIVE" ? "available" : court.status === "MAINTENANCE" ? "maintenance" : "inactive",
+      rating: court.averageRating || 0,
+      totalReviews: court.totalReviews || 0,
+      image: court.courtImages && court.courtImages.length > 0 
+        ? court.courtImages[0] 
+        : "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
+      tags: ["Mới cập nhật", "Giữ chỗ nhanh"],
+    };
+  });
+
 
   const featuredCount = courts.length;
 
@@ -203,7 +250,36 @@ export default function HomePage({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-ice-gradient text-foreground">
+      {/* Side Banners - Only visible on very large screens */}
+      <div className="side-banner side-banner-left">
+        <div className="banner-content group relative cursor-pointer">
+          <img 
+            src="/sports_gear_banner_1778866716963.png" 
+            alt="Ad Left" 
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-4 left-0 w-full text-center text-[10px] font-bold text-white uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+            Trang bị mới
+          </div>
+        </div>
+      </div>
+      
+      <div className="side-banner side-banner-right">
+        <div className="banner-content group relative cursor-pointer">
+          <img 
+            src="/booking_discount_banner_1778866731696.png" 
+            alt="Ad Right" 
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-4 left-0 w-full text-center text-[10px] font-bold text-white uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+            Ưu đãi đặt sân
+          </div>
+        </div>
+      </div>
+
       <main id="home">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
@@ -662,10 +738,22 @@ export default function HomePage({
                   <div className="flex items-center justify-between border-t border-border/60 pt-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Giá thuê</p>
-                      <p className="text-xl font-semibold gradient-text-emerald">
-                        {court.price}
-                      </p>
+                      {court.discountInfo ? (
+                        <div className="flex flex-col">
+                          <span className="text-xs text-muted-foreground line-through decoration-red-500/50">
+                            {court.price}
+                          </span>
+                          <p className="text-xl font-bold gradient-text-emerald">
+                            {court.discountInfo.finalPrice.toLocaleString()}đ/giờ
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xl font-semibold gradient-text-emerald">
+                          {court.price}
+                        </p>
+                      )}
                     </div>
+
 
                     <Button
                       disabled={court.status !== "available"}

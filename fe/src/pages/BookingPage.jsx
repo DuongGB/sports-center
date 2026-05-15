@@ -35,9 +35,19 @@ export default function BookingPage() {
   const { user, isAuthenticated } = useAuth();
 
   const { data: court, isLoading: loadingCourt } = useCourtQuery(courtId);
+  const [activeEvents, setActiveEvents] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
+
+  useEffect(() => {
+    import("@/services/eventService").then(({ eventService }) => {
+      eventService.getActiveEvents().then(res => {
+        setActiveEvents(res.data || []);
+      }).catch(console.error);
+    });
+  }, []);
+
 
   const [formData, setFormData] = useState({
     bookingDate: "",
@@ -119,30 +129,60 @@ export default function BookingPage() {
   };
 
   const calculateTotalPrice = () => {
-    if (!court || !formData.startTime || !formData.endTime) return 0;
+    if (!court || !formData.startTime || !formData.endTime) return { total: 0, original: 0, discount: 0 };
 
     const start = timeToDecimal(formData.startTime);
     const end = timeToDecimal(formData.endTime);
 
-    if (end <= start) return 0;
+    if (end <= start) return { total: 0, original: 0, discount: 0 };
 
-    let total = 0;
+    let totalOriginal = 0;
+    let totalDiscounted = 0;
+
     // Iterate through every 30-minute interval
     for (let current = start; current < end; current += 0.5) {
-      const currentPrice = court.prices?.find((p) => {
+      const currentPriceObj = court.prices?.find((p) => {
         const pStart = timeToDecimal(p.startTime);
         const pEnd = timeToDecimal(p.endTime);
         return current >= pStart && current < pEnd;
       });
 
-      if (currentPrice) {
-        total += currentPrice.price * 0.5;
+      if (currentPriceObj) {
+        const originalPriceSlot = currentPriceObj.price * 0.5;
+        totalOriginal += originalPriceSlot;
+
+        // Apply best discount
+        let bestDiscountedPrice = originalPriceSlot;
+        activeEvents.forEach(event => {
+          const applies = event.targets?.some(target => 
+            target.courtId === court.id || target.sportTypeId === court.sportTypeId
+          );
+
+          if (applies) {
+            let discounted = originalPriceSlot;
+            if (event.type === "DISCOUNT_PERCENT") {
+              discounted = originalPriceSlot * (1 - event.discountPercent / 100);
+            } else if (event.type === "DISCOUNT_FIXED") {
+              // Note: Fixed discount per slot might be tricky if it's meant per booking, 
+              // but here we treat it as reduction of the base hourly price proportionally.
+              discounted = originalPriceSlot - (event.discountAmount / 2); // since we work in 0.5h slots
+            }
+            if (discounted < bestDiscountedPrice) bestDiscountedPrice = Math.max(0, discounted);
+          }
+        });
+        totalDiscounted += bestDiscountedPrice;
       }
     }
-    return total;
+    return { 
+      total: Math.round(totalDiscounted), 
+      original: totalOriginal, 
+      discount: totalOriginal - totalDiscounted 
+    };
   };
 
-  const totalPrice = calculateTotalPrice();
+  const pricing = calculateTotalPrice();
+  const totalPrice = pricing.total;
+
 
   const formatPrice = (p) =>
     p != null ? p.toLocaleString("vi-VN") + "đ" : "N/A";
@@ -293,16 +333,36 @@ export default function BookingPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
-                            {court.prices.map((p, idx) => (
-                              <tr key={idx} className="hover:bg-primary/5 transition-colors">
-                                <td className="px-3 py-2 text-foreground font-medium">
-                                  {formatTime24h(p.startTime)} - {formatTime24h(p.endTime)}
-                                </td>
-                                <td className="px-3 py-2 text-right text-primary font-bold">
-                                  {formatPrice(p.price)}/giờ
-                                </td>
-                              </tr>
-                            ))}
+                            {court.prices.map((p, idx) => {
+                               const discountInfo = activeEvents.find(ev => 
+                                 ev.targets?.some(t => t.courtId === court.id || t.sportTypeId === court.sportTypeId)
+                               );
+                               const hasDiscount = discountInfo && (discountInfo.type === 'DISCOUNT_PERCENT' || discountInfo.type === 'DISCOUNT_FIXED');
+                               let discountedPrice = p.price;
+                               if (hasDiscount) {
+                                 if (discountInfo.type === 'DISCOUNT_PERCENT') discountedPrice = p.price * (1 - discountInfo.discountPercent / 100);
+                                 else discountedPrice = Math.max(0, p.price - discountInfo.discountAmount);
+                               }
+
+                               return (
+                                 <tr key={idx} className="hover:bg-primary/5 transition-colors">
+                                   <td className="px-3 py-2 text-foreground font-medium">
+                                     {formatTime24h(p.startTime)} - {formatTime24h(p.endTime)}
+                                   </td>
+                                   <td className="px-3 py-2 text-right">
+                                     {hasDiscount ? (
+                                       <div className="flex flex-col items-end">
+                                         <span className="text-[10px] text-muted-foreground line-through">{formatPrice(p.price)}</span>
+                                         <span className="text-primary font-bold">{formatPrice(discountedPrice)}/giờ</span>
+                                       </div>
+                                     ) : (
+                                       <span className="text-primary font-bold">{formatPrice(p.price)}/giờ</span>
+                                     )}
+                                   </td>
+                                 </tr>
+                               );
+                             })}
+
                           </tbody>
                         </table>
                       </div>
@@ -519,7 +579,7 @@ export default function BookingPage() {
                 </div>
 
                 {/* Price summary */}
-                {totalPrice > 0 && (
+                {pricing.total > 0 && (
                   <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 space-y-2 animate-in fade-in slide-in-from-top-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Thời gian:</span>
@@ -527,14 +587,28 @@ export default function BookingPage() {
                         {(timeToDecimal(formData.endTime) - timeToDecimal(formData.startTime)).toFixed(1)} giờ
                       </span>
                     </div>
+                    {pricing.discount > 0 && (
+                      <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span>Khuyến mãi áp dụng:</span>
+                        <span>-{formatPrice(pricing.discount)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center pt-2 border-t border-primary/10">
                       <span className="text-base font-bold">Tổng tạm tính:</span>
-                      <span className="text-xl font-black text-primary">
-                        {formatPrice(totalPrice)}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        {pricing.discount > 0 && (
+                          <span className="text-xs text-muted-foreground line-through mb-0.5">
+                            {formatPrice(pricing.original)}
+                          </span>
+                        )}
+                        <span className="text-xl font-black text-primary">
+                          {formatPrice(pricing.total)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
+
 
                 <Button
                   type="submit"

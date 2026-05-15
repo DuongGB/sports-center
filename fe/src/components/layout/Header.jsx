@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Menu, X, Dumbbell } from "lucide-react";
+import { Menu, X, Dumbbell, User as UserIcon, History, LogOut, ChevronDown } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const navLinks = [
@@ -22,6 +22,7 @@ export default function Header({
   onLogout,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,37 +83,71 @@ export default function Header({
           <ThemeToggle />
 
           {isAuthenticated ? (
-            <div className="hidden items-center gap-3 rounded-full border border-border bg-card px-3 py-2 sm:flex">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${
-                    user?.id || "sports-center"
-                  }`}
-                  alt={user?.fullName || "User"}
-                />
-                <AvatarFallback>
-                  {(user?.fullName || "U").slice(0, 1)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden min-w-0 sm:block">
-                <p className="max-w-[160px] truncate text-sm font-medium">
-                  {user?.fullName || "Tài khoản của bạn"}
-                </p>
-                <p className="max-w-[160px] truncate text-xs text-muted-foreground">
-                  {user?.phone || "Đã đăng nhập"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 ml-4">
-                <Link to="/profile">
-                  <Button variant="ghost" size="sm">Trang cá nhân</Button>
-                </Link>
-                <Link to="/my-bookings">
-                  <Button variant="ghost" size="sm">Lịch sử đặt sân</Button>
-                </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  Đăng xuất
-                </Button>
-              </div>
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 rounded-full border border-border bg-card/50 p-1.5 pr-4 transition-all hover:bg-accent/50 active:scale-95"
+              >
+                <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+                  <AvatarImage
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${
+                      user?.id || "sports-center"
+                    }`}
+                    alt={user?.fullName || "User"}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {(user?.fullName || "U").slice(0, 1)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-left leading-none">
+                  <p className="max-w-[120px] truncate text-sm font-semibold">
+                    {user?.fullName || "Tài khoản"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {user?.phone || "Khách hàng"}
+                  </p>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {userMenuOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setUserMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 z-20 w-56 overflow-hidden rounded-2xl border border-border bg-background/95 p-1 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-3 mb-1 bg-muted/30 rounded-t-xl border-b border-border/50">
+                      <p className="text-sm font-bold truncate">{user?.fullName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email || user?.phone}</p>
+                    </div>
+                    <Link 
+                      to="/profile" 
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent group"
+                    >
+                      <UserIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                      Trang cá nhân
+                    </Link>
+                    <Link 
+                      to="/my-bookings" 
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent group"
+                    >
+                      <History className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                      Lịch sử đặt sân
+                    </Link>
+                    <div className="my-1 border-t border-border/50" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-500/10 active:bg-red-500/20"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Đăng xuất
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="hidden items-center gap-2 md:flex">

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCourtQuery } from "@/hooks/queries/useCourtQueries";
 import { useCourtReviewsQuery } from "@/hooks/queries/useReviewQueries";
@@ -30,6 +31,51 @@ export default function CourtDetailPage() {
   } = useCourtQuery(id);
   const { data: reviews = [], isLoading: reviewsLoading } =
     useCourtReviewsQuery(id);
+
+  const [activeEvents, setActiveEvents] = useState([]);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    import("@/services/eventService").then(({ eventService }) => {
+      eventService.getActiveEvents().then(res => {
+        setActiveEvents(res.data || []);
+      }).catch(console.error);
+    });
+  }, [id]);
+
+  const calculateDiscountedPrice = (court, events) => {
+    if (!court || !events || events.length === 0) return null;
+    const originalPrice = court.prices && court.prices.length > 0 ? court.prices[0].price : 0;
+    if (originalPrice === 0) return null;
+
+    let bestFinalPrice = originalPrice;
+    let hasDiscount = false;
+
+    events.forEach(event => {
+      const applies = event.targets?.some(target => 
+        target.courtId === court.id || target.sportTypeId === court.sportTypeId
+      );
+
+      if (applies) {
+        let currentFinalPrice = originalPrice;
+        if (event.type === "DISCOUNT_PERCENT") {
+          currentFinalPrice = originalPrice * (1 - event.discountPercent / 100);
+        } else if (event.type === "DISCOUNT_FIXED") {
+          currentFinalPrice = originalPrice - event.discountAmount;
+        }
+        if (currentFinalPrice < bestFinalPrice) {
+          bestFinalPrice = Math.max(0, currentFinalPrice);
+          hasDiscount = true;
+        }
+      }
+    });
+
+    return hasDiscount ? bestFinalPrice : null;
+  };
+
+  const discountedPrice = calculateDiscountedPrice(court, activeEvents);
+  const displayReviews = showAllReviews ? reviews : reviews.slice(0, 5);
 
   if (courtLoading) {
     return (
@@ -201,7 +247,7 @@ export default function CourtDetailPage() {
                 </div>
               ) : (
                 <div className="grid gap-6">
-                  {reviews.map((review) => (
+                  {displayReviews.map((review) => (
                     <Card
                       key={review.id}
                       className="border-none bg-muted/20 shadow-none transition-all hover:bg-muted/40 rounded-2xl overflow-hidden"
@@ -263,6 +309,18 @@ export default function CourtDetailPage() {
                       </CardContent>
                     </Card>
                   ))}
+                  
+                  {reviews.length > 5 && (
+                    <div className="pt-4 text-center">
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => setShowAllReviews(!showAllReviews)}
+                        className="text-primary hover:text-primary/80 hover:bg-primary/5 rounded-full"
+                      >
+                        {showAllReviews ? "Thu gọn đánh giá" : `Xem thêm ${reviews.length - 5} đánh giá`}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -275,13 +333,31 @@ export default function CourtDetailPage() {
                 <p className="text-sm font-medium text-primary mb-1">
                   Giá thuê từ
                 </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-primary">
-                    {court.prices?.[0]?.price?.toLocaleString() || "Liên hệ"}
-                  </span>
-                  <span className="text-muted-foreground font-medium">
-                    vnđ/giờ
-                  </span>
+                <div className="flex flex-col">
+                  {discountedPrice != null ? (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-primary">
+                          {discountedPrice.toLocaleString()}
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                          vnđ/giờ
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground line-through mt-1">
+                        {court.prices?.[0]?.price?.toLocaleString()} vnđ
+                      </span>
+                    </>
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-primary">
+                        {court.prices?.[0]?.price?.toLocaleString() || "Liên hệ"}
+                      </span>
+                      <span className="text-muted-foreground font-medium">
+                        vnđ/giờ
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
