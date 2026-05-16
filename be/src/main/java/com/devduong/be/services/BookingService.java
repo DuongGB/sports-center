@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -235,6 +236,37 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
+    @Transactional
+    public void cancelMyBooking(UUID bookingId, String userId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
+
+        if (booking.getUser() != null) {
+            if (userId == null || !booking.getUser().getId().equals(userId)) {
+                throw new RuntimeException("Không có quyền hủy đơn đặt sân này");
+            }
+        }
+
+        if (booking.getBookingStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể hủy đơn đặt sân đang chờ xác nhận");
+        }
+
+        if (booking.getPaymentMethod() == PaymentMethod.CASH) {
+            if (LocalDateTime.now().isAfter(booking.getCreatedAt().plusMinutes(10))) {
+                throw new RuntimeException("Không thể hủy đơn đặt sân sau 10 phút");
+            }
+        }
+
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+
+        paymentRepository.findByBookingId(bookingId).ifPresent(payment -> {
+            payment.setPaymentStatus(com.devduong.be.enums.PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+        });
+    }
+
     // TODO: Xử lý hàng loạt
     @Transactional
     public void batchProcessBookings(List<UUID> bookingIds, String action) {
@@ -255,10 +287,10 @@ public class BookingService {
         bookingRepository.saveAll(bookings);
     }
 
-    // TODO: Cron job tự động xác nhận sau 24h (Chạy mỗi giờ)
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
     @Transactional
     public void autoConfirmBookings() {
+        // ... Logic in case there is anything else left or we can rename to complete
         LocalDateTime threshold = LocalDateTime.now().minusHours(24);
         List<Booking> oldPendingBookings = bookingRepository.findByBookingStatusAndCreatedAtBefore(
                 BookingStatus.PENDING, threshold
@@ -266,14 +298,49 @@ public class BookingService {
         if (!oldPendingBookings.isEmpty()) {
             oldPendingBookings.forEach(b -> b.setBookingStatus(BookingStatus.CONFIRMED));
             bookingRepository.saveAll(oldPendingBookings);
-            log.info("Auto-confirmed {} bookings.", oldPendingBookings.size());
+            log.info("Auto-confirmed {} bookings (24h rule).", oldPendingBookings.size());
         }
     }
 
-    // TODO: Tự động hủy booking PayPal nếu không thanh toán sau 10p
-    @Scheduled(fixedRate = 60000) // Chạy mỗi phút
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
     @Transactional
-    public void autoCancelUnpaidPaypalBookings() {
+    public void autoCompleteConfirmedBookings() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Booking> confirmedBookings = bookingRepository.findByBookingStatus(BookingStatus.CONFIRMED);
+
+        List<Booking> toComplete = confirmedBookings.stream()
+                .filter(b -> now.isAfter(LocalDateTime.of(b.getBookingDate(), b.getEndTime())))
+                .toList();
+
+        if (!toComplete.isEmpty()) {
+            toComplete.forEach(b -> b.setBookingStatus(BookingStatus.COMPLETED));
+            bookingRepository.saveAll(toComplete);
+            log.info("Auto-completed {} bookings.", toComplete.size());
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
+    @Transactional
+    public void autoConfirmCashBookingsAfter10Mins() {
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
+        List<Booking> pendingCashBookings = bookingRepository.findByBookingStatusAndCreatedAtBefore(
+                BookingStatus.PENDING, threshold
+        );
+
+        List<Booking> toConfirm = pendingCashBookings.stream()
+                .filter(b -> b.getPaymentMethod() == PaymentMethod.CASH)
+                .toList();
+
+        if (!toConfirm.isEmpty()) {
+            toConfirm.forEach(b -> b.setBookingStatus(BookingStatus.CONFIRMED));
+            bookingRepository.saveAll(toConfirm);
+            log.info("Auto-confirmed {} CASH bookings.", toConfirm.size());
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
+    @Transactional
+    public void autoCancelUnpaidOnlineBookings() {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
         List<Payment> expiredPayments = paymentRepository.findByPaymentStatusAndPaymentDateBefore(
                 com.devduong.be.enums.PaymentStatus.PENDING, threshold
@@ -281,17 +348,17 @@ public class BookingService {
 
         if (!expiredPayments.isEmpty()) {
             for (Payment payment : expiredPayments) {
-                if (payment.getPaymentMethod() == PaymentMethod.PAYPAL) {
+                if (payment.getPaymentMethod() == PaymentMethod.PAYPAL || payment.getPaymentMethod() == PaymentMethod.MOMO) {
                     Booking booking = payment.getBooking();
                     if (booking.getBookingStatus() == BookingStatus.PENDING) {
                         booking.setBookingStatus(BookingStatus.CANCELLED);
                         booking.setCancelledAt(LocalDateTime.now());
                         bookingRepository.save(booking);
-                        
+
                         payment.setPaymentStatus(com.devduong.be.enums.PaymentStatus.FAILED);
                         paymentRepository.save(payment);
-                        
-                        log.info("Auto-cancelled unpaid PayPal booking: {}", booking.getId());
+
+                        log.info("Auto-cancelled unpaid online booking: {}", booking.getId());
                     }
                 }
             }

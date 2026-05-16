@@ -130,4 +130,11 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
         return reviewMapper.toReviewResponse(savedReview);
     }
+
+    @Transactional(readOnly = true)
+    public ReviewResponse getReviewByBookingId(UUID bookingId) {
+        Review review = reviewRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
+        return reviewMapper.toReviewResponse(review);
+    }
 }

@@ -40,6 +40,16 @@ public class ReviewController {
                 .build());
     }
 
+    @GetMapping("/booking/{bookingId}")
+    public ResponseEntity<ApiResponse<ReviewResponse>> getReviewByBookingId(@PathVariable UUID bookingId) {
+        return ResponseEntity.ok(ApiResponse.<ReviewResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Review retrieved successfully")
+                .data(reviewService.getReviewByBookingId(bookingId))
+                .build());
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getAllReviews() {
         return ResponseEntity.ok(ApiResponse.<List<ReviewResponse>>builder()

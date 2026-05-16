@@ -101,6 +101,27 @@ public class BookingController {
                 .build());
     }
 
+    @PutMapping("/{id}/cancel-my-booking")
+    public ResponseEntity<ApiResponse<?>> cancelMyBooking(@PathVariable UUID id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = null;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                userId = ((UserPrincipal) principal).getId();
+            } else if (principal instanceof String) {
+                userId = (String) principal;
+            }
+        }
+        
+        bookingService.cancelMyBooking(id, userId);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Booking cancelled successfully")
+                .build());
+    }
+
     @PutMapping("/batch")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> batchProcessBookings(@RequestBody BatchBookingRequest request) {

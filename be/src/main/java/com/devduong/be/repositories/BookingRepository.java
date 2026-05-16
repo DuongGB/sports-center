@@ -114,6 +114,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             Pageable pageable
     );
 
+    List<Booking> findByBookingStatus(BookingStatus status);
+
     List<Booking> findByBookingStatusAndCreatedAtBefore(BookingStatus status, LocalDateTime dateTime);
 
     List<Booking> findByUserIdOrderByCreatedAtDesc(String userId);

@@ -1,10 +1,20 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { XCircle } from "lucide-react";
+import { bookingService } from "@/services/bookingService";
 
 export default function PaymentCancelPage() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const pendingBookingId = localStorage.getItem("pendingBookingId");
+    if (pendingBookingId) {
+      bookingService.cancelMyBooking(pendingBookingId).catch(console.error);
+      // Giữ lại id trong trường hợp retry cần hoặc xóa đi
+    }
+  }, []);
 
   const handleRetry = () => {
     localStorage.removeItem("pendingBookingId");

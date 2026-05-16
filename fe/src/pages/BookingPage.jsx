@@ -39,6 +39,70 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+
+  useEffect(() => {
+    let timer;
+    if (bookingSuccess && bookingSuccess.paymentMethod === "CASH" && bookingSuccess.bookingStatus === "PENDING" && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [bookingSuccess, timeLeft]);
+
+  const formatTimeLeft = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  const handleCancelMyBooking = async () => {
+    const confirmToastId = toast.info(
+      <div className="flex flex-col gap-3">
+        <p className="font-medium">Bạn có chắc chắn muốn hủy đơn đặt sân này không?</p>
+        <div className="flex justify-end gap-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => toast.dismiss(confirmToastId)}
+          >
+            Bỏ qua
+          </Button>
+          <Button 
+            size="sm" 
+            variant="destructive"
+            onClick={async () => {
+              toast.dismiss(confirmToastId);
+              await executeCancelBooking();
+            }}
+          >
+            Hủy đơn
+          </Button>
+        </div>
+      </div>,
+      {
+        position: "top-right",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+      }
+    );
+  };
+
+  const executeCancelBooking = async () => {
+    try {
+      const response = await bookingService.cancelMyBooking(bookingSuccess.id);
+      if (response.success) {
+        toast.success("Đã hủy đơn đặt sân thành công");
+        setBookingSuccess(null);
+        setIsPaid(false);
+      }
+    } catch (error) {
+      toast.error(error.message || "Có lỗi xảy ra khi hủy đơn đặt sân");
+    }
+  };
 
   useEffect(() => {
     import("@/services/eventService").then(({ eventService }) => {
@@ -111,6 +175,7 @@ export default function BookingPage() {
       const res = await bookingService.createBooking(payload);
       if (res.success) {
         setBookingSuccess(res.data);
+        setTimeLeft(600);
         toast.success("Đặt sân thành công!");
       } else {
         toast.error(res.message || "Đặt sân thất bại. Vui lòng thử lại.");
@@ -250,10 +315,20 @@ export default function BookingPage() {
               </p>
               <p>
                 <strong>Trạng thái đơn:</strong>{" "}
-                <span className={`px-2 py-0.5 text-xs rounded-full ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-orange-100 text-orange-800 font-medium dark:bg-orange-900/30 dark:text-orange-400'}`}>
                   {isPaid ? 'Đã thanh toán' : 'Chờ xác nhận/Thanh toán'}
                 </span>
               </p>
+              {bookingSuccess.paymentMethod === "CASH" && timeLeft > 0 && (
+                <p className="text-rose-600 dark:text-rose-400 font-medium animate-pulse mt-2">
+                  Giữ chỗ trong: {formatTimeLeft(timeLeft)}
+                </p>
+              )}
+              {bookingSuccess.paymentMethod === "CASH" && timeLeft <= 0 && (
+                <p className="text-emerald-600 dark:text-emerald-400 font-medium mt-2">
+                  Đơn đã được tự động xác nhận.
+                </p>
+              )}
             </div>
 
             {/* PayPal Section */}
@@ -287,6 +362,15 @@ export default function BookingPage() {
               >
                 Đặt thêm sân
               </Button>
+              {bookingSuccess.paymentMethod === "CASH" && timeLeft > 0 && (
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelMyBooking}
+                  className="w-full"
+                >
+                  Hủy đặt sân
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

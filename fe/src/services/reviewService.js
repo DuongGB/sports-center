@@ -13,6 +13,9 @@ export const reviewService = {
   getAllReviews: () =>
     apiCall("/reviews", { method: "GET" }),
 
+  getReviewByBookingId: (bookingId) =>
+    apiCall(`/reviews/booking/${bookingId}`, { method: "GET" }),
+
   deleteReview: (id) =>
     apiCall(`/reviews/${id}`, { method: "DELETE" }),
 
