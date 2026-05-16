@@ -42,6 +42,7 @@ public record BookingResponse(
         String cancelReason,
 
         LocalDateTime createdAt,
-        boolean isReviewed
+        boolean isReviewed,
+        LocalDateTime reviewCreatedAt
 ) {
 }

@@ -46,5 +46,21 @@ export function useReviewMutations() {
     },
   });
 
-  return { deleteReviewMut, createReviewMut, replyReviewMut };
+  const updateReviewMut = useMutation({
+    mutationFn: ({ id, data }) => reviewService.updateReview(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["courts"] });
+    },
+  });
+
+  const toggleHideReviewMut = useMutation({
+    mutationFn: (id) => reviewService.toggleHideReview(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
+    },
+  });
+
+  return { deleteReviewMut, createReviewMut, replyReviewMut, updateReviewMut, toggleHideReviewMut };
 }

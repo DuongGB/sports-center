@@ -10,6 +10,14 @@ export function useBookingsQuery(page = 1, size = 10, filters = {}) {
   });
 }
 
+export function useMyBookingsQuery(page = 1, size = 8) {
+  return useQuery({
+    queryKey: ["my-bookings", page, size],
+    queryFn: () => bookingService.getMyBookings(page, size).then(res => res.data),
+    staleTime: 30 * 1000, // 30 seconds for my bookings as they change more frequently
+  });
+}
+
 export function useBookingMutations() {
   const queryClient = useQueryClient();
 
@@ -17,6 +25,7 @@ export function useBookingMutations() {
     mutationFn: (id) => bookingService.confirmBooking(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
     },
   });
 
@@ -24,6 +33,7 @@ export function useBookingMutations() {
     mutationFn: ({ id, reason }) => bookingService.cancelBooking(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
     },
   });
 
@@ -31,6 +41,7 @@ export function useBookingMutations() {
     mutationFn: ({ ids, action }) => bookingService.batchProcess(ids, action),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
     },
   });
 

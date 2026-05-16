@@ -74,6 +74,7 @@ public enum ErrorCode {
     BOOKING_NOT_COMPLETED(6009, "Chỉ có thể đánh giá các đơn đặt sân đã hoàn tất", HttpStatus.BAD_REQUEST),
     ALREADY_REVIEWED(6010, "Đơn đặt sân này đã được đánh giá trước đó", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_FOUND(6011, "Không tìm thấy đánh giá", HttpStatus.NOT_FOUND),
+    REVIEW_EDIT_TIME_EXPIRED(6012, "Đã hết thời hạn chỉnh sửa đánh giá (tối đa 7 ngày)", HttpStatus.BAD_REQUEST),
 
     // TODO: EVENT
     EVENT_NOT_FOUND(7001, "Không tìm thấy sự kiện", HttpStatus.NOT_FOUND),

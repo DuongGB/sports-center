@@ -81,4 +81,27 @@ public class ReviewController {
                 .data(reviewService.replyToReview(id, reply))
                 .build());
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ReviewResponse>> updateReview(
+            @PathVariable UUID id,
+            @RequestBody @Valid ReviewRequest request) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(ApiResponse.<ReviewResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Review updated successfully")
+                .data(reviewService.updateReview(id, request, userId))
+                .build());
+    }
+
+    @PatchMapping("/{id}/toggle-hide")
+    public ResponseEntity<ApiResponse<ReviewResponse>> toggleHideReview(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.<ReviewResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Review visibility toggled successfully")
+                .data(reviewService.toggleHideReview(id))
+                .build());
+    }
 }

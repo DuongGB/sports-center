@@ -11,5 +11,6 @@
     <include file="db/changelog/changes/003-add-reply-to-reviews.xml"/>
     <include file="db/changelog/changes/004-create-events-tables.xml"/>
     <include file="db/changelog/changes/005-add-cancel-reason-to-bookings.xml"/>
+    <include file="db/changelog/changes/006-add-is-hide-to-reviews.sql"/>
 
 </databaseChangeLog>

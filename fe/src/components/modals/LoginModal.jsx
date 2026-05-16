@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "@/store/authSlice";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ export default function LoginModal({
   onSwitchToRegister,
   onForgotPassword,
   onSuccess,
+  registeredEmail,
 }) {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
@@ -21,6 +22,15 @@ export default function LoginModal({
   });
   const [formError, setFormError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({ identifier: "", password: "" });
+      setFormError("");
+    } else if (registeredEmail) {
+      setFormData((prev) => ({ ...prev, identifier: registeredEmail }));
+    }
+  }, [isOpen, registeredEmail]);
 
   const handleChange = (e) => {
     let { name, value } = e.target;
@@ -101,7 +111,7 @@ export default function LoginModal({
               name="identifier"
               value={formData.identifier}
               onChange={handleChange}
-              placeholder="0356309561 hoặc example@gmail.com"
+              placeholder="0********* hoặc example@gmail.com"
               disabled={loading}
               className="border-input bg-input"
             />
@@ -179,7 +189,7 @@ export default function LoginModal({
               />
               <span className="text-foreground">Ghi nhớ tôi</span>
             </label>
-            <button 
+            <button
               type="button"
               onClick={onForgotPassword}
               className="hover:underline text-primary font-medium"
@@ -192,25 +202,30 @@ export default function LoginModal({
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Đang đăng nhập..." : "Đăng Nhập"}
           </Button>
-          
+
           {/* OR divider */}
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Hoặc đăng nhập bằng</span>
+              <span className="bg-card px-2 text-muted-foreground">
+                Hoặc đăng nhập bằng
+              </span>
             </div>
           </div>
 
           {/* Social Logins */}
           <div className="grid grid-cols-2 gap-4">
             {/* Google Login Button */}
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               className="w-full bg-white text-black hover:bg-gray-50 border-gray-300 dark:bg-slate-900 dark:text-white dark:border-slate-800 dark:hover:bg-slate-800"
-              onClick={() => window.location.href = "http://localhost:8080/oauth2/authorize/google"}
+              onClick={() =>
+                (window.location.href =
+                  "http://localhost:8080/oauth2/authorize/google")
+              }
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -234,13 +249,20 @@ export default function LoginModal({
             </Button>
 
             {/* Facebook Login Button */}
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               className="w-full bg-[#1877F2] text-white hover:bg-[#166fe5] border-transparent dark:bg-[#0866FF] dark:hover:bg-[#0055e5]"
-              onClick={() => window.location.href = "http://localhost:8080/oauth2/authorize/facebook"}
+              onClick={() =>
+                (window.location.href =
+                  "http://localhost:8080/oauth2/authorize/facebook")
+              }
             >
-              <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="mr-2 h-4 w-4"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
               </svg>
               Facebook

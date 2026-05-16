@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCourtQuery } from "@/hooks/queries/useCourtQueries";
+import { useActiveEventsQuery } from "@/hooks/queries/useEventQueries";
 import { useCourtReviewsQuery } from "@/hooks/queries/useReviewQueries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,16 +33,11 @@ export default function CourtDetailPage() {
   const { data: reviews = [], isLoading: reviewsLoading } =
     useCourtReviewsQuery(id);
 
-  const [activeEvents, setActiveEvents] = useState([]);
+  const { data: activeEvents = [] } = useActiveEventsQuery();
   const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    import("@/services/eventService").then(({ eventService }) => {
-      eventService.getActiveEvents().then(res => {
-        setActiveEvents(res.data || []);
-      }).catch(console.error);
-    });
   }, [id]);
 
   const calculateDiscountedPrice = (court, events) => {

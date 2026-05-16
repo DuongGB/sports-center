@@ -15,7 +15,11 @@ import com.devduong.be.repositories.MessageRepository;
 import com.devduong.be.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +37,18 @@ public class ChatService {
     UserRepository userRepository;
     SimpMessagingTemplate messagingTemplate;
 
-    public org.springframework.data.domain.Page<ConversationResponse> getConversations(int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+    @Scheduled(cron = "0 0 2 * * ?") // Mỗi ngày lúc 2h sáng
+    @Transactional
+    public void cleanupGuestConversations() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(20);
+        List<Conversation> oldConversations = conversationRepository.findByUserIsNullAndLastMessageAtBefore(threshold);
+        for (Conversation conv : oldConversations) {
+            deleteConversation(conv.getId());
+        }
+    }
+
+    public Page<ConversationResponse> getConversations(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
         return conversationRepository.findAllOrderByLastMessageAtDesc(pageable)
                 .map(this::toConversationResponse);
     }

@@ -137,7 +137,9 @@ public class BookingController {
     }
 
     @GetMapping("/my-bookings")
-    public ResponseEntity<ApiResponse<?>> getMyBookings() {
+    public ResponseEntity<ApiResponse<?>> getMyBookings(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = null;
         if (authentication != null && authentication.isAuthenticated()) {
@@ -153,11 +155,12 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page - 1, size);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Get my bookings successful")
-                .data(bookingService.getMyBookings(userId))
+                .data(bookingService.getMyBookings(userId, pageable))
                 .build());
     }
 }

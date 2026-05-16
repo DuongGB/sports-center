@@ -19,6 +19,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,7 +87,7 @@ public class ReviewService {
     }
 
     public List<ReviewResponse> getCourtReviews(UUID courtId) {
-        return reviewRepository.findByCourtIdOrderByCreatedAtDesc(courtId).stream()
+        return reviewRepository.findByCourtIdAndIsHideFalseOrderByCreatedAtDesc(courtId).stream()
                 .map(reviewMapper::toReviewResponse)
                 .toList();
     }
@@ -136,5 +137,51 @@ public class ReviewService {
         Review review = reviewRepository.findByBookingId(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
         return reviewMapper.toReviewResponse(review);
+    }
+
+    @Transactional
+    public ReviewResponse updateReview(UUID id, ReviewRequest request, String userId) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
+
+        // Validate user ownership
+        if (!review.getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
+        }
+
+        // Validate 7-day rule
+        if (LocalDateTime.now().isAfter(review.getCreatedAt().plusDays(7))) {
+            throw new AppException(ErrorCode.REVIEW_EDIT_TIME_EXPIRED);
+        }
+
+        int oldRating = review.getRating();
+        int newRating = request.rating();
+
+        if (oldRating != newRating) {
+            Court court = review.getCourt();
+            int totalReviews = court.getTotalReviews();
+            double currentAvg = court.getAverageRating();
+
+            // (Avg * Total - Old + New) / Total
+            double newAvg = (currentAvg * totalReviews - oldRating + newRating) / totalReviews;
+            court.setAverageRating(Math.round(newAvg * 10.0) / 10.0);
+            courtRepository.save(court);
+        }
+
+        review.setRating(newRating);
+        review.setComment(request.comment());
+
+        Review savedReview = reviewRepository.save(review);
+        return reviewMapper.toReviewResponse(savedReview);
+    }
+
+    @Transactional
+    public ReviewResponse toggleHideReview(UUID id) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
+
+        review.setHide(!review.isHide());
+        Review savedReview = reviewRepository.save(review);
+        return reviewMapper.toReviewResponse(savedReview);
     }
 }

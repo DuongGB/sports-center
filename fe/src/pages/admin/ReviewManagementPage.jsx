@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Trash2, MessageSquare, User, Calendar, Eye, Reply, RefreshCw } from "lucide-react";
+import { Star, Trash2, MessageSquare, User, Calendar, Eye, EyeOff, Reply, RefreshCw, Search } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/utils/toast";
 import {
@@ -43,7 +43,7 @@ export default function ReviewManagementPage() {
   const [replyText, setReplyText] = useState("");
 
   const { data: reviews = [], isLoading } = useAllReviewsQuery();
-  const { deleteReviewMut, replyReviewMut } = useReviewMutations();
+  const { deleteReviewMut, replyReviewMut, toggleHideReviewMut } = useReviewMutations();
 
   const handleDeleteClick = (id) => {
     showToast.confirm(
@@ -59,6 +59,24 @@ export default function ReviewManagementPage() {
         });
       },
       "Xóa"
+    );
+  };
+
+  const handleToggleHide = (id, isCurrentlyHidden) => {
+    const action = isCurrentlyHidden ? "hiển thị lại" : "ẩn";
+    showToast.confirm(
+      `Bạn có chắc chắn muốn ${action} đánh giá này?`,
+      () => {
+        toggleHideReviewMut.mutate(id, {
+          onSuccess: () => {
+            showToast.success(`Đã ${action} đánh giá thành công`);
+          },
+          onError: (error) => {
+            showToast.error(error.message || "Cập nhật thất bại");
+          },
+        });
+      },
+      isCurrentlyHidden ? "Hiển thị" : "Ẩn"
     );
   };
 
@@ -166,6 +184,9 @@ export default function ReviewManagementPage() {
                     ) : (
                       <Badge variant="secondary">Chờ phản hồi</Badge>
                     )}
+                    {review.isHide && (
+                      <Badge variant="destructive" className="ml-1">Đã ẩn</Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-muted-foreground text-sm">
@@ -180,7 +201,7 @@ export default function ReviewManagementPage() {
                       className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
                       onClick={() => setViewReview(review)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Search className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -192,6 +213,15 @@ export default function ReviewManagementPage() {
                       }}
                     >
                       <Reply className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`${review.isHide ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50' : 'text-slate-500 hover:text-slate-600 hover:bg-slate-50'}`}
+                      onClick={() => handleToggleHide(review.id, review.isHide)}
+                      title={review.isHide ? "Hiện đánh giá" : "Ẩn đánh giá"}
+                    >
+                      {review.isHide ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </Button>
                     <Button
                       variant="ghost"

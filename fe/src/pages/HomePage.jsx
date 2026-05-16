@@ -37,8 +37,8 @@ import {
   Zap,
 } from "lucide-react";
 import CourtReviewsModal from "@/components/modals/CourtReviewsModal";
-import { bookingService } from "@/services/bookingService";
-import { eventService } from "@/services/eventService";
+import { useActiveEventsQuery } from "@/hooks/queries/useEventQueries";
+import { useMyBookingsQuery } from "@/hooks/queries/useBookingQueries";
 
 const navLinks = [
   { label: "Trang chủ", href: "#home" },
@@ -102,33 +102,19 @@ export default function HomePage({
   });
 
   const navigate = useNavigate();
-  const [recentBookings, setRecentBookings] = useState([]);
+  const { data: myBookingsData } = useMyBookingsQuery(1, 8);
+  const recentBookings = useMemo(() => {
+    if (!myBookingsData) return [];
+    const bookingsList = Array.isArray(myBookingsData) ? myBookingsData : (myBookingsData.data || []);
+    return bookingsList.slice(0, 3);
+  }, [myBookingsData]);
+
   const [selectedCourtForReviews, setSelectedCourtForReviews] = useState(null);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
-  const [activeEvents, setActiveEvents] = useState([]);
+  const { data: activeEvents = [] } = useActiveEventsQuery();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchRecentBookings();
-    }
-  }, [isAuthenticated]);
 
-  useEffect(() => {
-    eventService.getActiveEvents().then(res => {
-      setActiveEvents(res.data || []);
-    }).catch(console.error);
-  }, []);
 
-  const fetchRecentBookings = async () => {
-    try {
-      const response = await bookingService.getMyBookings();
-      if (response.success) {
-        setRecentBookings(response.data.slice(0, 3)); // Only show last 3
-      }
-    } catch (error) {
-      console.error("Failed to fetch bookings", error);
-    }
-  };
 
   const { courts, loading: courtsLoading, page, totalPages, totalElements: totalCourts, setPage, setFilters } = useCourts();
   const { sportTypes, loading: sportTypesLoading, totalElements: totalSportTypes } = useSportTypes();

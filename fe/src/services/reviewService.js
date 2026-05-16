@@ -24,4 +24,11 @@ export const reviewService = {
       method: "PATCH",
       body: reply, // Sending as raw string if the backend expects @RequestBody String
     }),
+  updateReview: (id, reviewData) =>
+    apiCall(`/reviews/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(reviewData),
+    }),
+  toggleHideReview: (id) =>
+    apiCall(`/reviews/${id}/toggle-hide`, { method: "PATCH" }),
 };

@@ -47,6 +47,10 @@ public class Review {
     @Column(name = "replied_at")
     LocalDateTime repliedAt;
 
+    @Builder.Default
+    @Column(name = "is_hide")
+    boolean isHide = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

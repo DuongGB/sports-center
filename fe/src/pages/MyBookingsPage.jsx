@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { bookingService } from "@/services/bookingService";
+import { useMyBookingsQuery } from "@/hooks/queries/useBookingQueries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -15,6 +16,10 @@ import {
   RefreshCw,
   CreditCard,
   Info,
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  Search,
 } from "lucide-react";
 import ReviewModal from "@/components/modals/ReviewModal";
 import ViewReviewModal from "@/components/modals/ViewReviewModal";
@@ -48,8 +53,13 @@ const statusConfig = {
 
 export default function MyBookingsPage() {
   const navigate = useNavigate();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+  const { data: myBookingsData, isLoading: loading, refetch } = useMyBookingsQuery(currentPage, pageSize);
+  
+  const bookings = myBookingsData?.data || [];
+  const totalPages = myBookingsData?.totalPages || 1;
+
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isViewReviewModalOpen, setIsViewReviewModalOpen] = useState(false);
@@ -58,24 +68,10 @@ export default function MyBookingsPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    fetchMyBookings();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const fetchMyBookings = async () => {
-    setLoading(true);
-    try {
-      const response = await bookingService.getMyBookings();
-      if (response.success) {
-        setBookings(response.data);
-      }
-    } catch (error) {
-      toast.error(error.message || "Không thể tải danh sách đơn đặt sân");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenReviewModal = useCallback((booking) => {
     setSelectedBooking(booking);
@@ -97,10 +93,10 @@ export default function MyBookingsPage() {
     setIsPaymentModalOpen(true);
   }, []);
 
-  const handleCloseReviewModal = useCallback(
-    () => setIsReviewModalOpen(false),
-    [],
-  );
+  const handleCloseReviewModal = useCallback(() => {
+    setIsReviewModalOpen(false);
+    setSelectedBooking(null);
+  }, []);
   const handleCloseViewReviewModal = useCallback(
     () => setIsViewReviewModalOpen(false),
     [],
@@ -155,12 +151,7 @@ export default function MyBookingsPage() {
       const response = await bookingService.cancelMyBooking(bookingId);
       if (response.success) {
         toast.success("Đã hủy đơn đặt sân thành công");
-        // Update local state instead of reloading everything
-        setBookings((prev) =>
-          prev.map((b) =>
-            b.id === bookingId ? { ...b, bookingStatus: "CANCELLED" } : b,
-          ),
-        );
+        refetch();
       }
     } catch (error) {
       toast.error(error.message || "Có lỗi xảy ra khi hủy đơn đặt sân");
@@ -185,7 +176,7 @@ export default function MyBookingsPage() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-full hover:bg-muted"
-              onClick={fetchMyBookings}
+              onClick={() => refetch()}
               title="Làm mới dữ liệu"
             >
               <RefreshCw
@@ -199,7 +190,7 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      {bookings.length === 0 ? (
+      {bookings?.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -217,7 +208,7 @@ export default function MyBookingsPage() {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {bookings.map((booking) => {
+          {bookings?.map((booking) => {
             const status =
               statusConfig[booking.bookingStatus] || statusConfig.PENDING;
             const StatusIcon = status.icon;
@@ -321,14 +312,34 @@ export default function MyBookingsPage() {
                           )}
                         {booking.bookingStatus === "COMPLETED" &&
                           (booking.isReviewed ? (
-                            <Button
-                              variant="outline"
-                              className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                              onClick={() => handleOpenViewReviewModal(booking)}
-                            >
-                              <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
-                              Xem đánh giá
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                onClick={() =>
+                                  handleOpenViewReviewModal(booking)
+                                }
+                              >
+                                <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+                                Xem đánh giá
+                              </Button>
+                              {booking.reviewCreatedAt &&
+                                (new Date() -
+                                  new Date(booking.reviewCreatedAt)) /
+                                  (1000 * 60 * 60 * 24) <
+                                  7 && (
+                                  <Button
+                                    variant="outline"
+                                    className="gap-2 text-amber-500 border-amber-200 hover:bg-amber-50"
+                                    onClick={() =>
+                                      handleOpenReviewModal(booking)
+                                    }
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Cập nhật
+                                  </Button>
+                                )}
+                            </>
                           ) : (
                             <Button
                               className="gap-2 bg-amber-500 hover:bg-amber-600 text-white"
@@ -376,6 +387,38 @@ export default function MyBookingsPage() {
         </div>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Trước
+          </Button>
+          <div className="flex items-center gap-1 mx-4">
+            <span className="text-sm font-medium">Trang {currentPage}</span>
+            <span className="text-sm text-muted-foreground">
+              / {totalPages}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+          >
+            Sau
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
       {selectedBooking && (
         <PaymentModal
           isOpen={isPaymentModalOpen}
@@ -397,7 +440,7 @@ export default function MyBookingsPage() {
           isOpen={isReviewModalOpen}
           onClose={handleCloseReviewModal}
           booking={selectedBooking}
-          onSuccess={fetchMyBookings}
+          onSuccess={() => refetch()}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,12 +11,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "react-toastify";
 import { useReviewMutations } from "@/hooks/queries/useReviewQueries";
+import { reviewService } from "@/services/reviewService";
 
 export default function ReviewModal({ isOpen, onClose, booking, onSuccess }) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
-  const { createReviewMut } = useReviewMutations();
+  const [reviewId, setReviewId] = useState(null);
+  const { createReviewMut, updateReviewMut } = useReviewMutations();
+
+  useEffect(() => {
+    if (isOpen && booking?.isReviewed) {
+      reviewService.getReviewByBookingId(booking.id).then((res) => {
+        if (res.success) {
+          setRating(res.data.rating);
+          setComment(res.data.comment || "");
+          setReviewId(res.data.id);
+        }
+      });
+    } else if (isOpen) {
+      setRating(0);
+      setComment("");
+      setReviewId(null);
+    }
+  }, [isOpen, booking]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -24,29 +42,47 @@ export default function ReviewModal({ isOpen, onClose, booking, onSuccess }) {
       return;
     }
 
-    createReviewMut.mutate({
-      bookingId: booking.id,
-      rating,
-      comment,
-    }, {
-      onSuccess: () => {
-        toast.success("Cảm ơn bạn đã đánh giá!");
-        onSuccess?.();
-        onClose();
-        setRating(0);
-        setComment("");
-      },
-      onError: (error) => {
-        toast.error(error.message || "Đánh giá thất bại");
-      }
-    });
+    if (booking.isReviewed && reviewId) {
+      updateReviewMut.mutate({
+        id: reviewId,
+        data: {
+          bookingId: booking.id,
+          rating,
+          comment,
+        }
+      }, {
+        onSuccess: () => {
+          toast.success("Cập nhật đánh giá thành công!");
+          onSuccess?.();
+          onClose();
+        },
+        onError: (error) => {
+          toast.error(error.message || "Cập nhật thất bại");
+        }
+      });
+    } else {
+      createReviewMut.mutate({
+        bookingId: booking.id,
+        rating,
+        comment,
+      }, {
+        onSuccess: () => {
+          toast.success("Cảm ơn bạn đã đánh giá!");
+          onSuccess?.();
+          onClose();
+        },
+        onError: (error) => {
+          toast.error(error.message || "Đánh giá thất bại");
+        }
+      });
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Đánh giá sân {booking?.courtName}</DialogTitle>
+          <DialogTitle>{booking?.isReviewed ? "Cập nhật" : "Đánh giá"} sân {booking?.courtName}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center space-y-4 py-4">
           <p className="text-sm text-muted-foreground text-center">
@@ -82,11 +118,11 @@ export default function ReviewModal({ isOpen, onClose, booking, onSuccess }) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={createReviewMut.isPending}>
+          <Button variant="ghost" onClick={onClose} disabled={createReviewMut.isPending || updateReviewMut.isPending}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={createReviewMut.isPending}>
-            {createReviewMut.isPending ? "Đang gửi..." : "Gửi đánh giá"}
+          <Button onClick={handleSubmit} disabled={createReviewMut.isPending || updateReviewMut.isPending}>
+            {createReviewMut.isPending || updateReviewMut.isPending ? "Đang gửi..." : (booking?.isReviewed ? "Cập nhật" : "Gửi đánh giá")}
           </Button>
         </DialogFooter>
       </DialogContent>

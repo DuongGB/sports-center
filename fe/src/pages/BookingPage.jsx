@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useCourtQuery } from "@/hooks/queries/useCourtQueries";
+import { useActiveEventsQuery } from "@/hooks/queries/useEventQueries";
 import { bookingService } from "@/services/bookingService";
 import { toast } from "react-toastify";
 import {
@@ -35,7 +36,7 @@ export default function BookingPage() {
   const { user, isAuthenticated } = useAuth();
 
   const { data: court, isLoading: loadingCourt } = useCourtQuery(courtId);
-  const [activeEvents, setActiveEvents] = useState([]);
+  const { data: activeEvents = [] } = useActiveEventsQuery();
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
@@ -104,13 +105,6 @@ export default function BookingPage() {
     }
   };
 
-  useEffect(() => {
-    import("@/services/eventService").then(({ eventService }) => {
-      eventService.getActiveEvents().then(res => {
-        setActiveEvents(res.data || []);
-      }).catch(console.error);
-    });
-  }, []);
 
 
   const [formData, setFormData] = useState({

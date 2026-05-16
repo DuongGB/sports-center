@@ -9,6 +9,14 @@ export function useEventsQuery(statusFilter = "") {
   });
 }
 
+export function useActiveEventsQuery() {
+  return useQuery({
+    queryKey: ["events", "active"],
+    queryFn: () => eventService.getActiveEvents().then(res => res.data || []),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
 export function useEventMutations() {
   const queryClient = useQueryClient();
 

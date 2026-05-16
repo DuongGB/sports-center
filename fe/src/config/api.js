@@ -20,8 +20,25 @@ export const apiCall = async (endpoint, options = {}) => {
     headers,
   });
 
+  const contentType = response.headers.get("content-type");
+  if (contentType && !contentType.includes("application/json")) {
+    if (!response.ok) {
+      throw new Error(`Lỗi hệ thống (${response.status})`);
+    }
+    return await response.blob();
+  }
+
   const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
+  let data = {};
+  
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (e) {
+    if (!response.ok) {
+      throw new Error(`Lỗi hệ thống (${response.status}): Vui lòng thử lại sau`);
+    }
+    throw new Error("Dữ liệu phản hồi không hợp lệ");
+  }
   
   if (!response.ok || data.success === false) {
     throw new Error(data.message || "Có lỗi xảy ra");

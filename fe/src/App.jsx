@@ -54,6 +54,7 @@ function AppContent() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const { isAuthenticated, fetchCurrentUser, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -79,8 +80,12 @@ function AppContent() {
     }
   };
 
-  const handleRegisterSuccess = () => {
+  const handleRegisterSuccess = (email) => {
     setIsRegisterModalOpen(false);
+    if (email) {
+      setRegisteredEmail(email);
+      setIsLoginModalOpen(true);
+    }
   };
 
   return (
@@ -151,7 +156,11 @@ function AppContent() {
 
       <LoginModal
         isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
+        onClose={() => {
+          setIsLoginModalOpen(false);
+          setRegisteredEmail("");
+        }}
+        registeredEmail={registeredEmail}
         onSwitchToRegister={() => {
           setIsLoginModalOpen(false);
           setIsRegisterModalOpen(true);

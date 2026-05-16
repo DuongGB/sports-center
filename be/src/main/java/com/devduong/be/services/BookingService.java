@@ -390,7 +390,7 @@ public class BookingService {
     public void autoCancelUnpaidOnlineBookings() {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
         List<Payment> expiredPayments = paymentRepository.findByPaymentStatusAndPaymentDateBefore(
-                com.devduong.be.enums.PaymentStatus.PENDING, threshold
+                PaymentStatus.PENDING, threshold
         );
 
         if (!expiredPayments.isEmpty()) {
@@ -460,7 +460,8 @@ public class BookingService {
                             pStatus,
                             booking.getCancelReason(),
                             booking.getCreatedAt(),
-                            isReviewed
+                            isReviewed,
+                            reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
                     );
                 })
                 .toList();
@@ -473,8 +474,10 @@ public class BookingService {
         );
     }
 
-    public List<BookingResponse> getMyBookings(String userId) {
-        return bookingRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+    public PageResponse<BookingResponse> getMyBookings(String userId, Pageable pageable) {
+        Page<Booking> bookingPage = bookingRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        
+        List<BookingResponse> responses = bookingPage.stream()
                 .map(booking -> {
                     String customerName = booking.getUser() != null
                             ? booking.getUser().getFullName()
@@ -512,10 +515,19 @@ public class BookingService {
                             pStatus,
                             booking.getCancelReason(),
                             booking.getCreatedAt(),
-                            isReviewed
+                            isReviewed,
+                            reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
                     );
                 })
                 .toList();
+
+        return new PageResponse<>(
+                bookingPage.getNumber() + 1,
+                bookingPage.getTotalPages(),
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                responses
+        );
     }
 
 }

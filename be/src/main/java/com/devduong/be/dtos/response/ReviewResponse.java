@@ -12,7 +12,8 @@ public record ReviewResponse(
         String comment,
         String adminReply,
         LocalDateTime repliedAt,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean isHide
 ) {
 }
 

@@ -412,6 +412,7 @@ export default function BookingsPage() {
                 { label: "Tổng tiền", value: formatPrice(viewData.totalPrice) },
                 { label: "Trạng thái", value: (statusMap[viewData.bookingStatus] || {}).label || viewData.bookingStatus },
                 { label: "Phương thức TT", value: viewData.paymentMethod || "Tiền mặt" },
+                { label: "Trạng thái thanh toán", value: viewData.paymentStatus === 'SUCCESS' ? 'Đã thanh toán' : 'Chưa thanh toán' },
                 { label: "Lý do hủy", value: viewData.cancelReason, condition: viewData.bookingStatus === 'CANCELLED' },
                 { label: "Ngày tạo", value: formatDate(viewData.createdAt) },
               ].filter(item => item.condition !== false).map(({ label, value }) => (
