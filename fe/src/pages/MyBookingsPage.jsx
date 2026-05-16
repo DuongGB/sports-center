@@ -25,6 +25,7 @@ import ReviewModal from "@/components/modals/ReviewModal";
 import ViewReviewModal from "@/components/modals/ViewReviewModal";
 import BookingDetailModal from "@/components/modals/BookingDetailModal";
 import PaymentModal from "@/components/modals/PaymentModal";
+import QrModal from "@/components/modals/QrModal";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -65,6 +66,7 @@ export default function MyBookingsPage() {
   const [isViewReviewModalOpen, setIsViewReviewModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -93,6 +95,11 @@ export default function MyBookingsPage() {
     setIsPaymentModalOpen(true);
   }, []);
 
+  const handleOpenQrModal = useCallback((booking) => {
+    setSelectedBooking(booking);
+    setIsQrModalOpen(true);
+  }, []);
+
   const handleCloseReviewModal = useCallback(() => {
     setIsReviewModalOpen(false);
     setSelectedBooking(null);
@@ -107,6 +114,10 @@ export default function MyBookingsPage() {
   );
   const handleClosePaymentModal = useCallback(
     () => setIsPaymentModalOpen(false),
+    [],
+  );
+  const handleCloseQrModal = useCallback(
+    () => setIsQrModalOpen(false),
     [],
   );
 
@@ -370,6 +381,15 @@ export default function MyBookingsPage() {
                             Đặt lại
                           </Button>
                         )}
+                        {booking.bookingStatus === "CONFIRMED" && (
+                          <Button
+                            variant="outline"
+                            className="gap-2 border-primary/20 hover:bg-primary/5 text-primary"
+                            onClick={() => handleOpenQrModal(booking)}
+                          >
+                            Mã QR
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           className="text-primary hover:bg-primary/10"
@@ -441,6 +461,14 @@ export default function MyBookingsPage() {
           onClose={handleCloseReviewModal}
           booking={selectedBooking}
           onSuccess={() => refetch()}
+        />
+      )}
+
+      {selectedBooking && (
+        <QrModal
+          isOpen={isQrModalOpen}
+          onClose={handleCloseQrModal}
+          booking={selectedBooking}
         />
       )}
 

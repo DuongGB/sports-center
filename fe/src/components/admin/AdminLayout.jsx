@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Star,
   CalendarRange,
+  QrCode,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -127,6 +128,7 @@ const AdminLayout = () => {
     { name: "Đánh Giá", path: "/admin/reviews", icon: Star },
     { name: "Tin Nhắn", path: "/admin/chat", icon: MessageCircle },
     { name: "Sự Kiện", path: "/admin/events", icon: CalendarRange },
+    { name: "Quét QR", path: "/admin/scanner", icon: QrCode },
   ];
 
   return (
