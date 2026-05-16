@@ -76,7 +76,8 @@ export default function BookingsPage() {
 
   const canBatchConfirm = selectedIds.length > 0 && selectedBookings.every(b => b.bookingStatus === "PENDING");
   const canBatchCancel = selectedIds.length > 0 && selectedBookings.every(b => 
-    (b.bookingStatus === "PENDING" || b.bookingStatus === "CONFIRMED") && !isBookingInProgress(b) && !isBookingFinished(b)
+    (b.bookingStatus === "PENDING" || b.bookingStatus === "CONFIRMED") && 
+    !isBookingInProgress(b) && !isBookingFinished(b) && b.paymentStatus !== "SUCCESS"
   );
 
   const { confirmBookingMut, cancelBookingMut, batchProcessMut } = useBookingMutations();
@@ -335,8 +336,12 @@ export default function BookingsPage() {
                               size="sm" 
                               onClick={() => handleCancel(b)} 
                               className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                              disabled={isBookingInProgress(b) || isBookingFinished(b)}
-                              title={isBookingInProgress(b) ? "Không thể hủy khi đang trong giờ chơi" : isBookingFinished(b) ? "Không thể hủy đơn đã kết thúc" : ""}
+                              disabled={isBookingInProgress(b) || isBookingFinished(b) || b.paymentStatus === "SUCCESS"}
+                              title={
+                                isBookingInProgress(b) ? "Không thể hủy khi đang trong giờ chơi" : 
+                                isBookingFinished(b) ? "Không thể hủy đơn đã kết thúc" : 
+                                b.paymentStatus === "SUCCESS" ? "Không thể hủy đơn đã thanh toán" : ""
+                              }
                             >
                               <XCircle className="w-4 h-4 mr-1" /> Hủy
                             </Button>
@@ -348,8 +353,12 @@ export default function BookingsPage() {
                             size="sm" 
                             onClick={() => handleCancel(b)} 
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                            disabled={isBookingInProgress(b) || isBookingFinished(b)}
-                            title={isBookingInProgress(b) ? "Không thể hủy khi đang trong giờ chơi" : isBookingFinished(b) ? "Không thể hủy đơn đã kết thúc" : ""}
+                            disabled={isBookingInProgress(b) || isBookingFinished(b) || b.paymentStatus === "SUCCESS"}
+                            title={
+                              isBookingInProgress(b) ? "Không thể hủy khi đang trong giờ chơi" : 
+                              isBookingFinished(b) ? "Không thể hủy đơn đã kết thúc" : 
+                              b.paymentStatus === "SUCCESS" ? "Không thể hủy đơn đã thanh toán" : ""
+                            }
                           >
                             <XCircle className="w-4 h-4 mr-1" /> Hủy
                           </Button>
@@ -422,8 +431,12 @@ export default function BookingsPage() {
                   <Button 
                     variant="destructive" 
                     onClick={() => { handleCancel(viewData); setIsViewModalOpen(false); }}
-                    disabled={isBookingInProgress(viewData) || isBookingFinished(viewData)}
-                    title={isBookingInProgress(viewData) ? "Không thể hủy khi đang trong giờ chơi" : isBookingFinished(viewData) ? "Không thể hủy đơn đã kết thúc" : ""}
+                    disabled={isBookingInProgress(viewData) || isBookingFinished(viewData) || viewData.paymentStatus === "SUCCESS"}
+                    title={
+                      isBookingInProgress(viewData) ? "Không thể hủy khi đang trong giờ chơi" : 
+                      isBookingFinished(viewData) ? "Không thể hủy đơn đã kết thúc" : 
+                      viewData.paymentStatus === "SUCCESS" ? "Không thể hủy đơn đã thanh toán" : ""
+                    }
                   >
                     Hủy đơn
                   </Button>

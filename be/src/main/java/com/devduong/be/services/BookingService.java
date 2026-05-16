@@ -236,6 +236,12 @@ public class BookingService {
             throw new RuntimeException("Không thể hủy đơn đặt sân đã kết thúc");
         }
 
+        paymentRepository.findByBookingId(bookingId).ifPresent(payment -> {
+            if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+                throw new RuntimeException("Không thể hủy đơn đặt sân đã thanh toán thành công");
+            }
+        });
+
         booking.setBookingStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
         booking.setCancelReason(reason);
@@ -303,8 +309,15 @@ public class BookingService {
                     booking.setCancelledAt(LocalDateTime.now());
                 }
             } else if (booking.getBookingStatus() == BookingStatus.CONFIRMED && "CANCEL".equalsIgnoreCase(action)) {
-                booking.setBookingStatus(BookingStatus.CANCELLED);
-                booking.setCancelledAt(LocalDateTime.now());
+                // Check if paid
+                boolean isPaid = paymentRepository.findByBookingId(booking.getId())
+                        .map(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                        .orElse(false);
+                
+                if (!isPaid) {
+                    booking.setBookingStatus(BookingStatus.CANCELLED);
+                    booking.setCancelledAt(LocalDateTime.now());
+                }
             }
         }
         bookingRepository.saveAll(bookings);
@@ -336,7 +349,18 @@ public class BookingService {
                 .toList();
 
         if (!toComplete.isEmpty()) {
-            toComplete.forEach(b -> b.setBookingStatus(BookingStatus.COMPLETED));
+            toComplete.forEach(b -> {
+                b.setBookingStatus(BookingStatus.COMPLETED);
+                if (b.getPaymentMethod() == PaymentMethod.CASH) {
+                    paymentRepository.findByBookingId(b.getId()).ifPresent(p -> {
+                        if (p.getPaymentStatus() == PaymentStatus.PENDING) {
+                            p.setPaymentStatus(PaymentStatus.SUCCESS);
+                            p.setPaymentDate(LocalDateTime.now());
+                            paymentRepository.save(p);
+                        }
+                    });
+                }
+            });
             bookingRepository.saveAll(toComplete);
             log.info("Auto-completed {} bookings.", toComplete.size());
         }
