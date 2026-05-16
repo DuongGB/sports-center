@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUsers } from "@/hooks/useUsers";
-import { X, Eye, Search, Filter, RefreshCcw } from "lucide-react";
+import { X, Eye, Search, Filter, RefreshCcw, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "@/utils/dateUtils";
 import { showToast } from "@/utils/toast";
 
 export default function UsersPage() {
+  const queryClient = useQueryClient();
   const [userFilters, setUserFilters] = useState({ keyword: "", status: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const { users, loading, page, totalPages, totalElements, setPage, setFilters, updateUserMut } = useUsers();
@@ -76,7 +78,18 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Người Dùng</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Người Dùng</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-muted"
+            onClick={() => queryClient.invalidateQueries(["users"])}
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
         
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={handleSearch} className="relative w-full sm:w-64">

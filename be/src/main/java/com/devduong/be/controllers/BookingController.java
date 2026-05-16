@@ -92,8 +92,11 @@ public class BookingController {
 
     @PutMapping("/{id}/cancel")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> cancelBooking(@PathVariable UUID id) {
-        bookingService.cancelBooking(id);
+    public ResponseEntity<ApiResponse<?>> cancelBooking(
+            @PathVariable UUID id,
+            @RequestBody(required = false) java.util.Map<String, String> payload) {
+        String reason = payload != null ? payload.get("reason") : "Hủy bởi Admin";
+        bookingService.cancelBooking(id, reason);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .code(HttpStatus.OK.value())

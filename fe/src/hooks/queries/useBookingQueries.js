@@ -21,7 +21,7 @@ export function useBookingMutations() {
   });
 
   const cancelBookingMut = useMutation({
-    mutationFn: (id) => bookingService.cancelBooking(id),
+    mutationFn: ({ id, reason }) => bookingService.cancelBooking(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },

@@ -1,11 +1,16 @@
 package com.devduong.be.controllers;
 
+import com.devduong.be.entities.Payment;
+import com.devduong.be.enums.PaymentMethod;
 import com.devduong.be.enums.PaymentStatus;
+import com.devduong.be.repositories.BookingRepository;
+import com.devduong.be.repositories.PaymentRepository;
 import com.devduong.be.services.payment.PayPalService;
 import com.paypal.http.HttpResponse;
 import com.paypal.orders.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -17,8 +22,8 @@ import java.util.Map;
 public class PayPalController {
 
     private final PayPalService payPalService;
-    private final com.devduong.be.repositories.BookingRepository bookingRepository;
-    private final com.devduong.be.repositories.PaymentRepository paymentRepository;
+    private final BookingRepository bookingRepository;
+    private final PaymentRepository paymentRepository;
 
     @PostMapping("/create")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> payload) {
@@ -47,7 +52,7 @@ public class PayPalController {
     }
 
     @PostMapping("/capture")
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public ResponseEntity<?> captureOrder(@RequestBody Map<String, String> payload) {
         try {
             String orderId = payload.get("orderId");
@@ -60,12 +65,17 @@ public class PayPalController {
                 com.devduong.be.entities.Booking booking = bookingRepository.findById(java.util.UUID.fromString(bookingId))
                         .orElseThrow(() -> new RuntimeException("Booking not found"));
                 
-                booking.setBookingStatus(com.devduong.be.enums.BookingStatus.CONFIRMED);
+                // Update Payment Method for both Booking and Payment
+                booking.setPaymentMethod(PaymentMethod.PAYPAL);
+                if (booking.getBookingStatus() == com.devduong.be.enums.BookingStatus.PENDING) {
+                    booking.setBookingStatus(com.devduong.be.enums.BookingStatus.CONFIRMED);
+                }
                 bookingRepository.save(booking);
                 
-                com.devduong.be.entities.Payment payment = paymentRepository.findByBookingId(booking.getId())
+                Payment payment = paymentRepository.findByBookingId(booking.getId())
                         .orElseThrow(() -> new RuntimeException("Payment not found"));
                 
+                payment.setPaymentMethod(PaymentMethod.PAYPAL);
                 payment.setPaymentStatus(PaymentStatus.SUCCESS);
                 payment.setTransactionId(response.result().id());
                 payment.setPaymentDate(java.time.LocalDateTime.now());

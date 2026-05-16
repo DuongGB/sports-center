@@ -3,11 +3,12 @@ import { chatService } from "../../services/chatService";
 import { API_BASE_URL } from "../../config/api";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Send, Search, User, Phone, MessageCircle, ArrowLeft, Trash2, Bot, Sparkles } from "lucide-react";
+import { Send, Search, User, Phone, MessageCircle, ArrowLeft, Trash2, Bot, Sparkles, RefreshCw } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useConversations, useMessages, useDeleteConversation } from "../../hooks/queries/useChatQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { showToast } from "@/utils/toast";
 
 export default function ChatPage() {
@@ -140,7 +141,18 @@ export default function ChatPage() {
       {/* Sidebar danh sách chat */}
       <div className={`w-full md:w-80 border-r flex flex-col bg-card ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b">
-          <h2 className="text-xl font-bold mb-4">Hỗ trợ khách hàng</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Hỗ trợ khách hàng</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-muted"
+              onClick={() => queryClient.invalidateQueries(["chat", "conversations"])}
+              title="Làm mới dữ liệu"
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input

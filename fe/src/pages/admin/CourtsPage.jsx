@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, X, Eye, Search, Filter, RefreshCcw } from "lucide-react";
+import { MapPin, X, Eye, Search, Filter, RefreshCcw, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCourtsQuery, useCourtMutations } from "@/hooks/queries/useCourtQueries";
 import { useSportTypesQuery } from "@/hooks/queries/useSportTypeQueries";
 import { showToast } from "@/utils/toast";
 
 export default function CourtsPage() {
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ keyword: "", status: "", sportTypeId: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -172,7 +174,18 @@ export default function CourtsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Sân Bãi</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Sân Bãi</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-muted"
+            onClick={() => queryClient.invalidateQueries(["courts"])}
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
         
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={handleSearch} className="relative w-full sm:w-64">

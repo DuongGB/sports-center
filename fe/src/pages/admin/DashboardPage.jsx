@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Users,
   Activity,
@@ -13,7 +14,9 @@ import {
   Loader2,
   Download,
   FileText,
+  RefreshCw,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useRevenueOverview,
   useMonthlyRevenue,
@@ -70,8 +73,16 @@ const STATUS_LABELS = {
 };
 
 const SPORT_COLORS = [
-  "#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444",
-  "#ec4899", "#14b8a6", "#f97316", "#84cc16",
+  "#6366f1",
+  "#8b5cf6",
+  "#06b6d4",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#ec4899",
+  "#14b8a6",
+  "#f97316",
+  "#84cc16",
 ];
 
 const PIE_COLORS = ["#f59e0b", "#10b981", "#ef4444", "#3b82f6"];
@@ -83,12 +94,17 @@ const CustomTooltip = ({ active, payload, label, suffix = "đ" }) => {
     <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-xl text-xs">
       <p className="font-semibold text-foreground mb-1">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="flex items-center gap-1.5">
+        <p
+          key={i}
+          style={{ color: p.color }}
+          className="flex items-center gap-1.5"
+        >
           <span
             className="inline-block w-2.5 h-2.5 rounded-full"
             style={{ backgroundColor: p.color }}
           />
-          {p.name}: <span className="font-semibold">{formatFullCurrency(p.value)}</span>
+          {p.name}:{" "}
+          <span className="font-semibold">{formatFullCurrency(p.value)}</span>
         </p>
       ))}
     </div>
@@ -110,18 +126,22 @@ function ChartSkeleton({ className = "" }) {
 
 // ===== Main Component =====
 export default function DashboardPage() {
+  const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [exportType, setExportType] = useState("year");
   const [exportValue, setExportValue] = useState(new Date().getMonth()); // Default to current month index if month type selected
 
   const { data: overview, isLoading: loadingOverview } = useRevenueOverview();
-  const { data: monthlyData, isLoading: loadingMonthly } = useMonthlyRevenue(selectedYear);
+  const { data: monthlyData, isLoading: loadingMonthly } =
+    useMonthlyRevenue(selectedYear);
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyRevenue();
   const { data: statusData, isLoading: loadingStatus } = useBookingsByStatus();
-  const { data: sportTypeData, isLoading: loadingSportType } = useRevenueBySportType();
+  const { data: sportTypeData, isLoading: loadingSportType } =
+    useRevenueBySportType();
   const { data: topCourts, isLoading: loadingTopCourts } = useTopCourts(5);
-  const { data: recentBookings, isLoading: loadingRecent } = useRecentBookings();
+  const { data: recentBookings, isLoading: loadingRecent } =
+    useRecentBookings();
 
   // ===== Export Logic =====
   const handleExportReport = () => {
@@ -155,7 +175,11 @@ export default function DashboardPage() {
         const mData = allMonths[mIdx];
         const rev = mData ? mData.revenue || 0 : 0;
         totalRevenue += rev;
-        dataRows.push([i + 1, mData ? mData.monthLabel : `Tháng ${mIdx + 1}`, `${rev}`]);
+        dataRows.push([
+          i + 1,
+          mData ? mData.monthLabel : `Tháng ${mIdx + 1}`,
+          `${rev}`,
+        ]);
       });
     }
 
@@ -245,7 +269,20 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Bảng điều khiển
+            </h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-muted"
+              onClick={() => queryClient.invalidateQueries()}
+              title="Làm mới dữ liệu"
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
             Tổng quan doanh thu và thống kê hoạt động
           </p>
@@ -253,7 +290,9 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-center gap-4 bg-muted/30 p-2 rounded-xl border border-border/50">
           {/* Year Selector */}
           <div className="flex items-center gap-2 px-3 py-1.5 border-r border-border/50 last:border-0">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Năm:</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Năm:
+            </span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -269,7 +308,9 @@ export default function DashboardPage() {
 
           {/* Export Type Selector */}
           <div className="flex items-center gap-2 px-3 py-1.5 border-r border-border/50 last:border-0">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Báo cáo:</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Báo cáo:
+            </span>
             <select
               value={exportType}
               onChange={(e) => setExportType(e.target.value)}
@@ -324,7 +365,10 @@ export default function DashboardPage() {
       {loadingOverview ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6">
+            <div
+              key={i}
+              className="animate-pulse rounded-xl border border-border bg-card p-6"
+            >
               <div className="h-4 w-1/2 rounded bg-muted mb-3" />
               <div className="h-6 w-2/3 rounded bg-muted mb-2" />
               <div className="h-3 w-1/3 rounded bg-muted/60" />
@@ -343,16 +387,22 @@ export default function DashboardPage() {
                 className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
               >
                 {/* Decorative gradient */}
-                <div className={`absolute top-0 right-0 h-24 w-24 rounded-bl-[4rem] ${stat.bgColor} opacity-60 transition-opacity group-hover:opacity-100`} />
+                <div
+                  className={`absolute top-0 right-0 h-24 w-24 rounded-bl-[4rem] ${stat.bgColor} opacity-60 transition-opacity group-hover:opacity-100`}
+                />
 
                 <div className="relative flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">{stat.name}</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    {stat.name}
+                  </h3>
                   <div className={`rounded-lg p-2 ${stat.bgColor}`}>
                     <Icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
                 </div>
                 <div className="relative">
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {stat.value}
+                  </p>
                   <div className="mt-1 flex items-center gap-2">
                     {stat.change != null && (
                       <span
@@ -365,7 +415,9 @@ export default function DashboardPage() {
                         {stat.change}%
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground">{stat.subValue}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {stat.subValue}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -383,8 +435,12 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-foreground">Doanh thu theo tháng</h3>
-                <p className="text-xs text-muted-foreground">Biểu đồ doanh thu năm {selectedYear}</p>
+                <h3 className="font-semibold text-foreground">
+                  Doanh thu theo tháng
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Biểu đồ doanh thu năm {selectedYear}
+                </p>
               </div>
               <div className="rounded-lg bg-blue-500/10 p-2">
                 <BarChart3 className="h-4 w-4 text-blue-500" />
@@ -393,9 +449,19 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={monthlyData || []}>
                 <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="revenueGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                    <stop
+                      offset="100%"
+                      stopColor="#6366f1"
+                      stopOpacity={0.02}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -424,7 +490,12 @@ export default function DashboardPage() {
                   strokeWidth={2.5}
                   fill="url(#revenueGradient)"
                   dot={{ fill: "#6366f1", strokeWidth: 2, r: 3 }}
-                  activeDot={{ r: 6, fill: "#6366f1", stroke: "#fff", strokeWidth: 2 }}
+                  activeDot={{
+                    r: 6,
+                    fill: "#6366f1",
+                    stroke: "#fff",
+                    strokeWidth: 2,
+                  }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -438,7 +509,9 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-4">
               <h3 className="font-semibold text-foreground">7 ngày gần nhất</h3>
-              <p className="text-xs text-muted-foreground">Doanh thu theo ngày</p>
+              <p className="text-xs text-muted-foreground">
+                Doanh thu theo ngày
+              </p>
             </div>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={weeklyData || []} barCategoryGap="20%">
@@ -465,7 +538,11 @@ export default function DashboardPage() {
                   {(weeklyData || []).map((_, idx) => (
                     <Cell
                       key={idx}
-                      fill={idx === (weeklyData || []).length - 1 ? "#6366f1" : "#a5b4fc"}
+                      fill={
+                        idx === (weeklyData || []).length - 1
+                          ? "#6366f1"
+                          : "#a5b4fc"
+                      }
                     />
                   ))}
                 </Bar>
@@ -483,8 +560,12 @@ export default function DashboardPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-4">
-              <h3 className="font-semibold text-foreground">Tỉ lệ trạng thái đặt sân</h3>
-              <p className="text-xs text-muted-foreground">Phân bố theo trạng thái booking</p>
+              <h3 className="font-semibold text-foreground">
+                Tỉ lệ trạng thái đặt sân
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Phân bố theo trạng thái booking
+              </p>
             </div>
             <div className="flex items-center justify-center">
               <ResponsiveContainer width="100%" height={280}>
@@ -502,12 +583,18 @@ export default function DashboardPage() {
                     label={({ statusLabel, count, percent }) =>
                       `${statusLabel} (${count})`
                     }
-                    labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                    labelLine={{
+                      stroke: "hsl(var(--muted-foreground))",
+                      strokeWidth: 1,
+                    }}
                   >
                     {(statusData || []).map((entry, idx) => (
                       <Cell
                         key={idx}
-                        fill={STATUS_COLORS[entry.status] || PIE_COLORS[idx % PIE_COLORS.length]}
+                        fill={
+                          STATUS_COLORS[entry.status] ||
+                          PIE_COLORS[idx % PIE_COLORS.length]
+                        }
                       />
                     ))}
                   </Pie>
@@ -526,16 +613,24 @@ export default function DashboardPage() {
             {/* Legend */}
             <div className="flex flex-wrap justify-center gap-4 mt-2">
               {(statusData || []).map((entry, idx) => (
-                <div key={entry.status} className="flex items-center gap-1.5 text-xs">
+                <div
+                  key={entry.status}
+                  className="flex items-center gap-1.5 text-xs"
+                >
                   <span
                     className="inline-block w-2.5 h-2.5 rounded-full"
                     style={{
                       backgroundColor:
-                        STATUS_COLORS[entry.status] || PIE_COLORS[idx % PIE_COLORS.length],
+                        STATUS_COLORS[entry.status] ||
+                        PIE_COLORS[idx % PIE_COLORS.length],
                     }}
                   />
-                  <span className="text-muted-foreground">{entry.statusLabel}</span>
-                  <span className="font-semibold text-foreground">{entry.count}</span>
+                  <span className="text-muted-foreground">
+                    {entry.statusLabel}
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {entry.count}
+                  </span>
                 </div>
               ))}
             </div>
@@ -548,11 +643,19 @@ export default function DashboardPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-4">
-              <h3 className="font-semibold text-foreground">Doanh thu theo loại sân</h3>
-              <p className="text-xs text-muted-foreground">So sánh doanh thu giữa các môn</p>
+              <h3 className="font-semibold text-foreground">
+                Doanh thu theo loại sân
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                So sánh doanh thu giữa các môn
+              </p>
             </div>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={sportTypeData || []} layout="vertical" barCategoryGap="18%">
+              <BarChart
+                data={sportTypeData || []}
+                layout="vertical"
+                barCategoryGap="18%"
+              >
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--color-border)"
@@ -577,7 +680,10 @@ export default function DashboardPage() {
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="revenue" name="Doanh thu" radius={[0, 6, 6, 0]}>
                   {(sportTypeData || []).map((_, idx) => (
-                    <Cell key={idx} fill={SPORT_COLORS[idx % SPORT_COLORS.length]} />
+                    <Cell
+                      key={idx}
+                      fill={SPORT_COLORS[idx % SPORT_COLORS.length]}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -596,9 +702,13 @@ export default function DashboardPage() {
             <div className="p-6 pb-3">
               <div className="flex items-center gap-2 mb-1">
                 <Trophy className="h-4 w-4 text-amber-500" />
-                <h3 className="font-semibold text-foreground">Top sân doanh thu cao nhất</h3>
+                <h3 className="font-semibold text-foreground">
+                  Top sân doanh thu cao nhất
+                </h3>
               </div>
-              <p className="text-xs text-muted-foreground">Xếp hạng theo tổng doanh thu</p>
+              <p className="text-xs text-muted-foreground">
+                Xếp hạng theo tổng doanh thu
+              </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -606,15 +716,24 @@ export default function DashboardPage() {
                   <tr>
                     <th className="px-6 py-3 text-left font-medium">#</th>
                     <th className="px-6 py-3 text-left font-medium">Sân</th>
-                    <th className="px-6 py-3 text-left font-medium">Loại sân</th>
-                    <th className="px-6 py-3 text-right font-medium">Lượt đặt</th>
-                    <th className="px-6 py-3 text-right font-medium">Doanh thu</th>
+                    <th className="px-6 py-3 text-left font-medium">
+                      Loại sân
+                    </th>
+                    <th className="px-6 py-3 text-right font-medium">
+                      Lượt đặt
+                    </th>
+                    <th className="px-6 py-3 text-right font-medium">
+                      Doanh thu
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {(topCourts || []).length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-8 text-center text-muted-foreground">
+                      <td
+                        colSpan="5"
+                        className="px-6 py-8 text-center text-muted-foreground"
+                      >
                         Chưa có dữ liệu
                       </td>
                     </tr>
@@ -630,10 +749,10 @@ export default function DashboardPage() {
                               idx === 0
                                 ? "bg-amber-500/20 text-amber-600"
                                 : idx === 1
-                                ? "bg-slate-400/20 text-slate-500"
-                                : idx === 2
-                                ? "bg-orange-400/20 text-orange-500"
-                                : "bg-muted text-muted-foreground"
+                                  ? "bg-slate-400/20 text-slate-500"
+                                  : idx === 2
+                                    ? "bg-orange-400/20 text-orange-500"
+                                    : "bg-muted text-muted-foreground"
                             }`}
                           >
                             {idx + 1}
@@ -641,7 +760,9 @@ export default function DashboardPage() {
                         </td>
                         <td className="px-6 py-3">
                           <div>
-                            <p className="font-medium text-foreground">{court.courtName}</p>
+                            <p className="font-medium text-foreground">
+                              {court.courtName}
+                            </p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {court.location}
@@ -678,7 +799,9 @@ export default function DashboardPage() {
             <div className="p-6 pb-3">
               <div className="flex items-center gap-2 mb-1">
                 <CalendarDays className="h-4 w-4 text-blue-500" />
-                <h3 className="font-semibold text-foreground">Đơn đặt sân gần đây</h3>
+                <h3 className="font-semibold text-foreground">
+                  Đơn đặt sân gần đây
+                </h3>
               </div>
               <p className="text-xs text-muted-foreground">10 đơn mới nhất</p>
             </div>
@@ -703,12 +826,12 @@ export default function DashboardPage() {
                             b.bookingStatus === "CONFIRMED"
                               ? "status-badge status-active"
                               : b.bookingStatus === "PENDING"
-                              ? "status-badge status-pending"
-                              : b.bookingStatus === "CANCELLED"
-                              ? "status-badge status-cancelled"
-                              : "status-badge status-completed"
+                                ? "status-badge status-pending"
+                                : b.bookingStatus === "CANCELLED"
+                                  ? "status-badge status-cancelled"
+                                  : "status-badge status-completed"
                           }`}
-                          style={{ fontSize: '10px', padding: '1px 8px' }}
+                          style={{ fontSize: "10px", padding: "1px 8px" }}
                         >
                           {STATUS_LABELS[b.bookingStatus] || b.bookingStatus}
                         </span>
@@ -728,7 +851,9 @@ export default function DashboardPage() {
                       <p className="font-semibold text-sm text-primary">
                         {formatFullCurrency(b.totalPrice)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{b.bookingDate}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {b.bookingDate}
+                      </p>
                     </div>
                   </div>
                 ))

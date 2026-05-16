@@ -220,11 +220,25 @@ public class BookingService {
 
     // TODO: Hủy đặt sân
     @Transactional
-    public void cancelBooking(UUID bookingId) {
+    public void cancelBooking(UUID bookingId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+        LocalDateTime end = LocalDateTime.of(booking.getBookingDate(), booking.getEndTime());
+        
+        if (!now.isBefore(start) && now.isBefore(end)) {
+            throw new RuntimeException("Không thể hủy đơn đặt sân khi đang trong thời gian diễn ra");
+        }
+
+        if (now.isAfter(end)) {
+            throw new RuntimeException("Không thể hủy đơn đặt sân đã kết thúc");
+        }
+
         booking.setBookingStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
+        booking.setCancelReason(reason);
         bookingRepository.save(booking);
     }
 
@@ -271,7 +285,16 @@ public class BookingService {
     @Transactional
     public void batchProcessBookings(List<UUID> bookingIds, String action) {
         List<Booking> bookings = bookingRepository.findAllById(bookingIds);
+        LocalDateTime now = LocalDateTime.now();
+        
         for (Booking booking : bookings) {
+            if ("CANCEL".equalsIgnoreCase(action)) {
+                LocalDateTime start = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+                if (!now.isBefore(start)) {
+                    continue; // Skip if already started or finished
+                }
+            }
+
             if (booking.getBookingStatus() == BookingStatus.PENDING) {
                 if ("CONFIRM".equalsIgnoreCase(action)) {
                     booking.setBookingStatus(BookingStatus.CONFIRMED);
@@ -393,6 +416,10 @@ public class BookingService {
                     }
                     boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
 
+                    Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+                    PaymentStatus pStatus = payment != null ? payment.getPaymentStatus() : com.devduong.be.enums.PaymentStatus.PENDING;
+                    UUID pId = payment != null ? payment.getId() : null;
+
                     return new BookingResponse(
                             booking.getId(),
                             booking.getCourt().getId(),
@@ -404,10 +431,10 @@ public class BookingService {
                             booking.getBookingStatus(),
                             customerName,
                             customerPhone,
-                            null, // paymentId
+                            pId,
                             method,
-                            null, // paymentStatus
-                            null, // paymentUrl
+                            pStatus,
+                            booking.getCancelReason(),
                             booking.getCreatedAt(),
                             isReviewed
                     );
@@ -441,6 +468,10 @@ public class BookingService {
 
                     boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
 
+                    Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+                    PaymentStatus pStatus = payment != null ? payment.getPaymentStatus() : com.devduong.be.enums.PaymentStatus.PENDING;
+                    UUID pId = payment != null ? payment.getId() : null;
+
                     return new BookingResponse(
                             booking.getId(),
                             booking.getCourt().getId(),
@@ -452,10 +483,10 @@ public class BookingService {
                             booking.getBookingStatus(),
                             customerName,
                             customerPhone,
-                            null, // paymentId
+                            pId,
                             method,
-                            null, // paymentStatus
-                            null, // paymentUrl
+                            pStatus,
+                            booking.getCancelReason(),
                             booking.getCreatedAt(),
                             isReviewed
                     );

@@ -3,17 +3,18 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
 
-    <changeSet id="add-reply-columns-to-reviews-v2" author="devduong">
+    <changeSet id="005-add-cancel-reason-to-bookings" author="devduong">
         <preConditions onFail="MARK_RAN">
             <not>
-                <columnExists tableName="reviews" columnName="admin_reply"/>
+                <columnExists tableName="bookings" columnName="cancel_reason"/>
             </not>
         </preConditions>
-        <addColumn tableName="reviews">
-            <column name="admin_reply" type="TEXT"/>
-            <column name="replied_at" type="TIMESTAMP"/>
+        <addColumn tableName="bookings">
+            <column name="cancel_reason" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
         </addColumn>
     </changeSet>
 

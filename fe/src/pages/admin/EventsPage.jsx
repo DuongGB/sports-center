@@ -13,6 +13,7 @@ import {
   Trash2,
   Edit,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 import { showToast } from "@/utils/toast";
 import { eventService } from "@/services/eventService";
@@ -307,9 +308,20 @@ export default function EventsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Quản Lý Sự Kiện
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Quản Lý Sự Kiện
+          </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-muted"
+            onClick={fetchEvents}
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}

@@ -27,7 +27,6 @@ public interface BookingMapper {
     @Mapping(source = "booking.court.name", target = "courtName")
     @Mapping(source = "paymentResult.paymentId", target = "paymentId")
     @Mapping(source = "paymentResult.paymentStatus", target = "paymentStatus")
-    @Mapping(source = "paymentResult.paymentUrl", target = "paymentUrl")
     @Mapping(source = "paymentMethod", target = "paymentMethod")
     @Mapping(target = "customerName", expression = "java(booking.getUser() != null ? booking.getUser().getFullName() : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : null))")
     @Mapping(target = "customerPhone", expression = "java(booking.getUser() != null ? booking.getUser().getPhone() : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : null))")

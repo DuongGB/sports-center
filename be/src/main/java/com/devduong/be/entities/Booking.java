@@ -7,6 +7,7 @@
 package com.devduong.be.entities;
 
 import com.devduong.be.enums.BookingStatus;
+import com.devduong.be.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -66,7 +67,7 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
-    com.devduong.be.enums.PaymentMethod paymentMethod;
+    PaymentMethod paymentMethod;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt;
@@ -76,6 +77,9 @@ public class Booking {
 
     @Column(name = "cancelled_at")
     LocalDateTime cancelledAt;
+
+    @Column(name = "cancel_reason")
+    String cancelReason;
 
     @PrePersist
     protected void onCreate() {

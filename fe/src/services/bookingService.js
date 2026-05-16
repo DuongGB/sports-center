@@ -14,8 +14,11 @@ export const bookingService = {
   },
   confirmBooking: (id) =>
     apiCall(`/booking/${id}/confirm`, { method: "PUT" }),
-  cancelBooking: (id) =>
-    apiCall(`/booking/${id}/cancel`, { method: "PUT" }),
+  cancelBooking: (id, reason) =>
+    apiCall(`/booking/${id}/cancel`, { 
+      method: "PUT",
+      body: reason ? JSON.stringify({ reason }) : undefined
+    }),
   cancelMyBooking: (id) =>
     apiCall(`/booking/${id}/cancel-my-booking`, { method: "PUT" }),
   batchProcess: (ids, action) =>

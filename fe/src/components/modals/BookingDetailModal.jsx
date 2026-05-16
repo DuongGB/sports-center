@@ -43,7 +43,7 @@ const statusConfig = {
 
 const paymentStatusConfig = {
   PENDING: { label: "Chưa thanh toán", color: "text-amber-600" },
-  PAID: { label: "Đã thanh toán", color: "text-emerald-600" },
+  SUCCESS: { label: "Đã thanh toán", color: "text-emerald-600" },
   FAILED: { label: "Thanh toán thất bại", color: "text-rose-600" },
   REFUNDED: { label: "Đã hoàn tiền", color: "text-blue-600" },
 };
@@ -115,6 +115,16 @@ export default function BookingDetailModal({ isOpen, onClose, booking }) {
           </div>
 
           <div className="h-px bg-border/50" />
+
+          {booking.bookingStatus === "CANCELLED" && booking.cancelReason && (
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 space-y-2 animate-in fade-in slide-in-from-top-1">
+              <div className="flex items-center gap-2 text-xs font-semibold text-rose-600 uppercase tracking-wider">
+                <Info className="h-3 w-3" />
+                Lý do hủy đơn
+              </div>
+              <p className="text-sm font-medium text-rose-700 italic">"{booking.cancelReason}"</p>
+            </div>
+          )}
 
           {/* Payment Info Section */}
           <div className="space-y-4">

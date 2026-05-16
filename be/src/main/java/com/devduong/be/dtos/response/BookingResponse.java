@@ -39,7 +39,7 @@ public record BookingResponse(
         UUID paymentId,
         PaymentMethod paymentMethod,
         PaymentStatus paymentStatus,
-        String paymentUrl,
+        String cancelReason,
 
         LocalDateTime createdAt,
         boolean isReviewed

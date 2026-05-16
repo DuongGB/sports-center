@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Trash2, MessageSquare, User, Calendar, Eye, Reply } from "lucide-react";
+import { Star, Trash2, MessageSquare, User, Calendar, Eye, Reply, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/utils/toast";
 import {
   AlertDialog,
@@ -35,6 +36,7 @@ import {
 } from "@/hooks/queries/useReviewQueries";
 
 export default function ReviewManagementPage() {
+  const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState(null);
   const [viewReview, setViewReview] = useState(null);
   const [replyReview, setReplyReview] = useState(null);
@@ -91,11 +93,24 @@ export default function ReviewManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Quản lý đánh giá</h1>
-        <p className="text-muted-foreground">
-          Xem và quản lý các phản hồi từ khách hàng.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Quản lý đánh giá</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-muted"
+              onClick={() => queryClient.invalidateQueries(["reviews"])}
+              title="Làm mới dữ liệu"
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
+          <p className="text-muted-foreground">
+            Xem và quản lý các phản hồi từ khách hàng.
+          </p>
+        </div>
       </div>
 
       <div className="rounded-md border bg-card">

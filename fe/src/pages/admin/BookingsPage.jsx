@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Eye, CheckCircle, XCircle, Search, Filter, RefreshCcw } from "lucide-react";
+import { X, Eye, CheckCircle, XCircle, Search, Filter, RefreshCcw, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useBookingsQuery, useBookingMutations } from "@/hooks/queries/useBookingQueries";
 import { formatDate } from "@/utils/dateUtils";
 import { showToast } from "@/utils/toast";
@@ -29,6 +30,7 @@ const formatTime = (t) => (t ? t.substring(0, 5) : "??:??");
 const formatPrice = (p) => (p != null ? p.toLocaleString("vi-VN") + "đ" : "N/A");
 
 export default function BookingsPage() {
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ keyword: "", status: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -59,8 +61,23 @@ export default function BookingsPage() {
 
   const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
 
+  const isBookingInProgress = (booking) => {
+    const now = new Date();
+    const start = new Date(`${booking.bookingDate}T${booking.startTime}`);
+    const end = new Date(`${booking.bookingDate}T${booking.endTime}`);
+    return now >= start && now < end;
+  };
+
+  const isBookingFinished = (booking) => {
+    const now = new Date();
+    const end = new Date(`${booking.bookingDate}T${booking.endTime}`);
+    return now >= end;
+  };
+
   const canBatchConfirm = selectedIds.length > 0 && selectedBookings.every(b => b.bookingStatus === "PENDING");
-  const canBatchCancel = selectedIds.length > 0 && selectedBookings.every(b => b.bookingStatus === "PENDING" || b.bookingStatus === "CONFIRMED");
+  const canBatchCancel = selectedIds.length > 0 && selectedBookings.every(b => 
+    (b.bookingStatus === "PENDING" || b.bookingStatus === "CONFIRMED") && !isBookingInProgress(b) && !isBookingFinished(b)
+  );
 
   const { confirmBookingMut, cancelBookingMut, batchProcessMut } = useBookingMutations();
 
@@ -96,7 +113,10 @@ export default function BookingsPage() {
   };
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   const openViewModal = (booking) => {
     setViewData(booking);
@@ -115,20 +135,37 @@ export default function BookingsPage() {
   };
 
   const handleCancel = (booking) => {
-    showToast.confirm(
-      "Hủy đơn đặt sân này?",
-      () => {
-        cancelBookingMut.mutate(booking.id, {
-          onSuccess: () => showToast.success("Đã hủy đơn đặt sân!")
-        });
+    setBookingToCancel(booking);
+    setCancelReason("");
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancel = () => {
+    if (!bookingToCancel) return;
+    cancelBookingMut.mutate({ id: bookingToCancel.id, reason: cancelReason }, {
+      onSuccess: () => {
+        showToast.success("Đã hủy đơn đặt sân!");
+        setIsCancelModalOpen(false);
+        setBookingToCancel(null);
       }
-    );
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Đặt Sân</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Quản Lý Đặt Sân</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-muted"
+            onClick={() => queryClient.invalidateQueries(["bookings"])}
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
         
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={handleSearch} className="relative w-full sm:w-64">
@@ -293,13 +330,27 @@ export default function BookingsPage() {
                             <Button variant="ghost" size="sm" onClick={() => handleConfirm(b)} className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
                               <CheckCircle className="w-4 h-4 mr-1" /> Xác nhận
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleCancel(b)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleCancel(b)} 
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                              disabled={isBookingInProgress(b) || isBookingFinished(b)}
+                              title={isBookingInProgress(b) ? "Không thể hủy khi đang trong giờ chơi" : isBookingFinished(b) ? "Không thể hủy đơn đã kết thúc" : ""}
+                            >
                               <XCircle className="w-4 h-4 mr-1" /> Hủy
                             </Button>
                           </>
                         )}
                         {b.bookingStatus === "CONFIRMED" && (
-                          <Button variant="ghost" size="sm" onClick={() => handleCancel(b)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleCancel(b)} 
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                            disabled={isBookingInProgress(b) || isBookingFinished(b)}
+                            title={isBookingInProgress(b) ? "Không thể hủy khi đang trong giờ chơi" : isBookingFinished(b) ? "Không thể hủy đơn đã kết thúc" : ""}
+                          >
                             <XCircle className="w-4 h-4 mr-1" /> Hủy
                           </Button>
                         )}
@@ -352,8 +403,9 @@ export default function BookingsPage() {
                 { label: "Tổng tiền", value: formatPrice(viewData.totalPrice) },
                 { label: "Trạng thái", value: (statusMap[viewData.bookingStatus] || {}).label || viewData.bookingStatus },
                 { label: "Phương thức TT", value: viewData.paymentMethod || "Tiền mặt" },
+                { label: "Lý do hủy", value: viewData.cancelReason, condition: viewData.bookingStatus === 'CANCELLED' },
                 { label: "Ngày tạo", value: formatDate(viewData.createdAt) },
-              ].map(({ label, value }) => (
+              ].filter(item => item.condition !== false).map(({ label, value }) => (
                 <div key={label} className="grid grid-cols-3 gap-2 border-b border-border pb-2 last:border-0">
                   <span className="text-sm font-medium text-muted-foreground">{label}:</span>
                   <span className="col-span-2 text-sm text-foreground break-all">{value || "N/A"}</span>
@@ -367,12 +419,51 @@ export default function BookingsPage() {
                   <Button onClick={() => { handleConfirm(viewData); setIsViewModalOpen(false); }} className="bg-emerald-600 hover:bg-emerald-700">
                     Xác nhận
                   </Button>
-                  <Button variant="destructive" onClick={() => { handleCancel(viewData); setIsViewModalOpen(false); }}>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => { handleCancel(viewData); setIsViewModalOpen(false); }}
+                    disabled={isBookingInProgress(viewData) || isBookingFinished(viewData)}
+                    title={isBookingInProgress(viewData) ? "Không thể hủy khi đang trong giờ chơi" : isBookingFinished(viewData) ? "Không thể hủy đơn đã kết thúc" : ""}
+                  >
                     Hủy đơn
                   </Button>
                 </>
               )}
               <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Đóng</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Cancel Reason Modal */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-foreground">Lý do hủy đơn</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Vui lòng nhập lý do hủy đơn để thông báo cho khách hàng.
+              </p>
+            </div>
+            
+            <textarea
+              className="w-full min-h-[100px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary mb-4"
+              placeholder="Ví dụ: Sân đang bảo trì, Trùng lịch thi đấu..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+            
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setIsCancelModalOpen(false)}>
+                Hủy
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmCancel}
+                disabled={!cancelReason.trim()}
+              >
+                Xác nhận hủy
+              </Button>
             </div>
           </div>
         </div>
