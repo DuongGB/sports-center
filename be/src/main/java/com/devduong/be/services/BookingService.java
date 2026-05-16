@@ -530,4 +530,48 @@ public class BookingService {
         );
     }
 
+    public BookingResponse getBookingById(UUID id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        
+        String customerName = booking.getUser() != null
+                ? booking.getUser().getFullName()
+                : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : "N/A");
+        String customerPhone = booking.getUser() != null
+                ? booking.getUser().getPhone()
+                : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
+        
+        PaymentMethod method = booking.getPaymentMethod();
+        if (method == null) {
+            method = paymentRepository.findByBookingId(booking.getId())
+                    .map(Payment::getPaymentMethod)
+                    .orElse(com.devduong.be.enums.PaymentMethod.CASH);
+        }
+        
+        Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+        PaymentStatus pStatus = payment != null ? payment.getPaymentStatus() : com.devduong.be.enums.PaymentStatus.PENDING;
+        UUID pId = payment != null ? payment.getId() : null;
+        boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
+
+        return new BookingResponse(
+                booking.getId(),
+                booking.getCourt().getId(),
+                booking.getCourt().getName(),
+                booking.getBookingDate(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getTotalPrice(),
+                booking.getBookingStatus(),
+                customerName,
+                customerPhone,
+                pId,
+                method,
+                pStatus,
+                booking.getCancelReason(),
+                booking.getCreatedAt(),
+                isReviewed,
+                reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
+        );
+    }
+
 }

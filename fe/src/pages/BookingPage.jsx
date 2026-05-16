@@ -170,6 +170,34 @@ export default function BookingPage() {
       if (res.success) {
         setBookingSuccess(res.data);
         setTimeLeft(600);
+        
+        // Lưu vào giỏ hàng tạm cho khách vãng lai
+        if (!isAuthenticated) {
+          try {
+            const guestBookings = JSON.parse(localStorage.getItem("guestBookings") || "[]");
+            const newBooking = {
+              id: res.data.id,
+              courtName: res.data.courtName,
+              bookingDate: res.data.bookingDate,
+              startTime: res.data.startTime,
+              endTime: res.data.endTime,
+              totalPrice: res.data.totalPrice,
+              bookingStatus: res.data.bookingStatus,
+              guestName: formData.guestName,
+              guestPhone: formData.guestPhone,
+              paymentMethod: formData.paymentMethod,
+              createdAt: new Date().toISOString()
+            };
+            // Thêm vào đầu danh sách và chỉ giữ 5 đơn gần nhất
+            const updatedBookings = [newBooking, ...guestBookings.filter(b => b.id !== newBooking.id)].slice(0, 5);
+            localStorage.setItem("guestBookings", JSON.stringify(updatedBookings));
+            // Kích hoạt sự kiện storage để Header cập nhật ngay lập tức
+            window.dispatchEvent(new Event("storage"));
+          } catch (e) {
+            console.error("Lỗi khi lưu booking vào localStorage", e);
+          }
+        }
+        
         toast.success("Đặt sân thành công!");
       } else {
         toast.error(res.message || "Đặt sân thất bại. Vui lòng thử lại.");

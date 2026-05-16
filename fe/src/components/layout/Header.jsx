@@ -3,7 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Menu, X, Dumbbell, User as UserIcon, History, LogOut, ChevronDown } from "lucide-react";
+import { Menu, X, Dumbbell, User as UserIcon, History, LogOut, ChevronDown, ShoppingCart } from "lucide-react";
+import GuestBookingCart from "@/components/booking/GuestBookingCart";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const navLinks = [
@@ -80,6 +81,7 @@ export default function Header({
 
         {/* Desktop Actions */}
         <div className="flex items-center gap-2">
+          {!isAuthenticated && <GuestBookingCart />}
           <ThemeToggle />
 
           {isAuthenticated ? (

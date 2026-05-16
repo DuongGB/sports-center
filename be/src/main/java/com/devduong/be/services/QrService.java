@@ -14,10 +14,7 @@ import com.devduong.be.repositories.BookingQrCodeRepository;
 import com.devduong.be.repositories.BookingRepository;
 import com.devduong.be.repositories.UserRepository;
 import com.devduong.be.dtos.response.QrResponse;
-import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -45,17 +42,22 @@ public class QrService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         if (booking.getBookingStatus() == BookingStatus.COMPLETED) {
-            throw new RuntimeException("Đơn đặt sân này đã hoàn thành, không thể lấy mã QR");
+            throw new AppException(ErrorCode.QR_ALREADY_CHECKED_IN);
         }
 
         if (booking.getBookingStatus() != BookingStatus.CONFIRMED) {
-            throw new RuntimeException("Chỉ có thể lấy mã QR cho đơn đặt sân đã xác nhận");
+            throw new AppException(ErrorCode.QR_UNAVAILABLE);
         }
 
         Optional<BookingQrCode> existingQrOpt = qrCodeRepository.findByBookingId(bookingId);
         
         if (existingQrOpt.isPresent()) {
             BookingQrCode existingQr = existingQrOpt.get();
+            
+            if (existingQr.getStatus() == CheckinStatus.CHECKED_IN) {
+                throw new AppException(ErrorCode.QR_ALREADY_CHECKED_IN);
+            }
+
             // Nếu vẫn còn hiệu lực và chưa được sử dụng
             if (existingQr.getStatus() == CheckinStatus.PENDING && 
                 existingQr.getExpiredAt().isAfter(LocalDateTime.now())) {
@@ -68,7 +70,10 @@ public class QrService {
             // Nếu đã hết hạn hoặc đã sử dụng, ta sẽ cập nhật lại (vì OneToOne unique constraint)
             existingQr.setQrToken(UUID.randomUUID().toString());
             existingQr.setStatus(CheckinStatus.PENDING);
-            existingQr.setExpiredAt(LocalDateTime.now().plusMinutes(10));
+            LocalDateTime expiredAt = (booking.getUser() == null) 
+                    ? LocalDateTime.now().plusYears(1) 
+                    : LocalDateTime.now().plusHours(24);
+            existingQr.setExpiredAt(expiredAt);
             qrCodeRepository.save(existingQr);
             
             return QrResponse.builder()
@@ -79,7 +84,10 @@ public class QrService {
 
         // Generate new QR token
         String token = UUID.randomUUID().toString();
-        LocalDateTime expiredAt = LocalDateTime.now().plusMinutes(10);
+        // Đối với khách vãng lai (user == null), cho mã QR không hết hạn (set 1 năm)
+        LocalDateTime expiredAt = (booking.getUser() == null) 
+                ? LocalDateTime.now().plusYears(1) 
+                : LocalDateTime.now().plusHours(24);
 
         BookingQrCode qrCode = BookingQrCode.builder()
                 .booking(booking)
@@ -99,7 +107,7 @@ public class QrService {
     @Transactional
     public BookingResponse scanQrCode(String qrToken, String scannerUserId, String deviceInfo, String ipAddress) {
         BookingQrCode qrCode = qrCodeRepository.findByQrToken(qrToken)
-                .orElseThrow(() -> new RuntimeException("Mã QR không hợp lệ hoặc không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.QR_INVALID));
 
         Booking booking = qrCode.getBooking();
 
@@ -107,19 +115,19 @@ public class QrService {
         if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
             qrCode.setStatus(CheckinStatus.CANCELLED);
             qrCodeRepository.save(qrCode);
-            throw new RuntimeException("Đơn đặt sân này đã bị hủy");
+            throw new AppException(ErrorCode.BOOKING_CANCELLED);
         }
 
         // Check expiration
         if (LocalDateTime.now().isAfter(qrCode.getExpiredAt())) {
             qrCode.setStatus(CheckinStatus.EXPIRED);
             qrCodeRepository.save(qrCode);
-            throw new RuntimeException("Mã QR này đã hết hạn");
+            throw new AppException(ErrorCode.QR_EXPIRED);
         }
 
         // Check if already checked in
         if (qrCode.getStatus() == CheckinStatus.CHECKED_IN) {
-            throw new RuntimeException("Mã QR này đã được quét và check-in trước đó");
+            throw new AppException(ErrorCode.QR_ALREADY_CHECKED_IN);
         }
 
         // Proceed to check-in

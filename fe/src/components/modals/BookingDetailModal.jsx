@@ -4,170 +4,162 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  CalendarDays, 
-  Clock3, 
-  User, 
-  Phone, 
-  CreditCard, 
-  Receipt,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  CircleDashed,
-  Info
-} from "lucide-react";
+import { Calendar, Clock, MapPin, CreditCard, User, Phone, Mail, BadgeCheck, XCircle, Info, ArrowRight, Timer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { formatDate } from "@/utils/dateUtils";
+import PayPalRedirectButton from "@/components/payment/PayPalRedirectButton";
+import { useState, useEffect } from "react";
 
-const statusConfig = {
-  PENDING: {
-    label: "Chờ xác nhận",
-    icon: CircleDashed,
-    color: "text-amber-500 bg-amber-50 border-amber-200",
-  },
-  CONFIRMED: {
-    label: "Đã xác nhận",
-    icon: CheckCircle2,
-    color: "text-blue-500 bg-blue-50 border-blue-200",
-  },
-  COMPLETED: {
-    label: "Hoàn tất",
-    icon: CheckCircle2,
-    color: "text-emerald-500 bg-emerald-50 border-emerald-200",
-  },
-  CANCELLED: {
-    label: "Đã hủy",
-    icon: XCircle,
-    color: "text-rose-500 bg-rose-50 border-rose-200",
-  },
-};
+const ModalCountdown = ({ createdAt }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+  
+  useEffect(() => {
+    const calculate = () => {
+      const created = new Date(createdAt).getTime();
+      const now = new Date().getTime();
+      const diff = 10 * 60 * 1000 - (now - created);
+      
+      if (diff <= 0) {
+        setTimeLeft("00:00");
+        return;
+      }
+      
+      const m = Math.floor(diff / 60000).toString().padStart(2, "0");
+      const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, "0");
+      setTimeLeft(`${m}:${s}`);
+    };
+    
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
 
-const paymentStatusConfig = {
-  PENDING: { label: "Chưa thanh toán", color: "text-amber-600" },
-  SUCCESS: { label: "Đã thanh toán", color: "text-emerald-600" },
-  FAILED: { label: "Thanh toán thất bại", color: "text-rose-600" },
-  REFUNDED: { label: "Đã hoàn tiền", color: "text-blue-600" },
+  return (
+    <div className="flex flex-col items-center justify-center p-3 bg-orange-50 border border-orange-100 rounded-xl animate-pulse">
+      <p className="text-[10px] uppercase font-black text-orange-700 mb-1">Thời gian giữ chỗ còn lại</p>
+      <div className="text-2xl font-black text-orange-600 font-mono flex items-center gap-2">
+        <Timer className="h-5 w-5" />
+        {timeLeft}
+      </div>
+    </div>
+  );
 };
 
 export default function BookingDetailModal({ isOpen, onClose, booking }) {
   if (!booking) return null;
 
-  const status = statusConfig[booking.bookingStatus] || statusConfig.PENDING;
-  const StatusIcon = status.icon;
+  const formatPrice = (p) =>
+    p != null ? p.toLocaleString("vi-VN") + "đ" : "N/A";
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "CONFIRMED":
+        return <span className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full text-xs font-bold border border-emerald-500/20"><BadgeCheck className="h-3 w-3" /> Đã xác nhận</span>;
+      case "PENDING":
+        return <span className="flex items-center gap-1 text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full text-xs font-bold border border-orange-500/20"><Info className="h-3 w-3" /> Đang chờ</span>;
+      case "CANCELLED":
+        return <span className="flex items-center gap-1 text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full text-xs font-bold border border-rose-500/20"><XCircle className="h-3 w-3" /> Đã hủy</span>;
+      case "COMPLETED":
+        return <span className="flex items-center gap-1 text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full text-xs font-bold border border-blue-500/20"><BadgeCheck className="h-3 w-3" /> Hoàn thành</span>;
+      default:
+        return <span className="bg-muted px-2 py-0.5 rounded-full text-xs font-bold border">{status}</span>;
+    }
+  };
+
+  const isPendingCash = booking.bookingStatus === "PENDING" && booking.paymentMethod === "CASH";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none bg-background/80 backdrop-blur-xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-        
-        <DialogHeader className="p-6 pb-0 relative">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-              Chi tiết đặt sân
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md overflow-hidden p-0 gap-0">
+        <div className="bg-primary p-6 text-primary-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              Chi tiết đơn đặt sân
             </DialogTitle>
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}>
-              <StatusIcon className="h-3.5 w-3.5" />
-              {status.label}
+          </DialogHeader>
+          <p className="text-primary-foreground/70 text-xs mt-1">Mã đơn: {booking.id}</p>
+        </div>
+
+        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+          {/* Header Info */}
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-xl font-black text-foreground">{booking.courtName}</h3>
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <MapPin className="h-3 w-3" /> Sports Center Complex
+              </p>
+            </div>
+            {getStatusBadge(booking.bookingStatus)}
+          </div>
+
+          {isPendingCash && booking.createdAt && (
+            <ModalCountdown createdAt={booking.createdAt} />
+          )}
+
+          <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border">
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Ngày đặt</p>
+              <div className="flex items-center gap-2 font-medium">
+                <Calendar className="h-4 w-4 text-primary" />
+                {formatDate(booking.bookingDate).split(" ")[0]}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Khung giờ</p>
+              <div className="flex items-center gap-2 font-medium">
+                <Clock className="h-4 w-4 text-primary" />
+                {booking.startTime?.substring(0, 5)} - {booking.endTime?.substring(0, 5)}
+              </div>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Mã đơn hàng: <span className="font-mono text-primary">{booking.id}</span>
-          </p>
-        </DialogHeader>
 
-        <div className="p-6 space-y-6 relative">
-          {/* Court Info Section */}
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-bold">{booking.courtName}</h3>
-                <div className="flex flex-col gap-2 mt-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CalendarDays className="h-4 w-4 text-primary" />
-                    <span>Ngày: <span className="text-foreground font-medium">{booking.bookingDate}</span></span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock3 className="h-4 w-4 text-primary" />
-                    <span>Thời gian: <span className="text-foreground font-medium">{booking.startTime?.slice(0, 5)} - {booking.endTime?.slice(0, 5)}</span></span>
-                  </div>
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold border-b pb-2">Thông tin khách hàng</h4>
+            <div className="space-y-2">
+              {booking.guestName && (
+                <div className="flex items-center gap-3 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground w-20">Họ tên:</span>
+                  <span className="font-semibold">{booking.guestName}</span>
+                </div>
+              )}
+              {booking.guestPhone && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground w-20">SĐT:</span>
+                  <span className="font-semibold">{booking.guestPhone}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-3 text-sm">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground w-20">Thanh toán:</span>
+                <span className="font-semibold">{booking.paymentMethod === "CASH" ? "Tiền mặt" : booking.paymentMethod}</span>
+              </div>
+            </div>
+          </div>
+
+          {isPendingCash && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-blue-900">Thanh toán Online ngay?</p>
+                  <p className="text-xs text-blue-700">Chuyển sang thanh toán Online để đơn hàng được xác nhận ngay và nhận mã QR.</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-border/50" />
-
-          {/* Customer Info Section */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <User className="h-3 w-3" />
-                Khách hàng
-              </div>
-              <p className="text-sm font-medium">{booking.customerName || "N/A"}</p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <Phone className="h-3 w-3" />
-                Số điện thoại
-              </div>
-              <p className="text-sm font-medium">{booking.customerPhone || "N/A"}</p>
-            </div>
-          </div>
-
-          <div className="h-px bg-border/50" />
-
-          {booking.bookingStatus === "CANCELLED" && booking.cancelReason && (
-            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 space-y-2 animate-in fade-in slide-in-from-top-1">
-              <div className="flex items-center gap-2 text-xs font-semibold text-rose-600 uppercase tracking-wider">
-                <Info className="h-3 w-3" />
-                Lý do hủy đơn
-              </div>
-              <p className="text-sm font-medium text-rose-700 italic">"{booking.cancelReason}"</p>
+              <PayPalRedirectButton 
+                amount={Math.round(booking.totalPrice / 25000)}
+                bookingId={booking.id}
+              />
             </div>
           )}
 
-          {/* Payment Info Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              <Receipt className="h-3 w-3" />
-              Thông tin thanh toán
-            </div>
-            
-            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" /> Phương thức
-                </span>
-                <span className="font-medium">
-                  {booking.paymentMethod === "PAYPAL" ? "PayPal" : "Tiền mặt"}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <Info className="h-4 w-4" /> Trạng thái
-                </span>
-                <span className={`font-bold ${paymentStatusConfig[booking.paymentStatus]?.color || ""}`}>
-                  {paymentStatusConfig[booking.paymentStatus]?.label || booking.paymentStatus}
-                </span>
-              </div>
-              <div className="h-px bg-border/50 my-2" />
-              <div className="flex justify-between items-center pt-1">
-                <span className="font-bold">Tổng thanh toán</span>
-                <span className="text-xl font-black text-primary">
-                  {booking.totalPrice?.toLocaleString()}đ
-                </span>
-              </div>
-            </div>
+          <div className="pt-4 border-t flex justify-between items-center">
+            <span className="font-bold text-muted-foreground text-sm">Tổng cộng</span>
+            <span className="text-2xl font-black text-primary">{formatPrice(booking.totalPrice)}</span>
           </div>
-        </div>
 
-        <div className="p-6 bg-muted/20 border-t flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
-          >
-            Đóng
-          </button>
+          <Button onClick={onClose} variant="outline" className="w-full">Đóng</Button>
         </div>
       </DialogContent>
     </Dialog>

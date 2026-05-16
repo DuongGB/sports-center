@@ -102,7 +102,7 @@ export default function HomePage({
   });
 
   const navigate = useNavigate();
-  const { data: myBookingsData } = useMyBookingsQuery(1, 8);
+  const { data: myBookingsData } = useMyBookingsQuery(1, 8, { enabled: isAuthenticated });
   const recentBookings = useMemo(() => {
     if (!myBookingsData) return [];
     const bookingsList = Array.isArray(myBookingsData) ? myBookingsData : (myBookingsData.data || []);

@@ -28,4 +28,6 @@ export const bookingService = {
     }),
   getMyBookings: (page = 1, size = 8) =>
     apiCall(`/booking/my-bookings?page=${page}&size=${size}`, { method: "GET" }),
+  getBookingById: (id) =>
+    apiCall(`/booking/${id}`, { method: "GET" }),
 };

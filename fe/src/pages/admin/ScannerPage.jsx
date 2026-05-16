@@ -42,14 +42,14 @@ export default function ScannerPage() {
           success: false,
           error: response.message || "Quét mã không thành công.",
         });
-        toast.error("Check-in thất bại!");
+        toast.error(response.message || "Check-in thất bại!");
       }
     } catch (error) {
       setScanResult({
         success: false,
         error: error.message || "Lỗi khi quét mã QR.",
       });
-      toast.error("Lỗi khi quét mã QR!");
+      toast.error(error.message || "Lỗi khi quét mã QR!");
     } finally {
       setLoading(false);
     }

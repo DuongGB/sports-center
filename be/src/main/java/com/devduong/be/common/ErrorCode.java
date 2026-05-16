@@ -82,6 +82,13 @@ public enum ErrorCode {
     EVENT_START_TIME_INVALID(7003, "Thời gian bắt đầu không được ở quá khứ", HttpStatus.BAD_REQUEST),
     EVENT_OVERLAP(7004, "Thời gian sự kiện trùng với sự kiện khác đang hoạt động", HttpStatus.BAD_REQUEST),
 
+    // TODO: QR & CHECKIN
+    QR_ALREADY_CHECKED_IN(8001, "Mã QR này đã được quét và check-in trước đó", HttpStatus.BAD_REQUEST),
+    QR_EXPIRED(8002, "Mã QR này đã hết hạn", HttpStatus.BAD_REQUEST),
+    QR_INVALID(8003, "Mã QR không hợp lệ hoặc không tồn tại", HttpStatus.BAD_REQUEST),
+    BOOKING_CANCELLED(8004, "Đơn đặt sân này đã bị hủy", HttpStatus.BAD_REQUEST),
+    QR_UNAVAILABLE(8005, "Chỉ có thể lấy mã QR cho đơn đặt sân đã xác nhận", HttpStatus.BAD_REQUEST),
+
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR);
 

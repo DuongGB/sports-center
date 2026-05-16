@@ -163,4 +163,14 @@ public class BookingController {
                 .data(bookingService.getMyBookings(userId, pageable))
                 .build());
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.<BookingResponse>builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get booking detail successful")
+                .data(bookingService.getBookingById(id))
+                .build());
+    }
 }

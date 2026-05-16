@@ -10,11 +10,12 @@ export function useBookingsQuery(page = 1, size = 10, filters = {}) {
   });
 }
 
-export function useMyBookingsQuery(page = 1, size = 8) {
+export function useMyBookingsQuery(page = 1, size = 8, options = {}) {
   return useQuery({
     queryKey: ["my-bookings", page, size],
     queryFn: () => bookingService.getMyBookings(page, size).then(res => res.data),
     staleTime: 30 * 1000, // 30 seconds for my bookings as they change more frequently
+    ...options
   });
 }
 
