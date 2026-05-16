@@ -80,6 +80,7 @@ public enum ErrorCode {
     EVENT_NOT_FOUND(7001, "Không tìm thấy sự kiện", HttpStatus.NOT_FOUND),
     EVENT_EXPIRED(7002, "Đã qua thời gian diễn ra sự kiện", HttpStatus.BAD_REQUEST),
     EVENT_START_TIME_INVALID(7003, "Thời gian bắt đầu không được ở quá khứ", HttpStatus.BAD_REQUEST),
+    EVENT_OVERLAP(7004, "Thời gian sự kiện trùng với sự kiện khác đang hoạt động", HttpStatus.BAD_REQUEST),
 
     // TODO: SYSTEM
     INTERNAL_ERROR(9000, "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR);

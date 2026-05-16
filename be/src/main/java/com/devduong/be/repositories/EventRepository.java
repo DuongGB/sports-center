@@ -31,6 +31,15 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
                                        @Param("start") LocalDateTime start,
                                        @Param("end") LocalDateTime end);
 
+    @Query("SELECT e FROM Event e WHERE e.status = :status " +
+            "AND e.startDatetime < :end AND e.endDatetime > :start " +
+            "AND (:id IS NULL OR e.id <> :id) " +
+            "ORDER BY e.startDatetime DESC")
+    List<Event> findActiveEventsInRangeExcludingId(@Param("status") EventStatus status,
+                                                   @Param("start") LocalDateTime start,
+                                                   @Param("end") LocalDateTime end,
+                                                   @Param("id") UUID id);
+
     @Query("SELECT e FROM Event e WHERE e.status = 'ACTIVE' " +
             "AND e.endDatetime < :now")
     List<Event> findExpiredActiveEvents(@Param("now") LocalDateTime now);

@@ -37,7 +37,7 @@ public class EventService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        validateEventRequest(request, null);
+        validateEventRequest(request, null, null);
 
         Event event = Event.builder()
                 .name(request.name())
@@ -68,7 +68,7 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
-        validateEventRequest(request, event.getStatus());
+        validateEventRequest(request, eventId, event.getStatus());
 
         event.setName(request.name());
         event.setDescription(request.description());
@@ -164,7 +164,8 @@ public class EventService {
 
     // ==================== PRIVATE METHODS ====================
 
-    private void validateEventRequest(EventRequest request, EventStatus oldStatus) {
+
+    private void validateEventRequest(EventRequest request, UUID eventId, EventStatus oldStatus) {
         if (request.startDatetime() == null || request.endDatetime() == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
@@ -183,6 +184,20 @@ public class EventService {
             // thì thời gian bắt đầu không được ở quá khứ
             if (oldStatus != EventStatus.ACTIVE && request.startDatetime().isBefore(LocalDateTime.now().minusMinutes(5))) {
                 throw new AppException(ErrorCode.EVENT_START_TIME_INVALID);
+            }
+        }
+
+        // Kiểm tra trùng lặp với các sự kiện đang ACTIVE khác
+        if (request.status() == EventStatus.ACTIVE || request.status() == EventStatus.DRAFT) {
+            List<Event> overlappingEvents = eventRepository.findActiveEventsInRangeExcludingId(
+                    EventStatus.ACTIVE,
+                    request.startDatetime(),
+                    request.endDatetime(),
+                    eventId
+            );
+
+            if (!overlappingEvents.isEmpty()) {
+                throw new AppException(ErrorCode.EVENT_OVERLAP);
             }
         }
 
