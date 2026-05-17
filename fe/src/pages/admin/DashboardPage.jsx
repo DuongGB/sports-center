@@ -184,7 +184,7 @@ export default function DashboardPage() {
     }
 
     const csvContent = [
-      ["TRUNG TÂM THỂ THAO SPORTS CENTER"],
+      ["TRUNG TÂM THỂ THAO D-SPORT CENTER"],
       ["Địa chỉ: Số 12 Nguyễn Văn Bảo, Phường 4, Gò Vấp, TP.HCM"],
       ["Điện thoại: 0123 456 789"],
       [],
@@ -316,9 +316,15 @@ export default function DashboardPage() {
               onChange={(e) => setExportType(e.target.value)}
               className="bg-card border border-border/50 rounded px-2 py-0.5 text-sm font-semibold text-foreground focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors"
             >
-              <option value="year" className="bg-card text-foreground">Cả năm</option>
-              <option value="quarter" className="bg-card text-foreground">Theo quý</option>
-              <option value="month" className="bg-card text-foreground">Theo tháng</option>
+              <option value="year" className="bg-card text-foreground">
+                Cả năm
+              </option>
+              <option value="quarter" className="bg-card text-foreground">
+                Theo quý
+              </option>
+              <option value="month" className="bg-card text-foreground">
+                Theo tháng
+              </option>
             </select>
           </div>
 
@@ -335,12 +341,20 @@ export default function DashboardPage() {
               >
                 {exportType === "month"
                   ? Array.from({ length: 12 }).map((_, i) => (
-                      <option key={i} value={i} className="bg-card text-foreground">
+                      <option
+                        key={i}
+                        value={i}
+                        className="bg-card text-foreground"
+                      >
                         Tháng {i + 1}
                       </option>
                     ))
                   : [1, 2, 3, 4].map((q) => (
-                      <option key={q} value={q - 1} className="bg-card text-foreground">
+                      <option
+                        key={q}
+                        value={q - 1}
+                        className="bg-card text-foreground"
+                      >
                         Quý {q}
                       </option>
                     ))}

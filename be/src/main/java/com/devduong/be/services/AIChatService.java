@@ -40,7 +40,7 @@ public class AIChatService {
     public AIChatResponse processQuestion(String message) {
         if (message == null || message.trim().isEmpty()) {
             return AIChatResponse.builder()
-                    .reply("Xin chào! Tôi là trợ lý AI của Sports Center. Hãy hỏi tôi về sân thể thao, giá cả, hoặc cách đặt sân nhé! 😊")
+                    .reply("Xin chào! Tôi là trợ lý AI của D-Sport Center. Hãy hỏi tôi về sân thể thao, giá cả, hoặc cách đặt sân nhé! 😊")
                     .courts(Collections.emptyList())
                     .build();
         }
