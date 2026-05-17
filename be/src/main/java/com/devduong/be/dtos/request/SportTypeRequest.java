@@ -6,7 +6,10 @@
 
 package com.devduong.be.dtos.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.List;
 
 /*
  * @description:
@@ -16,6 +19,8 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record SportTypeRequest(
         @NotBlank(message = "Sport type name is required")
-        String name
+        String name,
+        @Valid
+        List<CourtPriceRequest> prices
 ) {
 }

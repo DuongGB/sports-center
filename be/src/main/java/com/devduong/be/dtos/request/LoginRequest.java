@@ -13,7 +13,7 @@ package com.devduong.be.dtos.request;
  * @version:    1.0
  */
 public record LoginRequest(
-        String phone,
+        String identifier,
         String password
 ) {
 }

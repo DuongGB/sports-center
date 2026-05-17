@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
             // Cắt bỏ chuỗi "Bearer " để lấy token thực tế
             String token = header.substring(7);
             JWTClaimsSet claims = jwtService.extractAllClaims(token);
-            String phone = claims.getSubject();
+            String userId = claims.getSubject();
             // Ép kiểu danh sách roles
             List<String> roles = Optional.ofNullable((List<String>) claims.getClaim("roles"))
                     .orElse(List.of());
@@ -60,7 +60,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     .stream()
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                     .toList();
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(phone, null, authorities);
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userId, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (Exception e) {
             // Nếu token không hợp lệ, ta có thể bỏ qua và để Spring Security xử lý lỗi xác thực sau này

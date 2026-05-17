@@ -6,6 +6,11 @@
 
 package com.devduong.be.dtos.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -15,8 +20,10 @@ import java.util.UUID;
  * @version:    1.0
  */
 public record CourtPriceRequest(
-        UUID courtId,
-        UUID timeSlotId,
-        double price
+        @JsonFormat(pattern = "HH:mm")
+        LocalTime startTime,
+        @JsonFormat(pattern = "HH:mm")
+        LocalTime endTime,
+        @NotNull double price
 ) {
 }

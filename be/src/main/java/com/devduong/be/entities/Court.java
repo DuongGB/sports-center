@@ -11,6 +11,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,6 +32,7 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Court {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
     @ManyToOne
@@ -42,13 +45,25 @@ public class Court {
     @Column(nullable = false)
     String location;
 
-    @Column(name = "image_url")
-    String imageUrl;
+    @Column(name = "openTime")
+    LocalTime openTime;
+
+    @Column(name = "close_time")
+    LocalTime closeTime;
 
     @Enumerated(EnumType.STRING)
     CourtStatus status;
 
     @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
     List<CourtAvailability> courtAvailabilities;
+
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtImage> courtImages;
+
+    @Column(name = "average_rating")
+    Double averageRating = 0.0;
+
+    @Column(name = "total_reviews")
+    Integer totalReviews = 0;
 }
 

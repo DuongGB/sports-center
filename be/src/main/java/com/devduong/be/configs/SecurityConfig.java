@@ -8,6 +8,8 @@ package com.devduong.be.configs;
 
 import com.devduong.be.security.CustomUserDetailsService;
 import com.devduong.be.security.JwtFilter;
+import com.devduong.be.security.oauth2.CustomOAuth2UserService;
+import com.devduong.be.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -40,6 +42,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     JwtFilter jwtFilter;
     CustomUserDetailsService customUserDetailsService;
+    CustomOAuth2UserService customOAuth2UserService;
+    OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -57,6 +62,11 @@ public class SecurityConfig {
         return new String[]{
                 "/api/auth/**",
                 "/api/booking/**",
+                "/api/payment/paypal/**",
+                "/api/chat/**",
+                "/api/qr/**",
+                "/ws/**",
+                "/api/events/active"
         };
     }
 
@@ -69,9 +79,20 @@ public class SecurityConfig {
                         .requestMatchers(getPublicEndpoints()).permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/sport-types/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(auth->
+                                auth.baseUri("/oauth2/authorize")) // FE sẽ gọi API: GET /oauth2/authorize/google hoặc /oauth2/authorize/facebook để bắt đầu quá trình OAuth2
+                        .redirectionEndpoint(redir->
+                                redir.baseUri("/login/oauth2/code/*")) // URI mapping từ google trả về
+                        .userInfoEndpoint(userInfo->
+                                userInfo.userService(customOAuth2UserService)) // Đưa service ở bước 4 vào
+                        .successHandler(oAuth2AuthenticationSuccessHandler) // Đưa handler ở bước 5 vào
+                );
         return http.build();
     }
 }

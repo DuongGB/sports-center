@@ -75,7 +75,8 @@ public class UserService {
     public UserResponse updateUser(String id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        if (request.fullName() != null && !request.fullName().isEmpty()) {
+
+        if (request.fullName() != null && !request.fullName().trim().isEmpty()) {
             user.setFullName(request.fullName());
         }
         if (request.phone() != null && !request.phone().equals(user.getPhone())) {
@@ -84,9 +85,16 @@ public class UserService {
             }
             user.setPhone(request.phone());
         }
+
+        // Handle password update
         if (request.password() != null && !request.password().trim().isEmpty()) {
+            // Verify old password
+            if (request.oldPassword() == null || !passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+                throw new AppException(ErrorCode.OLD_PASSWORD_INCORRECT);
+            }
             user.setPassword(passwordEncoder.encode(request.password()));
         }
+
         user = userRepository.save(user);
         return userMapper.toUserResponse(user);
     }

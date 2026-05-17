@@ -7,8 +7,10 @@
 package com.devduong.be.mappers;
 
 import com.devduong.be.dtos.response.BookingResponse;
+import com.devduong.be.dtos.response.PaymentExecutionResult;
 import com.devduong.be.entities.Booking;
 import com.devduong.be.entities.Payment;
+import com.devduong.be.enums.PaymentMethod;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -20,13 +22,13 @@ import org.mapstruct.Mapping;
  */
 @Mapper(componentModel = "spring")
 public interface BookingMapper {
-    @Mapping(source = "booking.id", target = "bookingId")
+    @Mapping(source = "booking.id", target = "id")
+    @Mapping(source = "booking.court.id", target = "courtId")
     @Mapping(source = "booking.court.name", target = "courtName")
-    @Mapping(source = "booking.timeSlot.startTime", target = "startTime")
-    @Mapping(source = "booking.timeSlot.endTime", target = "endTime")
-    @Mapping(source = "booking.bookingStatus", target = "bookingStatus")
-    @Mapping(source = "payment.id", target = "paymentId")
-    @Mapping(source = "payment.paymentMethod", target = "paymentMethod")
-    @Mapping(source = "payment.paymentStatus", target = "paymentStatus")
-    BookingResponse toBookingResponse(Booking booking, Payment payment);
+    @Mapping(source = "paymentResult.paymentId", target = "paymentId")
+    @Mapping(source = "paymentResult.paymentStatus", target = "paymentStatus")
+    @Mapping(source = "paymentMethod", target = "paymentMethod")
+    @Mapping(target = "customerName", expression = "java(booking.getUser() != null ? booking.getUser().getFullName() : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : null))")
+    @Mapping(target = "customerPhone", expression = "java(booking.getUser() != null ? booking.getUser().getPhone() : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : null))")
+    BookingResponse toBookingResponse(Booking booking, PaymentExecutionResult paymentResult, PaymentMethod paymentMethod);
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
+
+    <!-- Explicitly include files to ensure correct ordering and processing -->
+    <include file="db/changelog/changes/001-initial-schema.sql"/>
+    <include file="db/changelog/changes/002-create-reviews-table.sql"/>
+    <include file="db/changelog/changes/003-add-reply-to-reviews.xml"/>
+    <include file="db/changelog/changes/004-create-events-tables.xml"/>
+    <include file="db/changelog/changes/005-add-cancel-reason-to-bookings.xml"/>
+    <include file="db/changelog/changes/006-add-is-hide-to-reviews.sql"/>
+    <include file="db/changelog/changes/007-create-booking-qr-tables.xml"/>
+    <include file="db/changelog/changes/008-create-notifications-table.xml"/>
+
+</databaseChangeLog>

@@ -47,14 +47,15 @@ public class CourtAvailabilityController {
                 .build());
     }
 
-    @PostMapping
+    @PostMapping("/court/{courtId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> createOrUpdateAvailability(
+            @PathVariable UUID courtId,
             @RequestBody @Valid CourtAvailabilityRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourtAvailabilityResponse>builder()
                 .success(true)
                 .message("Create/update court availability successfully")
-                .data(courtAvailabilityService.createOrUpdateAvailability(request))
+                .data(courtAvailabilityService.createOrUpdateAvailability(courtId,request))
                 .build());
     }
 }

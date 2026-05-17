@@ -1,5 +1,6 @@
 import { loginUser, logout, getCurrentUser } from "@/store/authSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { useCallback } from "react";
 
 export function useAuth() {
   const dispatch = useDispatch();
@@ -11,9 +12,9 @@ export function useAuth() {
     return dispatch(loginUser({ phone, password }));
   };
 
-  const fetchCurrentUser = async () => {
+  const fetchCurrentUser = useCallback(async () => {
     return dispatch(getCurrentUser()).unwrap();
-  };
+  }, [dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());

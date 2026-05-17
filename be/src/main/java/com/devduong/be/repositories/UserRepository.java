@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,12 +28,18 @@ import java.util.UUID;
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
+    Optional<User> findByEmail(String email);
+
     Optional<User> findByPhone(String phone);
+    Optional<User> findByPhoneOrEmail(String phone, String email);
 
     boolean existsByPhone(String phone);
 
     @Query("SELECT u.id FROM User u WHERE u.id LIKE CONCAT(:prefix, '%')")
     List<String> findIdsByPrefix(@Param("prefix") String prefix);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :from")
+    long countUsersCreatedAfter(@Param("from") LocalDateTime from);
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = 'CUSTOMER' " +
             "AND (:keyword IS NULL OR " +

@@ -25,10 +25,5 @@ import java.util.UUID;
 public interface CourtAvailabilityRepository extends JpaRepository<CourtAvailability, UUID> {
     // TODO: get trạng thái 1 sân vào 1 ngày để hiển thị cho khách hàng
     List<CourtAvailability> findByCourtIdAndDate(UUID courtId, LocalDate date);
-
-    // TODO: Kiểm tra xem khung giờ của sân trong ngày đó đã bị đặt hay chưa
-    boolean existsByCourtIdAndDateAndTimeSlotId(UUID courtId, LocalDate date, UUID timeSlotId);
-
-    // TODO: Check xem sân có bị khóa và ngày và khung giờ đụ thể không
-    boolean existsByCourtIdAndTimeSlotIdAndDateAndStatus(UUID courtId, UUID timeSlotId, LocalDate date, AvailabilityStatus status);
+    
 }

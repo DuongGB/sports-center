@@ -23,6 +23,7 @@ public record UserResponse(
         String id,
         String fullName,
         String phone,
+        String email,
         String status,
         LocalDateTime createdAt,
         Set<String> roles

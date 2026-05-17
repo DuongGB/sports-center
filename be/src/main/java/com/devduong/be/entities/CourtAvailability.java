@@ -12,6 +12,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -40,9 +42,13 @@ public class CourtAvailability {
     // Ngày cụ thể mà sân có thể được đặt hoặc bị chặn
     LocalDate date;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "time_slot_id", nullable = false)
-    TimeSlot timeSlot;
+    @Column(name = "start_time")
+    LocalTime startTime;
+
+    @Column(name = "end_time")
+    LocalTime endTime;
+
+    String reason;
 
     @Enumerated(EnumType.STRING)
     AvailabilityStatus status;

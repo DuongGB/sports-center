@@ -7,13 +7,14 @@
 package com.devduong.be.entities;
 
 import com.devduong.be.enums.BookingStatus;
+import com.devduong.be.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -51,9 +52,11 @@ public class Booking {
     @Column(name = "booking_date", nullable = false)
     LocalDate bookingDate;
 
-    @ManyToOne
-    @JoinColumn(name = "time_slot_id", nullable = false)
-    TimeSlot timeSlot;
+    @Column(name = "start_time", nullable = false)
+    LocalTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    LocalTime endTime;
 
     @Column(name = "total_price", nullable = false)
     Double totalPrice;
@@ -62,11 +65,21 @@ public class Booking {
     @Column(nullable = false)
     BookingStatus bookingStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false)
+    PaymentMethod paymentMethod;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
+
+    @Column(name = "cancelled_at")
+    LocalDateTime cancelledAt;
+
+    @Column(name = "cancel_reason")
+    String cancelReason;
 
     @PrePersist
     protected void onCreate() {
@@ -76,6 +89,11 @@ public class Booking {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @PreRemove
+    protected void onRemove() {
+        cancelledAt = LocalDateTime.now();
     }
 }
 

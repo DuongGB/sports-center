@@ -11,19 +11,18 @@ import com.devduong.be.common.PageResponse;
 import com.devduong.be.dtos.request.SportTypeFilterRequest;
 import com.devduong.be.dtos.request.SportTypeRequest;
 import com.devduong.be.dtos.response.SportTypeResponse;
-import com.devduong.be.dtos.response.UserResponse;
+import com.devduong.be.entities.CourtPrice;
 import com.devduong.be.entities.SportType;
-import com.devduong.be.entities.User;
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.SportTypeMapper;
+import com.devduong.be.repositories.CourtPriceRepository;
 import com.devduong.be.repositories.SportTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +38,7 @@ import java.util.UUID;
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class SportTypeService {
     SportTypeRepository sportTypeRepository;
+    CourtPriceRepository courtPriceRepository;
     SportTypeMapper sportTypeMapper;
 
     // TODO: Get all sport types
@@ -54,9 +54,9 @@ public class SportTypeService {
         // Trả về kết quả
         return new PageResponse<>(
                 request.page(),
-                request.size(),
-                sportTypePage.getTotalElements(),
                 sportTypePage.getTotalPages(),
+                sportTypePage.getSize(),
+                sportTypePage.getTotalElements(),
                 sportTypeResponses
         );
     }
@@ -69,33 +69,88 @@ public class SportTypeService {
     }
 
     // TODO: Create new sport type
+    @Transactional
     public SportTypeResponse createSportType(SportTypeRequest request) {
         if (sportTypeRepository.findByName(request.name()).isPresent()) {
             throw new AppException(ErrorCode.SPORT_TYPE_EXISTS);
         }
+        // 1. Lưu Sport Type
         SportType sportType = SportType.builder()
                 .name(request.name())
                 .build();
-        sportTypeRepository.save(sportType);
-        return sportTypeMapper.toSportTypeResponse(sportType);
+        SportType savedSportType = sportTypeRepository.save(sportType);
+        // 2. Lưu danh sách khung giờ và giá
+        if (request.prices() != null && !request.prices().isEmpty()) {
+            List<CourtPrice> prices = request.prices().stream()
+                    .map(p -> CourtPrice.builder()
+                            .sportType(savedSportType)
+                            .startTime(p.startTime())
+                            .endTime(p.endTime())
+                            .price(p.price())
+                            .build())
+                    .toList();
+            List<CourtPrice> savedPrices = courtPriceRepository.saveAll(prices);
+            savedSportType.setCourtPrices(savedPrices);
+        }
+        return sportTypeMapper.toSportTypeResponse(savedSportType);
     }
 
-    // TODO: Update sport type
+    @Transactional
     public SportTypeResponse updateSportType(UUID id, SportTypeRequest request) {
+
         SportType sportType = sportTypeRepository.findById(id)
                 .orElseThrow();
-        if (sportTypeRepository.findByName(request.name()).isPresent()) {
+
+        if (!sportType.getName().equals(request.name()) &&
+                sportTypeRepository.findByName(request.name()).isPresent()) {
             throw new AppException(ErrorCode.SPORT_TYPE_EXISTS);
         }
+
+        // 1. Update name
         sportType.setName(request.name());
-        sportTypeRepository.save(sportType);
-        return sportTypeMapper.toSportTypeResponse(sportType);
+
+        // 2. Update courtPrices (QUAN TRỌNG)
+        List<CourtPrice> currentPrices = sportType.getCourtPrices();
+
+        // clear list cũ (Hibernate sẽ tự delete orphan)
+        currentPrices.clear();
+
+        // add list mới
+        if (request.prices() != null && !request.prices().isEmpty()) {
+            for (var p : request.prices()) {
+                CourtPrice cp = CourtPrice.builder()
+                        .sportType(sportType) // cực kỳ quan trọng
+                        .startTime(p.startTime())
+                        .endTime(p.endTime())
+                        .price(p.price())
+                        .build();
+
+                currentPrices.add(cp);
+            }
+        }
+
+        // KHÔNG cần save courtPriceRepository
+        // chỉ cần save sportType là đủ (cascade ALL)
+
+        SportType saved = sportTypeRepository.save(sportType);
+
+        return sportTypeMapper.toSportTypeResponse(saved);
     }
 
-    // TODO: Delete sport type
+    @Transactional
     public void deleteSportType(UUID id) {
-        SportType sportType = sportTypeRepository.findById(id)
-                .orElseThrow();
+        SportType sportType = sportTypeRepository.findById(id).orElseThrow();
+
+        // Check if there are courts associated with this sport type
+        if (sportType.getCourts() != null && !sportType.getCourts().isEmpty()) {
+            throw new AppException(ErrorCode.SPORT_TYPE_IN_USE);
+        }
+
+        // Xóa bảng giá trước để tránh lỗi khóa ngoại (nếu không dùng Cascade)
+        List<CourtPrice> existingPrices = courtPriceRepository.findBySportTypeId(id);
+        if (!existingPrices.isEmpty()) {
+            courtPriceRepository.deleteAll(existingPrices);
+        }
         sportTypeRepository.delete(sportType);
     }
 }

@@ -6,6 +6,12 @@
 
 package com.devduong.be.dtos.response;
 
+import com.devduong.be.enums.CourtStatus;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
 /*
  * @description:
  * @author: Nguyen Tan Thai Duong
@@ -18,7 +24,13 @@ public record CourtResponse(
         String sportTypeName,
         String name,
         String location,
-        String status,
-        String imageUrl
+        LocalTime openTime,
+        LocalTime closeTime,
+        CourtStatus status,
+        List<String> courtImages,
+        List<CourtAvailabilityResponse> availabilities,
+        List<CourtPriceResponse> prices,
+        Double averageRating,
+        Integer totalReviews
 ) {
 }

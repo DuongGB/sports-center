@@ -4,17 +4,67 @@ spring:
 
   # Configuration for PostgreSQL database
   datasource:
-    url: jdbc:postgresql://localhost:5432/sportsdb
-    username: postgres
-    password: root
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+
+  # Configuration for OAuth2 clients (Google and Facebook)
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile, email
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+          facebook:
+            client-id: ${FACEBOOK_CLIENT_ID}
+            client-secret: ${FACEBOOK_CLIENT_SECRET}
+            scope: public_profile, email
+            redirect-uri: http://localhost:8080/login/oauth2/code/facebook
+  # Configuration for mail
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+app:
+  oauth2:
+    # Sau khi người dùng đăng nhập thành công, họ sẽ được chuyển hướng đến URL này
+    redirect-uri: http://localhost:5173/oauth2/redirect
+
 
   # Configuration for Cloudinary
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+
+# Configuration for paypal
+paypal:
+  client:
+    id: ${PAYPAL_CLIENT_ID}
+    secret: ${PAYPAL_CLIENT_SECRET}
+  mode: sandbox # Hoặc 'live' cho môi trường sản xuất
+
+# Configuration for Gemini AI
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  model: gemini-2.0-flash
+  api-url: https://generativelanguage.googleapis.com/v1beta

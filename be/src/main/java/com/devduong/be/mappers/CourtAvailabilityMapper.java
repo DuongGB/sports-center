@@ -19,11 +19,6 @@ import org.mapstruct.Mapping;
  */
 @Mapper(componentModel = "spring")
 public interface CourtAvailabilityMapper {
-    @Mapping(source = "court.id", target = "courtId")
-    @Mapping(source = "court.name", target = "courtName")
-    @Mapping(source = "timeSlot.id", target = "timeSlotId")
-    @Mapping(source = "timeSlot.startTime", target = "startTime")
-    @Mapping(source = "timeSlot.endTime", target = "endTime")
     CourtAvailabilityResponse toCourtAvailabilityResponse(CourtAvailability courtAvailability);
 }
 

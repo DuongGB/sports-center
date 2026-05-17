@@ -6,7 +6,6 @@
 
 package com.devduong.be.dtos.request;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -26,6 +25,8 @@ public record UserUpdateRequest(
         String phone,
 
         @Size(min = 8, message = "Password must be at least 8 characters")
-        String password
+        String password,
+
+        String oldPassword
 ) {
 }

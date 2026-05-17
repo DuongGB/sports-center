@@ -21,9 +21,6 @@ import java.util.UUID;
  */
 @Repository
 public interface CourtPriceRepository extends JpaRepository<CourtPrice, UUID> {
-    // TODO: get list price by court id
-    List<CourtPrice> findByCourtId(UUID courtId);
+    List<CourtPrice> findBySportTypeId(UUID sportTypeId);
 
-    // TODO: Check sân có giá vào khung giờ đó không
-    boolean existsByCourtIdAndTimeSlotId(UUID courtId, UUID timeSlotId);
 }

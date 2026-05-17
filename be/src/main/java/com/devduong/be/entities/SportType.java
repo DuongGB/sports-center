@@ -36,5 +36,8 @@ public class SportType {
 
     @OneToMany(mappedBy = "sportType", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Court> courts;
+
+    @OneToMany(mappedBy = "sportType", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CourtPrice> courtPrices;
 }
 

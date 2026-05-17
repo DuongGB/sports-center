@@ -7,24 +7,35 @@
 package com.devduong.be.services;
 
 import com.devduong.be.common.ErrorCode;
+import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.BookingFilterRequest;
 import com.devduong.be.dtos.request.BookingRequest;
+import com.devduong.be.dtos.response.BookedSlotResponse;
 import com.devduong.be.dtos.response.BookingResponse;
+import com.devduong.be.dtos.response.PaymentExecutionResult;
 import com.devduong.be.entities.*;
-import com.devduong.be.enums.AvailabilityStatus;
-import com.devduong.be.enums.BookingStatus;
-import com.devduong.be.enums.PaymentStatus;
+import com.devduong.be.enums.*;
+
 import com.devduong.be.exceptions.AppException;
 import com.devduong.be.mappers.BookingMapper;
 import com.devduong.be.repositories.*;
+import com.devduong.be.services.payment.PaymentStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.core.context.SecurityContextHolder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Objects;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 /*
@@ -35,174 +46,581 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class BookingService {
     BookingRepository bookingRepository;
+    CourtRepository courtRepository;
+    CourtPriceRepository courtPriceRepository;
+    UserRepository userRepository;
     BookingGuestRepository bookingGuestRepository;
     PaymentRepository paymentRepository;
-    CourtRepository courtRepository;
-    TimeSlotRepository timeSlotRepository;
-    CourtPriceRepository courtPriceRepository;
-    CourtAvailabilityRepository courtAvailabilityRepository;
-    UserRepository userRepository;
+    ReviewRepository reviewRepository;
+    EventRepository eventRepository;
+    List<PaymentStrategy> paymentStrategies;
+
     BookingMapper bookingMapper;
-    PaymentService paymentService;
+    NotificationService notificationService;
 
     // TODO: Đặt sân
     @Transactional
-    public BookingResponse createBooking(BookingRequest request) {
-        // Check Court và TimeSlot có tồn tại không
-        Court court = getCourtById(request.courtId());
-        TimeSlot timeSlot = getTimeSlotById(request.timeSlotId());
-        // Check xem sân đã bị đặt chưa và có bị khóa vào ngày và khung giờ đó không
-        validateCourtAvailability(request.courtId(), request.timeSlotId(), request.bookingDate());
-        // Lấy giá của sân vào khung giờ đó
-        CourtPrice courtPrice = getCourtPrice(request.courtId(), request.timeSlotId());
-        // Lấy thông tin user hiện tại đang đăng nhập để gán vào booking
-        User user = resolveUser();
-        // Chỉ tạo Guest khi không có User (user == null)
-        BookingGuest guest = (user == null) ? resolveGuest(request) : null;
-        // Tạo booking mới và lưu vào database
-        Booking booking = createAndSaveBooking(request, court, timeSlot, user, guest, courtPrice);
-        // Tạo payment mới và lưu vào database
-        Payment payment = paymentService.createPendingPayment(booking, request.paymentMethod());
-        // Trả về thông tin booking vừa tạo
-        return bookingMapper.toBookingResponse(booking, payment);
+    public BookingResponse createBooking(BookingRequest request, String loggedInUserId) {
+        LocalDateTime startDateTime = LocalDateTime.of(request.bookingDate(), request.startTime());
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 1. Check đặt sân trong quá khứ
+        if (startDateTime.isBefore(now)) {
+            throw new AppException(ErrorCode.INVALID_TIME_RANGE);
+        }
+
+        // 2. Check time hợp lệ (giờ bắt đầu < giờ kết thúc)
+        if (!request.startTime().isBefore(request.endTime())) {
+            throw new AppException(ErrorCode.INVALID_TIME_RANGE);
+        }
+
+        // 3. Check sân có tồn tại không
+        Court court = courtRepository.findById(request.courtId())
+                .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
+
+        // 4. Check sân có nằm trong giờ mở cửa của sân không
+        LocalTime open = court.getOpenTime() != null ? court.getOpenTime() : LocalTime.MIN;
+        LocalTime close = court.getCloseTime() != null ? court.getCloseTime() : LocalTime.MAX;
+
+        if (request.startTime().isBefore(open) || request.endTime().isAfter(close)) {
+            throw new AppException(ErrorCode.COURT_CLOSED);
+        }
+
+        LocalDateTime endDateTime = LocalDateTime.of(request.bookingDate(), request.endTime());
+        // 5. Check trùng lịch đặt sân
+        boolean isOverlapping = bookingRepository.existsOverlappingBooking(
+                request.courtId(), request.bookingDate(), request.startTime(), request.endTime()
+        );
+        if (isOverlapping) {
+            throw new AppException(ErrorCode.COURT_ALREADY_BOOKED);
+        }
+
+        // 6. Check sự kiện khóa sân (BLOCK_BOOKING)
+        LocalDateTime bookingStart = LocalDateTime.of(request.bookingDate(), request.startTime());
+        LocalDateTime bookingEnd = LocalDateTime.of(request.bookingDate(), request.endTime());
+        List<Event> overlappingEvents = eventRepository.findActiveEventsInRange(EventStatus.ACTIVE, bookingStart, bookingEnd);
+        
+        boolean isBlocked = overlappingEvents.stream()
+                .filter(e -> e.getType() == EventType.BLOCK_BOOKING)
+                .anyMatch(e -> (e.getScope() == EventScope.ALL_COURTS) || 
+                               e.getTargets().stream().anyMatch(t -> 
+                                    (t.getCourt() != null && t.getCourt().getId().equals(court.getId())) || 
+                                    (t.getSportType() != null && t.getSportType().getId().equals(court.getSportType().getId()))
+                               ));
+        if (isBlocked) {
+            throw new AppException(ErrorCode.COURT_ALREADY_BOOKED); // Hoặc tạo ErrorCode.COURT_BLOCKED
+        }
+
+        // 7. Tính tổng tiền
+        double totalPrice = calculateTotalPrice(court.getId(), court.getSportType().getId(), request.bookingDate(), request.startTime(), request.endTime());
+
+        // 6. Tạo booking
+        Booking booking = Booking.builder()
+                .court(court)
+                .bookingDate(request.bookingDate())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .totalPrice(totalPrice)
+                .bookingStatus(BookingStatus.PENDING)
+                .paymentMethod(request.paymentMethod())
+                .build();
+        // 7. Xử lý User/ Guest
+        if (loggedInUserId != null) {
+            // Đặt sân cho User đã login
+            User user = userRepository.findById(loggedInUserId)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+            booking.setUser(user);
+        } else {
+            // Đặt sân cho khách vãng lai
+            BookingGuest guest = BookingGuest.builder()
+                    .fullName(request.guestName())
+                    .phone(request.guestPhone())
+                    .email(request.guestEmail())
+                    .build();
+            bookingGuestRepository.save(guest);
+            booking.setBookingGuest(guest);
+        }
+        // 8. Lưu booking
+        Booking savedBooking = bookingRepository.save(booking);
+        // 9. Xử lý thanh toán thông qua PaymentStrategy
+        PaymentStrategy paymentStrategy = getPaymentStrategy(request.paymentMethod());
+        PaymentExecutionResult paymentExecutionResult = paymentStrategy.executePayment(savedBooking);
+        BookingResponse response = bookingMapper.toBookingResponse(savedBooking, paymentExecutionResult, request.paymentMethod());
+
+        // 10. Gửi thông báo cho admin
+        String customerName = response.customerName();
+        String notificationMessage = String.format("%s đã đặt sân %s từ %s đến %s ngày %s",
+                customerName,
+                court.getName(),
+                request.startTime(),
+                request.endTime(),
+                request.bookingDate());
+
+        try {
+            notificationService.createNotification(
+                    "Đơn đặt sân mới",
+                    notificationMessage,
+                    NotificationType.BOOKING_CREATED,
+                    savedBooking.getId().toString()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send booking notification to admin", e);
+        }
+
+        return response;
     }
+
+    // TODO: Helper method: tìm đúng Strategy theo PaymentMethod
+    private PaymentStrategy getPaymentStrategy(PaymentMethod method) {
+        return paymentStrategies.stream()
+                .filter(strategy -> strategy.getPaymentMethod() == method)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Payment method not supported: " + method));
+    }
+
+    private double calculateTotalPrice(UUID courtId, UUID sportTypeId, LocalDate bookingDate, LocalTime start, LocalTime end) {
+        List<CourtPrice> prices = courtPriceRepository.findBySportTypeId(sportTypeId);
+        if (prices.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy bảng giá cho loại hình thể thao này");
+        }
+
+        // Lấy tất cả sự kiện đang hoạt động trong khoảng thời gian đặt sân
+        LocalDateTime bookingStart = LocalDateTime.of(bookingDate, start);
+        LocalDateTime bookingEnd = LocalDateTime.of(bookingDate, end);
+        List<Event> activeEvents = eventRepository.findActiveEventsInRange(EventStatus.ACTIVE, bookingStart, bookingEnd);
+
+        double total = 0;
+        LocalTime currentStart = start;
+        while (currentStart.isBefore(end)) {
+            CourtPrice applicablePrice = null;
+            // Tìm mức giá áp dụng cho khung giờ `currentStart`
+            for (CourtPrice price : prices) {
+                if (!currentStart.isBefore(price.getStartTime()) && currentStart.isBefore(price.getEndTime())) {
+                    applicablePrice = price;
+                    break;
+                }
+            }
+            if (applicablePrice == null) {
+                throw new RuntimeException("Không tìm thấy mức giá áp dụng cho khung giờ: " + currentStart);
+            }
+            // Tìm điểm kết thúc của mốc giá này (hoặc điểm kết thúc đặt sân, tùy cái nào tới trước)
+            LocalTime priceEnd = end.isBefore(applicablePrice.getEndTime()) ? end : applicablePrice.getEndTime();
+            // Tính số phút nằm trong mốc giá này
+            long minutes = Duration.between(currentStart, priceEnd).toMinutes();
+            double originalPrice = (applicablePrice.getPrice() / 60.0) * minutes;
+
+            // Tìm sự kiện giảm giá tốt nhất cho sân/loại hình này
+            double bestDiscountedPrice = originalPrice;
+            for (Event event : activeEvents) {
+                boolean matches = (event.getScope() == EventScope.ALL_COURTS) ||
+                                  event.getTargets().stream().anyMatch(t -> 
+                    (t.getCourt() != null && t.getCourt().getId().equals(courtId)) || 
+                    (t.getSportType() != null && t.getSportType().getId().equals(sportTypeId))
+                );
+                
+                if (matches) {
+                    double discounted = originalPrice;
+                    if (event.getType() == EventType.DISCOUNT_PERCENT) {
+                        discounted = originalPrice * (1 - event.getDiscountPercent().doubleValue() / 100.0);
+                    } else if (event.getType() == EventType.DISCOUNT_FIXED) {
+                        // Giảm tỉ lệ theo số phút (discountAmount là mức giảm cho 1 giờ)
+                        discounted = originalPrice - (event.getDiscountAmount().doubleValue() / 60.0) * minutes;
+                    }
+                    if (discounted < bestDiscountedPrice) bestDiscountedPrice = Math.max(0, discounted);
+                }
+            }
+
+            total += bestDiscountedPrice;
+            // Di chuyển `currentStart` lên điểm kết thúc của mốc giá này để tiếp tục tính cho phần còn lại
+            currentStart = priceEnd;
+        }
+        return Math.round(total);
+    }
+
 
     // TODO: Hủy đặt sân
     @Transactional
-    public void cancelBooking(UUID bookingId, String phone) {
+    public void cancelBooking(UUID bookingId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        verifyBookingOwnership(booking, phone);
-        // Check trạng thái : chỉ cho phép hủy khi trạng thái là PENDING hoặc CONFIRMED
-        if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
-            throw new AppException(ErrorCode.BOOKING_ALREADY_CANCELLED);
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+        LocalDateTime end = LocalDateTime.of(booking.getBookingDate(), booking.getEndTime());
+        
+        if (!now.isBefore(start) && now.isBefore(end)) {
+            throw new RuntimeException("Không thể hủy đơn đặt sân khi đang trong thời gian diễn ra");
         }
-        // Logic: check thời gian hủy (2 tiếng)
-        LocalDateTime cancelDeadline = booking.getCreatedAt().plusHours(2);
-        if (LocalDateTime.now().isAfter(cancelDeadline)) {
-            throw new AppException(ErrorCode.CANCEL_TIME_EXPIRED);
+
+        if (now.isAfter(end)) {
+            throw new RuntimeException("Không thể hủy đơn đặt sân đã kết thúc");
         }
+
+        paymentRepository.findByBookingId(bookingId).ifPresent(payment -> {
+            if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+                throw new RuntimeException("Không thể hủy đơn đặt sân đã thanh toán thành công");
+            }
+        });
+
         booking.setBookingStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(LocalDateTime.now());
+        booking.setCancelReason(reason);
         bookingRepository.save(booking);
-        // Cập nhật lại payment
-        Payment payment = paymentRepository.findByBookingId(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        if (payment.getPaymentStatus() == PaymentStatus.PENDING) {
-            payment.setPaymentStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
-        }
     }
 
-    // =========================================================================================
-    // TODO: HELPER METHODS (Tách chuẩn logic để tái sử dụng và dễ maintain)
-    // =========================================================================================
-    private Court getCourtById(UUID courtId) {
-        return courtRepository.findById(courtId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURT_NOT_FOUND));
+    @Transactional
+    public void confirmBooking(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
+        booking.setBookingStatus(BookingStatus.CONFIRMED);
+        bookingRepository.save(booking);
     }
 
-    private TimeSlot getTimeSlotById(UUID timeSlotId) {
-        return timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() -> new AppException(ErrorCode.TIME_SLOT_NOT_FOUND));
-    }
+    @Transactional
+    public void cancelMyBooking(UUID bookingId, String userId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt sân"));
 
-    // TODO: Kiểm tra xem sân đã bị đặt chưa và có bị khóa vào ngày và khung giờ đó không
-    private void validateCourtAvailability(UUID courtId, UUID timeSlotId, LocalDate bookingDate) {
-        // Check xem sân đã bị ai đặt chưa (trạng thái khác CANCELLED)
-        boolean isBooked = bookingRepository.existsByCourtIdAndTimeSlotIdAndBookingDateAndBookingStatusNot(
-                courtId, timeSlotId, bookingDate, BookingStatus.CANCELLED);
-        if (isBooked) {
-            throw new AppException(ErrorCode.COURT_ALREADY_BOOKED);
-        }
-        // Check xem sân có bị khóa vào ngày và khung giờ đó không
-        boolean isBlocked = courtAvailabilityRepository.existsByCourtIdAndTimeSlotIdAndDateAndStatus(
-                courtId, timeSlotId, bookingDate, AvailabilityStatus.BLOCKED);
-        if (isBlocked) {
-            throw new AppException(ErrorCode.COURT_BLOCKED);
-        }
-    }
-
-    // TODO: Lấy giá của sân vào khung giờ đó
-    private CourtPrice getCourtPrice(UUID courtId, UUID timeSlotId) {
-        return courtPriceRepository.findByCourtId(courtId).stream()
-                .filter(price -> price.getTimeSlot().getId().equals(timeSlotId))
-                .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.PRICE_ALREADY_EXISTS));
-    }
-
-    // TODO: Lấy thông tin user hiện tại đang đăng nhập để gán vào booking
-    private User resolveUser() {
-        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (currentUsername != null && !"anonymousUser".equals(currentUsername)) {
-            return userRepository.findByPhone(currentUsername)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        }
-        return null;
-    }
-
-    // TODO: Lấy thông tin khách hàng từ request để tạo BookingGuest (nếu có) và gán vào booking
-    private BookingGuest resolveGuest(BookingRequest request) {
-        if (request.guestName() == null || request.guestPhone() == null) {
-            throw new AppException(ErrorCode.GUEST_INFO_REQUIRED);
-        }
-        BookingGuest guest = BookingGuest.builder()
-                .fullName(request.guestName())
-                .phone(request.guestPhone())
-                .email(request.guestEmail())
-                .build();
-        return bookingGuestRepository.save(guest);
-    }
-
-    // TODO: Tạo booking mới và lưu vào database
-    private Booking createAndSaveBooking(BookingRequest request, Court court, TimeSlot timeSlot, User user, BookingGuest guest, CourtPrice courtPrice) {
-        Booking booking = Booking.builder()
-                .court(court)
-                .timeSlot(timeSlot)
-                .bookingDate(request.bookingDate())
-                .user(user)
-                .bookingGuest(guest)
-                .totalPrice(courtPrice.getPrice())
-                .bookingStatus(BookingStatus.PENDING)
-                .build();
-        return bookingRepository.save(booking);
-    }
-
-    // TODO: Xác minh quyền sở hữu Booking trước khi cho phép hủy
-    private void verifyBookingOwnership(Booking booking, String providedPhone) {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = (authentication != null) ? authentication.getName() : "anonymousUser";
-
-        // 1. Kiểm tra quyền Admin (Admin có thể hủy bất kỳ đơn nào)
-        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
-
-        if (isAdmin) {
-            return;
-        }
-
-        // KỊCH BẢN 1: Sân này do Khách hàng có tài khoản (Customer) đặt
         if (booking.getUser() != null) {
-            // Nếu không đăng nhập (ẩn danh) hoặc đăng nhập sai tài khoản -> Chặn
-            if ("anonymousUser".equals(currentUsername) || !booking.getUser().getPhone().equals(currentUsername)) {
-                throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
+            if (userId == null || !booking.getUser().getId().equals(userId)) {
+                throw new RuntimeException("Không có quyền hủy đơn đặt sân này");
             }
         }
-        // KỊCH BẢN 2: Sân này do Khách vãng lai (Guest) đặt
-        else if (booking.getBookingGuest() != null) {
-            // Bắt buộc phải có số điện thoại truyền lên từ params
-            if (providedPhone == null || providedPhone.trim().isEmpty()) {
-                throw new AppException(ErrorCode.MISSING_PHONE_NUMBER);
+
+        if (booking.getBookingStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể hủy đơn đặt sân đang chờ xác nhận");
+        }
+
+        if (booking.getPaymentMethod() == PaymentMethod.CASH) {
+            if (LocalDateTime.now().isAfter(booking.getCreatedAt().plusMinutes(10))) {
+                throw new RuntimeException("Không thể hủy đơn đặt sân sau 10 phút");
             }
-            // Số điện thoại phải khớp với lúc đặt
-            if (!booking.getBookingGuest().getPhone().equals(providedPhone)) {
-                throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
-            }
-        } else {
-            throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
+        }
+
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+
+        paymentRepository.findByBookingId(bookingId).ifPresent(payment -> {
+            payment.setPaymentStatus(com.devduong.be.enums.PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+        });
+
+        // Gửi thông báo hủy sân cho admin
+        String customerName = booking.getUser() != null ? booking.getUser().getFullName() : "Khách";
+        String notificationMessage = String.format("%s đã hủy đơn đặt sân %s ngày %s",
+                customerName,
+                booking.getCourt().getName(),
+                booking.getBookingDate());
+
+        try {
+            notificationService.createNotification(
+                    "Đơn đặt sân bị hủy",
+                    notificationMessage,
+                    NotificationType.BOOKING_CANCELLED,
+                    booking.getId().toString()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send booking cancellation notification to admin", e);
         }
     }
-}
 
+    // TODO: Xử lý hàng loạt
+    @Transactional
+    public void batchProcessBookings(List<UUID> bookingIds, String action) {
+        List<Booking> bookings = bookingRepository.findAllById(bookingIds);
+        LocalDateTime now = LocalDateTime.now();
+        
+        for (Booking booking : bookings) {
+            if ("CANCEL".equalsIgnoreCase(action)) {
+                LocalDateTime start = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+                if (!now.isBefore(start)) {
+                    continue; // Skip if already started or finished
+                }
+            }
+
+            if (booking.getBookingStatus() == BookingStatus.PENDING) {
+                if ("CONFIRM".equalsIgnoreCase(action)) {
+                    booking.setBookingStatus(BookingStatus.CONFIRMED);
+                } else if ("CANCEL".equalsIgnoreCase(action)) {
+                    booking.setBookingStatus(BookingStatus.CANCELLED);
+                    booking.setCancelledAt(LocalDateTime.now());
+                }
+            } else if (booking.getBookingStatus() == BookingStatus.CONFIRMED && "CANCEL".equalsIgnoreCase(action)) {
+                // Check if paid
+                boolean isPaid = paymentRepository.findByBookingId(booking.getId())
+                        .map(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                        .orElse(false);
+                
+                if (!isPaid) {
+                    booking.setBookingStatus(BookingStatus.CANCELLED);
+                    booking.setCancelledAt(LocalDateTime.now());
+                }
+            }
+        }
+        bookingRepository.saveAll(bookings);
+    }
+
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
+    @Transactional
+    public void autoConfirmBookings() {
+        // ... Logic in case there is anything else left or we can rename to complete
+        LocalDateTime threshold = LocalDateTime.now().minusHours(24);
+        List<Booking> oldPendingBookings = bookingRepository.findByBookingStatusAndCreatedAtBefore(
+                BookingStatus.PENDING, threshold
+        );
+        if (!oldPendingBookings.isEmpty()) {
+            oldPendingBookings.forEach(b -> b.setBookingStatus(BookingStatus.CONFIRMED));
+            bookingRepository.saveAll(oldPendingBookings);
+            log.info("Auto-confirmed {} bookings (24h rule).", oldPendingBookings.size());
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
+    @Transactional
+    public void autoCompleteConfirmedBookings() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Booking> confirmedBookings = bookingRepository.findByBookingStatus(BookingStatus.CONFIRMED);
+
+        List<Booking> toComplete = confirmedBookings.stream()
+                .filter(b -> now.isAfter(LocalDateTime.of(b.getBookingDate(), b.getEndTime())))
+                .toList();
+
+        if (!toComplete.isEmpty()) {
+            toComplete.forEach(b -> {
+                b.setBookingStatus(BookingStatus.COMPLETED);
+                if (b.getPaymentMethod() == PaymentMethod.CASH) {
+                    paymentRepository.findByBookingId(b.getId()).ifPresent(p -> {
+                        if (p.getPaymentStatus() == PaymentStatus.PENDING) {
+                            p.setPaymentStatus(PaymentStatus.SUCCESS);
+                            p.setPaymentDate(LocalDateTime.now());
+                            paymentRepository.save(p);
+                        }
+                    });
+                }
+            });
+            bookingRepository.saveAll(toComplete);
+            log.info("Auto-completed {} bookings.", toComplete.size());
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
+    @Transactional
+    public void autoConfirmCashBookingsAfter10Mins() {
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
+        List<Booking> pendingCashBookings = bookingRepository.findByBookingStatusAndCreatedAtBefore(
+                BookingStatus.PENDING, threshold
+        );
+
+        List<Booking> toConfirm = pendingCashBookings.stream()
+                .filter(b -> b.getPaymentMethod() == PaymentMethod.CASH)
+                .toList();
+
+        if (!toConfirm.isEmpty()) {
+            toConfirm.forEach(b -> b.setBookingStatus(BookingStatus.CONFIRMED));
+            bookingRepository.saveAll(toConfirm);
+            log.info("Auto-confirmed {} CASH bookings.", toConfirm.size());
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút
+    @Transactional
+    public void autoCancelUnpaidOnlineBookings() {
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
+        List<Payment> expiredPayments = paymentRepository.findByPaymentStatusAndPaymentDateBefore(
+                PaymentStatus.PENDING, threshold
+        );
+
+        if (!expiredPayments.isEmpty()) {
+            for (Payment payment : expiredPayments) {
+                if (payment.getPaymentMethod() == PaymentMethod.PAYPAL || payment.getPaymentMethod() == PaymentMethod.MOMO) {
+                    Booking booking = payment.getBooking();
+                    if (booking.getBookingStatus() == BookingStatus.PENDING) {
+                        booking.setBookingStatus(BookingStatus.CANCELLED);
+                        booking.setCancelledAt(LocalDateTime.now());
+                        bookingRepository.save(booking);
+
+                        payment.setPaymentStatus(com.devduong.be.enums.PaymentStatus.FAILED);
+                        paymentRepository.save(payment);
+
+                        log.info("Auto-cancelled unpaid online booking: {}", booking.getId());
+                    }
+                }
+            }
+        }
+    }
+
+    // TODO: Lấy tất cả booking (phân trang + lọc)
+    public PageResponse<BookingResponse> getAllBookings(BookingFilterRequest request) {
+        Sort sort = Sort.by(Sort.Direction.fromString(request.sortDirection()), request.sortBy());
+        Pageable pageable = PageRequest.of(request.page() - 1, request.size(), sort);
+        
+        Page<Booking> bookingPage = bookingRepository.findWithFilter(
+                request.keyword(),
+                request.status(),
+                pageable
+        );
+        
+        List<BookingResponse> responses = bookingPage.getContent().stream()
+                .map(booking -> {
+                    String customerName = booking.getUser() != null
+                            ? booking.getUser().getFullName()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : "N/A");
+                    String customerPhone = booking.getUser() != null
+                            ? booking.getUser().getPhone()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
+                    
+                    PaymentMethod method = booking.getPaymentMethod();
+                    if (method == null) {
+                        method = paymentRepository.findByBookingId(booking.getId())
+                                .map(Payment::getPaymentMethod)
+                                .orElse(com.devduong.be.enums.PaymentMethod.CASH);
+                    }
+                    boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
+
+                    Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+                    PaymentStatus pStatus = payment != null ? payment.getPaymentStatus() : com.devduong.be.enums.PaymentStatus.PENDING;
+                    UUID pId = payment != null ? payment.getId() : null;
+
+                    return new BookingResponse(
+                            booking.getId(),
+                            booking.getCourt().getId(),
+                            booking.getCourt().getName(),
+                            booking.getBookingDate(),
+                            booking.getStartTime(),
+                            booking.getEndTime(),
+                            booking.getTotalPrice(),
+                            booking.getBookingStatus(),
+                            customerName,
+                            customerPhone,
+                            pId,
+                            method,
+                            pStatus,
+                            booking.getCancelReason(),
+                            booking.getCreatedAt(),
+                            isReviewed,
+                            reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
+                    );
+                })
+                .toList();
+        return new PageResponse<>(
+                bookingPage.getNumber() + 1,
+                bookingPage.getTotalPages(),
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                responses
+        );
+    }
+
+    public PageResponse<BookingResponse> getMyBookings(String userId, Pageable pageable) {
+        Page<Booking> bookingPage = bookingRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        
+        List<BookingResponse> responses = bookingPage.stream()
+                .map(booking -> {
+                    String customerName = booking.getUser() != null
+                            ? booking.getUser().getFullName()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : "N/A");
+                    String customerPhone = booking.getUser() != null
+                            ? booking.getUser().getPhone()
+                            : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
+
+                    PaymentMethod method = booking.getPaymentMethod();
+                    if (method == null) {
+                        method = paymentRepository.findByBookingId(booking.getId())
+                                .map(Payment::getPaymentMethod)
+                                .orElse(com.devduong.be.enums.PaymentMethod.CASH);
+                    }
+
+                    boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
+
+                    Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+                    PaymentStatus pStatus = payment != null ? payment.getPaymentStatus() : com.devduong.be.enums.PaymentStatus.PENDING;
+                    UUID pId = payment != null ? payment.getId() : null;
+
+                    return new BookingResponse(
+                            booking.getId(),
+                            booking.getCourt().getId(),
+                            booking.getCourt().getName(),
+                            booking.getBookingDate(),
+                            booking.getStartTime(),
+                            booking.getEndTime(),
+                            booking.getTotalPrice(),
+                            booking.getBookingStatus(),
+                            customerName,
+                            customerPhone,
+                            pId,
+                            method,
+                            pStatus,
+                            booking.getCancelReason(),
+                            booking.getCreatedAt(),
+                            isReviewed,
+                            reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
+                    );
+                })
+                .toList();
+
+        return new PageResponse<>(
+                bookingPage.getNumber() + 1,
+                bookingPage.getTotalPages(),
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                responses
+        );
+    }
+
+    public BookingResponse getBookingById(UUID id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        
+        String customerName = booking.getUser() != null
+                ? booking.getUser().getFullName()
+                : (booking.getBookingGuest() != null ? booking.getBookingGuest().getFullName() : "N/A");
+        String customerPhone = booking.getUser() != null
+                ? booking.getUser().getPhone()
+                : (booking.getBookingGuest() != null ? booking.getBookingGuest().getPhone() : "N/A");
+        
+        PaymentMethod method = booking.getPaymentMethod();
+        if (method == null) {
+            method = paymentRepository.findByBookingId(booking.getId())
+                    .map(Payment::getPaymentMethod)
+                    .orElse(com.devduong.be.enums.PaymentMethod.CASH);
+        }
+        
+        Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+        PaymentStatus pStatus = payment != null ? payment.getPaymentStatus() : com.devduong.be.enums.PaymentStatus.PENDING;
+        UUID pId = payment != null ? payment.getId() : null;
+        boolean isReviewed = reviewRepository.existsByBookingId(booking.getId());
+
+        return new BookingResponse(
+                booking.getId(),
+                booking.getCourt().getId(),
+                booking.getCourt().getName(),
+                booking.getBookingDate(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getTotalPrice(),
+                booking.getBookingStatus(),
+                customerName,
+                customerPhone,
+                pId,
+                method,
+                pStatus,
+                booking.getCancelReason(),
+                booking.getCreatedAt(),
+                isReviewed,
+                reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
+        );
+    }
+
+    public List<BookedSlotResponse> getBookedSlots(UUID courtId, LocalDate date) {
+        List<Booking> bookings = bookingRepository.findActiveBookingsByCourtAndDate(courtId, date);
+        return bookings.stream()
+                .map(booking -> new BookedSlotResponse(booking.getStartTime(), booking.getEndTime()))
+                .toList();
+    }
+
+}

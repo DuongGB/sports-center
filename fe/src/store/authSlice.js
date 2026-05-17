@@ -4,8 +4,8 @@ import { API_BASE_URL } from "@/config/api";
 const initialState = {
   user: null,
   tokens: {
-    accessToken: null,
-    refreshToken: null,
+    accessToken: localStorage.getItem("accessToken"),
+    refreshToken: localStorage.getItem("refreshToken"),
   },
   loading: false,
   error: null,

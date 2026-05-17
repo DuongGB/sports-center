@@ -7,16 +7,28 @@
 package com.devduong.be.controllers;
 
 import com.devduong.be.common.ApiResponse;
+import com.devduong.be.common.PageResponse;
+import com.devduong.be.dtos.request.BatchBookingRequest;
+import com.devduong.be.dtos.request.BookingFilterRequest;
 import com.devduong.be.dtos.request.BookingRequest;
 import com.devduong.be.dtos.response.BookingResponse;
+import com.devduong.be.security.oauth2.UserPrincipal;
 import com.devduong.be.services.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import com.devduong.be.dtos.response.BookedSlotResponse;
 
 /*
  * @description:
@@ -34,22 +46,147 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<ApiResponse<?>> createBooking(
             @RequestBody @Valid BookingRequest request) {
-        return ResponseEntity.ok(ApiResponse.<BookingResponse>builder()
+        // 1. Lấy thông tin user đăng nhập (nếu có)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loggedInUserId = null;
+        // Check user đã đăng nhập chưa
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            Object principal = authentication.getPrincipal();
+            // Check principal có đúng là đối tượng UserPrincipal không
+            if (principal instanceof UserPrincipal) {
+                UserPrincipal userPrincipal = (UserPrincipal) principal;
+                loggedInUserId = userPrincipal.getId();
+            }
+            // Nếu JwtFilter đang set principal là một string (chứa ID hoặc email)
+            else if (principal instanceof String && !"anonymousUser".equals(principal)) {
+                loggedInUserId = (String) principal;
+            }
+
+        }
+        // 2. Gọi service để tạo booking
+        return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
-                .code(201)
+                .code(HttpStatus.CREATED.value())
                 .message("Booking created successfully")
-                .data(bookingService.createBooking(request))
+                .data(bookingService.createBooking(request, loggedInUserId))
+                .build());
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> getAllBookings(BookingFilterRequest request) {
+        return ResponseEntity.ok(ApiResponse.<PageResponse<BookingResponse>>builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get all bookings successful")
+                .data(bookingService.getAllBookings(request))
+                .build());
+    }
+
+    @PutMapping("/{id}/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> confirmBooking(@PathVariable UUID id) {
+        bookingService.confirmBooking(id);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Booking confirmed successfully")
                 .build());
     }
 
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse<?>> cancelBooking(@PathVariable UUID id, @RequestParam(required = false) String phone) {
-        bookingService.cancelBooking(id,phone);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> cancelBooking(
+            @PathVariable UUID id,
+            @RequestBody(required = false) java.util.Map<String, String> payload) {
+        String reason = payload != null ? payload.get("reason") : "Hủy bởi Admin";
+        bookingService.cancelBooking(id, reason);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
-                .code(200)
+                .code(HttpStatus.OK.value())
                 .message("Booking cancelled successfully")
                 .build());
     }
-}
 
+    @PutMapping("/{id}/cancel-my-booking")
+    public ResponseEntity<ApiResponse<?>> cancelMyBooking(@PathVariable UUID id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = null;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                userId = ((UserPrincipal) principal).getId();
+            } else if (principal instanceof String) {
+                userId = (String) principal;
+            }
+        }
+        
+        bookingService.cancelMyBooking(id, userId);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Booking cancelled successfully")
+                .build());
+    }
+
+    @PutMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> batchProcessBookings(@RequestBody BatchBookingRequest request) {
+        bookingService.batchProcessBookings(request.ids(), request.action());
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Batch processing successful")
+                .build());
+    }
+
+    @GetMapping("/my-bookings")
+    public ResponseEntity<ApiResponse<?>> getMyBookings(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                userId = ((UserPrincipal) principal).getId();
+            } else if (principal instanceof String) {
+                userId = (String) principal;
+            }
+        }
+        
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page - 1, size);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get my bookings successful")
+                .data(bookingService.getMyBookings(userId, pageable))
+                .build());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.<BookingResponse>builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get booking detail successful")
+                .data(bookingService.getBookingById(id))
+                .build());
+    }
+
+    @GetMapping("/booked-slots")
+    public ResponseEntity<ApiResponse<?>> getBookedSlots(
+            @RequestParam UUID courtId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(ApiResponse.<List<BookedSlotResponse>>builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Get booked slots successful")
+                .data(bookingService.getBookedSlots(courtId, date))
+                .build());
+    }
+}

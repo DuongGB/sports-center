@@ -33,22 +33,36 @@ import java.util.UUID;
 public class CourtPriceController {
     CourtPriceService courtPriceService;
 
-    @GetMapping("/court/{courtId}")
-    public ResponseEntity<ApiResponse<?>> getPricesByCourt(@PathVariable UUID courtId) {
+    @GetMapping("/sport-type/{sportTypeId}")
+    public ResponseEntity<ApiResponse<?>> getPricesBySportType(@PathVariable UUID sportTypeId) {
         return ResponseEntity.ok(ApiResponse.<List<CourtPriceResponse>>builder()
                 .success(true)
                 .message("Get court prices successfully")
-                .data(courtPriceService.getCourtPricesByCourtId(courtId))
+                .data(courtPriceService.getCourtPricesBySportTypeId(sportTypeId))
                 .build());
     }
 
-    @PostMapping
+    @PostMapping("/{sportTypeId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<?>> createCourtPrice(@RequestBody @Valid CourtPriceRequest request) {
+    public ResponseEntity<ApiResponse<?>> createCourtPrice(
+            @PathVariable UUID sportTypeId,
+            @RequestBody @Valid CourtPriceRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourtPriceResponse>builder()
                 .success(true)
                 .message("Create court price successfully")
-                .data(courtPriceService.createCourtPrice(request))
+                .data(courtPriceService.createCourtPrice(sportTypeId, request))
+                .build());
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> updateCourtPrice(
+            @PathVariable UUID id,
+            @RequestBody @Valid CourtPriceRequest request) {
+        return ResponseEntity.ok(ApiResponse.<CourtPriceResponse>builder()
+                .success(true)
+                .message("Update court price successfully")
+                .data(courtPriceService.updateCourtPrice(id, request))
                 .build());
     }
 }

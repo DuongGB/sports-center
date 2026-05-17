@@ -10,6 +10,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /*
@@ -32,12 +35,14 @@ public class CourtPrice {
     UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "court_id", nullable = false)
-    Court court;
+    @JoinColumn(name = "sport_type_id", nullable = false)
+    SportType sportType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "time_slot_id", nullable = false)
-    TimeSlot timeSlot;
+    @Column(name = "start_time")
+    LocalTime startTime;
+
+    @Column(name = "end_time")
+    LocalTime endTime;
 
     double price;
 }

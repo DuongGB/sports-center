@@ -8,6 +8,8 @@ package com.devduong.be.dtos.response;
 
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.List;
+
 /*
  * @description:
  * @author: Nguyen Tan Thai Duong
@@ -16,6 +18,7 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record SportTypeResponse(
         String id,
-        String name
+        String name,
+        List<CourtPriceResponse> prices
 ) {
 }

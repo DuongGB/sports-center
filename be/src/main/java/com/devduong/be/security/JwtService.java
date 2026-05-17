@@ -51,7 +51,7 @@ public class JwtService {
 
             // Tạo claims cho JWT, bao gồm thông tin về người dùng và các quyền của họ
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                    .subject(user.getPhone())
+                    .subject(user.getId())
                     .claim("roles", roles)
                     .issuer("devduong")
                     .issueTime(new java.util.Date())
@@ -80,7 +80,7 @@ public class JwtService {
     // TODO: Phương thức để tạo refresh token được mã hóa bằng JWE
     public String generateRefreshToken(User user) {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .subject(user.getPhone())
+                .subject(user.getId())
                 .issuer("devduong")
                 .issueTime(new java.util.Date())
                 .expirationTime(new java.util.Date(System.currentTimeMillis() + REFRESH_EXP))
@@ -126,8 +126,8 @@ public class JwtService {
         }
     }
 
-    // TODO: Get subject (số điện thoại) từ JWT đã được mã hóa bằng JWE
-    public String extractPhone(String token) {
+    // TODO: Get subject (userId) từ JWT đã được mã hóa bằng JWE
+    public String extractId(String token) {
         return extractAllClaims(token).getSubject();
     }
 
