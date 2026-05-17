@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useCourtQuery } from "@/hooks/queries/useCourtQueries";
 import { useActiveEventsQuery } from "@/hooks/queries/useEventQueries";
+import { useBookedSlotsQuery } from "@/hooks/queries/useBookingQueries";
 import { bookingService } from "@/services/bookingService";
 import { toast } from "react-toastify";
 import {
@@ -32,6 +34,7 @@ import PayPalRedirectButton from "@/components/payment/PayPalRedirectButton";
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const courtId = searchParams.get("courtId");
   const { user, isAuthenticated } = useAuth();
 
@@ -41,6 +44,18 @@ export default function BookingPage() {
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+
+  const [formData, setFormData] = useState({
+    bookingDate: "",
+    startTime: "",
+    endTime: "",
+    paymentMethod: "CASH",
+    guestName: "",
+    guestPhone: "",
+    guestEmail: "",
+  });
+
+  const { data: bookedSlots = [], isLoading: loadingSlots } = useBookedSlotsQuery(courtId, formData.bookingDate);
 
   useEffect(() => {
     let timer;
@@ -105,18 +120,6 @@ export default function BookingPage() {
     }
   };
 
-
-
-  const [formData, setFormData] = useState({
-    bookingDate: "",
-    startTime: "",
-    endTime: "",
-    paymentMethod: "CASH",
-    guestName: "",
-    guestPhone: "",
-    guestEmail: "",
-  });
-
   // Pre-fill guest info from logged-in user
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -138,6 +141,10 @@ export default function BookingPage() {
     }
     if (!formData.bookingDate || !formData.startTime || !formData.endTime) {
       toast.error("Vui lòng nhập đầy đủ ngày và giờ đặt sân");
+      return;
+    }
+    if (isTimeSlotOverlapped) {
+      toast.error("Khung giờ bạn chọn trùng với lịch đặt trước đó. Vui lòng chọn khung giờ khác.");
       return;
     }
     if (!isAuthenticated && (!formData.guestName || !formData.guestPhone)) {
@@ -170,6 +177,7 @@ export default function BookingPage() {
       if (res.success) {
         setBookingSuccess(res.data);
         setTimeLeft(600);
+        queryClient.invalidateQueries({ queryKey: ["booked-slots"] });
         
         // Lưu vào giỏ hàng tạm cho khách vãng lai
         if (!isAuthenticated) {
@@ -214,6 +222,21 @@ export default function BookingPage() {
     const [h, m] = t.split(":").map(Number);
     return h + m / 60;
   };
+
+  const checkIfTimeSlotBooked = () => {
+    if (!formData.startTime || !formData.endTime || bookedSlots.length === 0) return false;
+    const start = timeToDecimal(formData.startTime);
+    const end = timeToDecimal(formData.endTime);
+    if (end <= start) return false;
+
+    return bookedSlots.some(slot => {
+      const slotStart = timeToDecimal(slot.startTime);
+      const slotEnd = timeToDecimal(slot.endTime);
+      return start < slotEnd && end > slotStart;
+    });
+  };
+
+  const isTimeSlotOverlapped = checkIfTimeSlotBooked();
 
   const calculateTotalPrice = () => {
     if (!court || !formData.startTime || !formData.endTime) return { total: 0, original: 0, discount: 0 };
@@ -547,6 +570,38 @@ export default function BookingPage() {
                   />
                 </div>
 
+                {/* Booked slots list */}
+                {formData.bookingDate && (
+                  <div className="space-y-2 pt-1 animate-in fade-in duration-200">
+                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <Clock3 className="h-3.5 w-3.5 text-primary/70" />
+                      Khung giờ đã bận trong ngày:
+                    </p>
+                    {loadingSlots ? (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                        <span>Đang tải thông tin...</span>
+                      </div>
+                    ) : bookedSlots.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {bookedSlots.map((slot, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 px-2 py-1 text-xs font-semibold text-rose-700 dark:text-rose-450 ring-1 ring-inset ring-rose-600/10 dark:ring-rose-500/20"
+                          >
+                            Đã đặt: {slot.startTime} - {slot.endTime}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Sân trống cả ngày, bạn có thể chọn bất kỳ giờ nào!
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Time range */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -715,7 +770,15 @@ export default function BookingPage() {
                   </div>
                 )}
 
-                {pricing.total > 0 && !pricing.isBlocked && (
+                {isTimeSlotOverlapped && (
+                  <div className="rounded-xl bg-rose-500/15 border border-rose-500/30 p-4 animate-in fade-in slide-in-from-top-2">
+                    <p className="text-sm font-bold text-rose-600 dark:text-rose-450 text-center">
+                      Khung giờ bạn chọn trùng với lịch đặt trước đó. Vui lòng chọn khung giờ khác.
+                    </p>
+                  </div>
+                )}
+
+                {pricing.total > 0 && !pricing.isBlocked && !isTimeSlotOverlapped && (
                   <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 space-y-2 animate-in fade-in slide-in-from-top-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Thời gian:</span>
@@ -748,7 +811,7 @@ export default function BookingPage() {
 
                 <Button
                   type="submit"
-                  disabled={submitting || !court || pricing.isBlocked}
+                  disabled={submitting || !court || pricing.isBlocked || isTimeSlotOverlapped}
                   className="w-full h-12 gap-2 text-base"
                 >
                   {submitting ? (

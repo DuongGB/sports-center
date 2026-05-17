@@ -48,3 +48,13 @@ export function useBookingMutations() {
 
   return { confirmBookingMut, cancelBookingMut, batchProcessMut };
 }
+
+export function useBookedSlotsQuery(courtId, date, options = {}) {
+  return useQuery({
+    queryKey: ["booked-slots", courtId, date],
+    queryFn: () => bookingService.getBookedSlots(courtId, date).then(res => res.data),
+    enabled: !!courtId && !!date,
+    staleTime: 30 * 1000, // 30 seconds cache validity
+    ...options
+  });
+}

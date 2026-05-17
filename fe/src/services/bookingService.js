@@ -30,4 +30,6 @@ export const bookingService = {
     apiCall(`/booking/my-bookings?page=${page}&size=${size}`, { method: "GET" }),
   getBookingById: (id) =>
     apiCall(`/booking/${id}`, { method: "GET" }),
+  getBookedSlots: (courtId, date) =>
+    apiCall(`/booking/booked-slots?courtId=${courtId}&date=${date}`, { method: "GET" }),
 };

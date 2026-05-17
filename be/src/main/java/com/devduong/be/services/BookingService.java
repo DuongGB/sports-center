@@ -10,6 +10,7 @@ import com.devduong.be.common.ErrorCode;
 import com.devduong.be.common.PageResponse;
 import com.devduong.be.dtos.request.BookingFilterRequest;
 import com.devduong.be.dtos.request.BookingRequest;
+import com.devduong.be.dtos.response.BookedSlotResponse;
 import com.devduong.be.dtos.response.BookingResponse;
 import com.devduong.be.dtos.response.PaymentExecutionResult;
 import com.devduong.be.entities.*;
@@ -572,6 +573,13 @@ public class BookingService {
                 isReviewed,
                 reviewRepository.findByBookingId(booking.getId()).map(Review::getCreatedAt).orElse(null)
         );
+    }
+
+    public List<BookedSlotResponse> getBookedSlots(UUID courtId, LocalDate date) {
+        List<Booking> bookings = bookingRepository.findActiveBookingsByCourtAndDate(courtId, date);
+        return bookings.stream()
+                .map(booking -> new BookedSlotResponse(booking.getStartTime(), booking.getEndTime()))
+                .toList();
     }
 
 }

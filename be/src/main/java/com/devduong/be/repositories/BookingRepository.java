@@ -41,6 +41,14 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime);
 
+    @Query("SELECT b FROM Booking b WHERE b.court.id = :courtId " +
+            "AND b.bookingDate = :date " +
+            "AND b.bookingStatus != 'CANCELLED' " +
+            "ORDER BY b.startTime ASC")
+    List<Booking> findActiveBookingsByCourtAndDate(
+            @Param("courtId") UUID courtId,
+            @Param("date") LocalDate date);
+
     Page<Booking> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     // ===== Revenue Statistics Queries =====
