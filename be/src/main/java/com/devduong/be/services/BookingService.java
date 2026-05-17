@@ -60,6 +60,7 @@ public class BookingService {
     List<PaymentStrategy> paymentStrategies;
 
     BookingMapper bookingMapper;
+    NotificationService notificationService;
 
     // TODO: Đặt sân
     @Transactional
@@ -148,7 +149,29 @@ public class BookingService {
         // 9. Xử lý thanh toán thông qua PaymentStrategy
         PaymentStrategy paymentStrategy = getPaymentStrategy(request.paymentMethod());
         PaymentExecutionResult paymentExecutionResult = paymentStrategy.executePayment(savedBooking);
-        return bookingMapper.toBookingResponse(savedBooking, paymentExecutionResult, request.paymentMethod());
+        BookingResponse response = bookingMapper.toBookingResponse(savedBooking, paymentExecutionResult, request.paymentMethod());
+
+        // 10. Gửi thông báo cho admin
+        String customerName = response.customerName();
+        String notificationMessage = String.format("%s đã đặt sân %s từ %s đến %s ngày %s",
+                customerName,
+                court.getName(),
+                request.startTime(),
+                request.endTime(),
+                request.bookingDate());
+
+        try {
+            notificationService.createNotification(
+                    "Đơn đặt sân mới",
+                    notificationMessage,
+                    NotificationType.BOOKING_CREATED,
+                    savedBooking.getId().toString()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send booking notification to admin", e);
+        }
+
+        return response;
     }
 
     // TODO: Helper method: tìm đúng Strategy theo PaymentMethod
@@ -286,6 +309,24 @@ public class BookingService {
             payment.setPaymentStatus(com.devduong.be.enums.PaymentStatus.FAILED);
             paymentRepository.save(payment);
         });
+
+        // Gửi thông báo hủy sân cho admin
+        String customerName = booking.getUser() != null ? booking.getUser().getFullName() : "Khách";
+        String notificationMessage = String.format("%s đã hủy đơn đặt sân %s ngày %s",
+                customerName,
+                booking.getCourt().getName(),
+                booking.getBookingDate());
+
+        try {
+            notificationService.createNotification(
+                    "Đơn đặt sân bị hủy",
+                    notificationMessage,
+                    NotificationType.BOOKING_CANCELLED,
+                    booking.getId().toString()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send booking cancellation notification to admin", e);
+        }
     }
 
     // TODO: Xử lý hàng loạt

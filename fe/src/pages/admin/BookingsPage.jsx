@@ -31,8 +31,10 @@ const formatPrice = (p) => (p != null ? p.toLocaleString("vi-VN") + "đ" : "N/A"
 
 export default function BookingsPage() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState({ keyword: "", status: "" });
-  const [searchTerm, setSearchTerm] = useState("");
+  const queryParams = new URLSearchParams(window.location.search);
+  const initialKeyword = queryParams.get("keyword") || "";
+  const [filters, setFilters] = useState({ keyword: initialKeyword, status: "" });
+  const [searchTerm, setSearchTerm] = useState(initialKeyword);
   const [page, setPage] = useState(1);
   const size = 10;
   const [selectedIds, setSelectedIds] = useState([]);
@@ -57,6 +59,7 @@ export default function BookingsPage() {
     setSearchTerm("");
     setFilters({ keyword: "", status: "" });
     setPage(1);
+    window.history.replaceState({}, "", window.location.pathname);
   };
 
   const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
