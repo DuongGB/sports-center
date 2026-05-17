@@ -69,6 +69,10 @@ function AppContent() {
     }
   }, [isAuthenticated, user, fetchCurrentUser]);
 
+  useEffect(() => {
+    queryClient.clear();
+  }, [isAuthenticated]);
+
   const handleLoginSuccess = async () => {
     setIsLoginModalOpen(false);
     try {
@@ -110,8 +114,6 @@ function AppContent() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 <span className="ml-3 text-muted-foreground">Đang tải...</span>
               </div>
-            ) : user?.roles?.includes("ADMIN") ? (
-              <Navigate to="/admin/dashboard" replace />
             ) : (
               <HomePage
                 user={user}

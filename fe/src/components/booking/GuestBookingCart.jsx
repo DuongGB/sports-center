@@ -260,22 +260,23 @@ export default function GuestBookingCart() {
                       <span className="text-sm font-black text-foreground">
                         {formatPrice(booking.totalPrice)}
                       </span>
-                      <Button
-                        size="sm"
-                        variant={
-                          booking.bookingStatus === "CONFIRMED"
-                            ? "default"
-                            : "ghost"
-                        }
-                        className={`h-7 text-[10px] gap-1 px-2 ${booking.bookingStatus === "PENDING" ? "text-orange-600 bg-orange-50 hover:bg-orange-100" : ""}`}
-                        onClick={(e) => handleOpenQr(e, booking)}
-                        disabled={booking.bookingStatus === "CANCELLED"}
-                      >
-                        <QrCode className="h-3 w-3" />
-                        {booking.bookingStatus === "PENDING"
-                          ? "Chờ duyệt"
-                          : "Mã QR"}
-                      </Button>
+                      {booking.bookingStatus !== "COMPLETED" && booking.bookingStatus !== "CANCELLED" && (
+                        <Button
+                          size="sm"
+                          variant={
+                            booking.bookingStatus === "CONFIRMED"
+                              ? "default"
+                              : "ghost"
+                          }
+                          className={`h-7 text-[10px] gap-1 px-2 ${booking.bookingStatus === "PENDING" ? "text-orange-600 bg-orange-50 hover:bg-orange-100" : ""}`}
+                          onClick={(e) => handleOpenQr(e, booking)}
+                        >
+                          <QrCode className="h-3 w-3" />
+                          {booking.bookingStatus === "PENDING"
+                            ? "Chờ duyệt"
+                            : "Mã QR"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}

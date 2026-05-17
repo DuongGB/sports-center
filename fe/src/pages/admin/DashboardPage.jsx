@@ -296,10 +296,10 @@ export default function DashboardPage() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer"
+              className="bg-card border border-border/50 rounded px-2 py-0.5 text-sm font-semibold text-foreground focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors"
             >
               {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
-                <option key={y} value={y}>
+                <option key={y} value={y} className="bg-card text-foreground">
                   {y}
                 </option>
               ))}
@@ -314,11 +314,11 @@ export default function DashboardPage() {
             <select
               value={exportType}
               onChange={(e) => setExportType(e.target.value)}
-              className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer"
+              className="bg-card border border-border/50 rounded px-2 py-0.5 text-sm font-semibold text-foreground focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors"
             >
-              <option value="year">Cả năm</option>
-              <option value="quarter">Theo quý</option>
-              <option value="month">Theo tháng</option>
+              <option value="year" className="bg-card text-foreground">Cả năm</option>
+              <option value="quarter" className="bg-card text-foreground">Theo quý</option>
+              <option value="month" className="bg-card text-foreground">Theo tháng</option>
             </select>
           </div>
 
@@ -331,16 +331,16 @@ export default function DashboardPage() {
               <select
                 value={exportValue}
                 onChange={(e) => setExportValue(Number(e.target.value))}
-                className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer min-w-[80px]"
+                className="bg-card border border-border/50 rounded px-2 py-0.5 text-sm font-semibold text-foreground focus:outline-none cursor-pointer min-w-[80px] hover:bg-muted/50 transition-colors"
               >
                 {exportType === "month"
                   ? Array.from({ length: 12 }).map((_, i) => (
-                      <option key={i} value={i}>
+                      <option key={i} value={i} className="bg-card text-foreground">
                         Tháng {i + 1}
                       </option>
                     ))
                   : [1, 2, 3, 4].map((q) => (
-                      <option key={q} value={q - 1}>
+                      <option key={q} value={q - 1} className="bg-card text-foreground">
                         Quý {q}
                       </option>
                     ))}
@@ -805,7 +805,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-muted-foreground">10 đơn mới nhất</p>
             </div>
-            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {(recentBookings || []).length === 0 ? (
                 <div className="px-6 py-8 text-center text-muted-foreground">
                   Chưa có đơn đặt sân nào

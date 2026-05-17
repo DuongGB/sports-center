@@ -13,6 +13,7 @@ import {
   Star,
   CalendarRange,
   QrCode,
+  Home,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -129,6 +130,7 @@ const AdminLayout = () => {
     { name: "Tin Nhắn", path: "/admin/chat", icon: MessageCircle },
     { name: "Sự Kiện", path: "/admin/events", icon: CalendarRange },
     { name: "Quét QR", path: "/admin/scanner", icon: QrCode },
+    { name: "Trang Khách Hàng", path: "/", icon: Home },
   ];
 
   return (
@@ -146,7 +148,9 @@ const AdminLayout = () => {
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
+            const isActive = item.path === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(item.path);
 
             return (
               <Link
@@ -205,7 +209,9 @@ const AdminLayout = () => {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
+            const isActive = item.path === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(item.path);
 
             return (
               <Link

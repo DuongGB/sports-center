@@ -3,7 +3,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Menu, X, Dumbbell, User as UserIcon, History, LogOut, ChevronDown, ShoppingCart } from "lucide-react";
+import {
+  Menu,
+  X,
+  Dumbbell,
+  User as UserIcon,
+  History,
+  LogOut,
+  ChevronDown,
+  ShoppingCart,
+  LayoutDashboard,
+} from "lucide-react";
 import GuestBookingCart from "@/components/booking/GuestBookingCart";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -109,34 +119,50 @@ export default function Header({
                     {user?.phone || "Khách hàng"}
                   </p>
                 </div>
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${userMenuOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {userMenuOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
+                  <div
+                    className="fixed inset-0 z-10"
                     onClick={() => setUserMenuOpen(false)}
                   />
                   <div className="absolute right-0 mt-2 z-20 w-56 overflow-hidden rounded-2xl border border-border bg-background/95 p-1 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
                     <div className="p-3 mb-1 bg-muted/30 rounded-t-xl border-b border-border/50">
-                      <p className="text-sm font-bold truncate">{user?.fullName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user?.email || user?.phone}</p>
+                      <p className="text-sm font-bold truncate">
+                        {user?.fullName}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user?.email || user?.phone}
+                      </p>
                     </div>
-                    <Link 
-                      to="/profile" 
+                    {user?.roles?.includes("ADMIN") && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent group"
+                      >
+                        <LayoutDashboard className="h-4 w-4 " />
+                        Trang quản trị
+                      </Link>
+                    )}
+                    <Link
+                      to="/profile"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent group"
                     >
-                      <UserIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                      <UserIcon className="h-4 w-4" />
                       Trang cá nhân
                     </Link>
-                    <Link 
-                      to="/my-bookings" 
+                    <Link
+                      to="/my-bookings"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent group"
                     >
-                      <History className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                      <History className="h-4 w-4" />
                       Lịch sử đặt sân
                     </Link>
                     <div className="my-1 border-t border-border/50" />
@@ -215,11 +241,29 @@ export default function Header({
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 mt-2 px-2">
+                  {user?.roles?.includes("ADMIN") && (
+                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-3 font-semibold text-primary"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Trang quản trị
+                      </Button>
+                    </Link>
+                  )}
                   <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">Trang cá nhân</Button>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Trang cá nhân
+                    </Button>
                   </Link>
-                  <Link to="/my-bookings" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">Lịch sử đặt sân</Button>
+                  <Link
+                    to="/my-bookings"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button variant="ghost" className="w-full justify-start">
+                      Lịch sử đặt sân
+                    </Button>
                   </Link>
                   <Button
                     variant="outline"
