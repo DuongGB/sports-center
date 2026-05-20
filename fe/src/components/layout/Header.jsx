@@ -68,9 +68,9 @@ export default function Header({
             <Dumbbell className="h-5 w-5" />
           </div>
           <div className="leading-tight">
-            <div className="text-base font-semibold">Sports Center</div>
+            <div className="text-base font-semibold">D-Sport Center</div>
             <div className="text-xs text-muted-foreground">
-              Sports Center Booking System
+              D-Sport Center Booking System
             </div>
           </div>
         </Link>

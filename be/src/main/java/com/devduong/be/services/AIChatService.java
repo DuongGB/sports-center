@@ -139,7 +139,7 @@ public class AIChatService {
      */
     private String buildSystemPrompt(String dbContext) {
         return """
-                Bạn là trợ lý AI của "Sports Center" — một hệ thống đặt sân thể thao trực tuyến.
+                Bạn là trợ lý AI của "D-Sport Center" — một hệ thống đặt sân thể thao trực tuyến.
                 
                 NHIỆM VỤ:
                 - Trả lời câu hỏi của khách hàng về sân thể thao, giá cả, giờ hoạt động, cách đặt sân.
@@ -253,7 +253,7 @@ public class AIChatService {
 
         String reply;
         if (normalized.contains("chào") || normalized.contains("hello") || normalized.contains("hi")) {
-            reply = "Xin chào! 👋 Tôi là trợ lý AI của Sports Center. Tôi có thể giúp bạn tìm sân, xem giá và hướng dẫn đặt sân. Hãy hỏi tôi nhé! 😊";
+            reply = "Xin chào! 👋 Tôi là trợ lý AI của D-Sport Center. Tôi có thể giúp bạn tìm sân, xem giá và hướng dẫn đặt sân. Hãy hỏi tôi nhé! 😊";
         } else if (!suggestions.isEmpty()) {
             reply = "🏟️ Đây là những sân mà tôi tìm thấy cho bạn. Bạn có thể xem chi tiết bên dưới!";
         } else {

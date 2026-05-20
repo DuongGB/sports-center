@@ -15,7 +15,7 @@ const Footer = () => {
           <div className="md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <FontAwesomeIcon icon={faMountain} className="h-8 w-8" />
-              <span className="font-bold text-2xl">Sports Center</span>
+              <span className="font-bold text-2xl">D-Sport Center</span>
             </div>
             <p className="text-gray-400">
               Hệ thống đặt sân thể thao hàng đầu, mang đến trải nghiệm tiện lợi
@@ -72,7 +72,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-8 border-t border-border pt-8 text-center text-muted-foreground">
-          <p>&copy; 2026 Sports Center. All rights reserved.</p>
+          <p>&copy; 2026 D-Sport Center. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -95,7 +95,7 @@ public class AuthService {
             "  <p style='font-size: 12px; color: #70757a;'>Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn.</p>" +
             "</div>", resetUrl, resetUrl);
 
-        emailService.sendEmail(user.getEmail(), "Khôi phục mật khẩu - Sports Center", emailContent);
+        emailService.sendEmail(user.getEmail(), "Khôi phục mật khẩu - D-Sport Center", emailContent);
     }
 
     // TODO: Reset Password
