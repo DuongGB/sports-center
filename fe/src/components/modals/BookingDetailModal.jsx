@@ -86,7 +86,7 @@ export default function BookingDetailModal({ isOpen, onClose, booking }) {
             <div>
               <h3 className="text-xl font-black text-foreground">{booking.courtName}</h3>
               <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                <MapPin className="h-3 w-3" /> Sports Center Complex
+                <MapPin className="h-3 w-3" /> D-Sport Center Complex
               </p>
             </div>
             {getStatusBadge(booking.bookingStatus)}

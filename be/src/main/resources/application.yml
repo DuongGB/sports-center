@@ -8,6 +8,11 @@ spring:
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 5
+      data-source-properties:
+        sslmode: require
   jpa:
     hibernate:
       ddl-auto: validate
@@ -26,12 +31,12 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: profile, email
-            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            redirect-uri: ${APP_URL:http://localhost:8080}/login/oauth2/code/google
           facebook:
             client-id: ${FACEBOOK_CLIENT_ID}
             client-secret: ${FACEBOOK_CLIENT_SECRET}
             scope: public_profile, email
-            redirect-uri: http://localhost:8080/login/oauth2/code/facebook
+            redirect-uri: ${APP_URL:http://localhost:8080}/login/oauth2/code/facebook
   # Configuration for mail
   mail:
     host: ${MAIL_HOST}
@@ -47,7 +52,7 @@ spring:
 app:
   oauth2:
     # Sau khi người dùng đăng nhập thành công, họ sẽ được chuyển hướng đến URL này
-    redirect-uri: http://localhost:5173/oauth2/redirect
+    redirect-uri: ${FRONTEND_URL:http://localhost:5173}/oauth2/redirect
 
 
   # Configuration for Cloudinary

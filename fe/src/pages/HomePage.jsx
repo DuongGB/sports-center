@@ -909,7 +909,7 @@ export default function HomePage({
                   Sẵn sàng đặt sân cho buổi chơi tiếp theo?
                 </h2>
                 <p className="mt-4 max-w-2xl text-muted-foreground">
-                  Đội ngũ Sports Center luôn sẵn sàng hỗ trợ chọn sân, kiểm tra
+                  Đội ngũ D-Sport Center luôn sẵn sàng hỗ trợ chọn sân, kiểm tra
                   lịch trống và tư vấn dịch vụ phù hợp cho nhóm của bạn.
                 </p>
 
@@ -961,9 +961,9 @@ export default function HomePage({
                   <Dumbbell className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-lg font-semibold">Sports Center</p>
+                  <p className="text-lg font-semibold">D-Sport Center</p>
                   <p className="text-sm text-muted-foreground">
-                    Sports Center Booking System
+                    D-Sport Center Booking System
                   </p>
                 </div>
               </div>
@@ -1005,7 +1005,7 @@ export default function HomePage({
           </div>
 
           <div className="mt-8 border-t section-glow-divider pt-6 text-sm text-muted-foreground">
-            © 2026 Sports Center. All rights reserved.
+            © 2026 D-Sport Center. All rights reserved.
           </div>
         </div>
       </footer>

@@ -6,9 +6,9 @@
 
 ## 📝 Bản Quyền Sở Hữu (Copyright & License)
 
-**© 2026 Nguyễn Tấn Thái Dương.** *Bản quyền đã được đăng ký và bảo hộ pháp luật.*
+**© 2026 Nguyễn Tấn Thái Dương.** 
 
-Mọi hành vi sao chép, phân phối hoặc sửa đổi mã nguồn mà không có sự cho phép bằng văn bản từ tác giả **Nguyễn Tấn Thái Dương** đều được coi là vi phạm bản quyền và sẽ bị xử lý theo pháp luật hiện hành.
+Mọi hành vi sao chép, phân phối hoặc sửa đổi mã nguồn mà không có sự cho phép bằng văn bản từ tác giả **Nguyễn Tấn Thái Dương**
 
 ---
 
@@ -200,4 +200,4 @@ docker run --name sports-db -e POSTGRES_DB=sportsdb -e POSTGRES_USER=postgres -e
 *   **Tác Giả & Nhà Phát Triển:** **Nguyễn Tấn Thái Dương**
 *   **Github Profile:** [DuongGB](https://github.com/DuongGB)
 *   **Vị Trí:** Fullstack Software Engineer / Tech Lead
-*   **Bản quyền sản phẩm:** Mọi thông tin về bản quyền và sở hữu trí tuệ thuộc về tác giả **Nguyễn Tấn Thái Dương**. Nghiêm cấm phân phối lại dự án dưới mọi hình thức thương mại mà không có sự đồng ý của tác giả.
+*   **Bản quyền sản phẩm:** **Nguyễn Tấn Thái Dương**. 
