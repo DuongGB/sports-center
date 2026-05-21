@@ -3,11 +3,11 @@ import { toast } from "react-toastify";
 import axios from "axios";
 
 export default function PayPalButton({ amount, bookingId, onSuccess, onError }) {
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL_BASE;
 
   const createOrder = async () => {
     try {
-      const response = await axios.post(`${API_URL}/api/payment/paypal/create`, {
+      const response = await axios.post(`${API_URL}/payment/paypal/create`, {
         amount,
         currency: "USD",
       });
@@ -21,7 +21,7 @@ export default function PayPalButton({ amount, bookingId, onSuccess, onError }) 
 
   const onApprove = async (data) => {
     try {
-      const response = await axios.post(`${API_URL}/api/payment/paypal/capture`, {
+      const response = await axios.post(`${API_URL}/payment/paypal/capture`, {
         orderId: data.orderID,
         bookingId: bookingId,
       });

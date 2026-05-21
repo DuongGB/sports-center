@@ -14,7 +14,7 @@ export default function PaymentSuccessPage() {
   const isExecuting = useRef(false);
   
   const token = searchParams.get("token");
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL_BASE;
 
   useEffect(() => {
     const capturePayment = async () => {
@@ -28,7 +28,7 @@ export default function PaymentSuccessPage() {
 
       isExecuting.current = true;
       try {
-        const response = await axios.post(`${API_URL}/api/payment/paypal/capture`, {
+        const response = await axios.post(`${API_URL}/payment/paypal/capture`, {
           orderId: token,
           bookingId: bookingId
         });
