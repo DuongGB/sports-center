@@ -6,12 +6,12 @@ import { Loader2 } from "lucide-react";
 
 export default function PayPalRedirectButton({ amount, bookingId }) {
   const [loading, setLoading] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL_BASE;
 
   const handlePayment = async () => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/api/payment/paypal/create`, {
+      const response = await axios.post(`${API_URL}/payment/paypal/create`, {
         amount,
         currency: "USD",
         bookingId // backend needs to know which booking this is for redirect context if needed

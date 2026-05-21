@@ -1,5 +1,5 @@
 export const API_BASE_URL =  import.meta.env.VITE_API_URL_BASE;
-export const WS_URL = import.meta.env.VITE_API_URL + "/ws";
+export const WS_URL = import.meta.env.VITE_API_URL_BASE + "/ws";
 export const apiCall = async (endpoint, options = {}) => {
   const accessToken = localStorage.getItem("accessToken");
   const headers = {
