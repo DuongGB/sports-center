@@ -52,7 +52,7 @@ export default function CourtsPage() {
   const [modalMode, setModalMode] = useState("add"); 
   
   const [formData, setFormData] = useState({ 
-    id: "", name: "", location: "", sportTypeId: "", image: null, imageUrl: "", status: "ACTIVE",
+    id: "", name: "", location: "", sportTypeId: "", images: [], imageUrls: [], status: "ACTIVE",
     setupPriceAndAvailability: true,
     commonPrice: 100000,
     openTime: "06:00", 
@@ -62,7 +62,7 @@ export default function CourtsPage() {
   const openAddModal = () => {
     setModalMode("add");
     setFormData({ 
-      id: "", name: "", location: "", sportTypeId: "", image: null, imageUrl: "",
+      id: "", name: "", location: "", sportTypeId: "", images: [], imageUrls: [],
       status: "ACTIVE", setupPriceAndAvailability: true, commonPrice: 100000,
       openTime: "06:00", closeTime: "22:00"
     });
@@ -72,8 +72,8 @@ export default function CourtsPage() {
   const openEditModal = (item) => {
     setModalMode("edit");
     setFormData({ 
-      id: item.id, name: item.name, location: item.location, sportTypeId: item.sportTypeId, image: null, 
-      imageUrl: (item.courtImages && item.courtImages.length > 0) ? item.courtImages[0] : item.imageUrl,
+      id: item.id, name: item.name, location: item.location, sportTypeId: item.sportTypeId, images: [], 
+      imageUrls: item.courtImages || [],
       status: item.status || "ACTIVE",
       openTime: item.openTime ? item.openTime.substring(0, 5) : "06:00",
       closeTime: item.closeTime ? item.closeTime.substring(0, 5) : "22:00",
@@ -85,8 +85,8 @@ export default function CourtsPage() {
   const openViewModal = (item) => {
     setModalMode("view");
     setFormData({ 
-      id: item.id, name: item.name, location: item.location, sportTypeId: item.sportTypeId, image: null, 
-      imageUrl: (item.courtImages && item.courtImages.length > 0) ? item.courtImages[0] : item.imageUrl,
+      id: item.id, name: item.name, location: item.location, sportTypeId: item.sportTypeId, images: [], 
+      imageUrls: item.courtImages || [],
       status: item.status || "ACTIVE",
       openTime: item.openTime ? item.openTime.substring(0, 5) : "06:00",
       closeTime: item.closeTime ? item.closeTime.substring(0, 5) : "22:00",
@@ -155,7 +155,9 @@ export default function CourtsPage() {
       new Blob([JSON.stringify(requestData)], { type: "application/json" })
     );
 
-    if (formData.image) payload.append("image", formData.image);
+    if (formData.images && formData.images.length > 0) {
+      formData.images.forEach(file => payload.append("image", file));
+    }
 
     try {
       if (modalMode === "add") {
@@ -337,9 +339,11 @@ export default function CourtsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {modalMode === "view" && formData.imageUrl && (
-                 <div className="flex justify-center mb-4">
-                    <img src={formData.imageUrl} alt="Court" className="h-32 w-full object-cover rounded-md border border-border" />
+              {modalMode === "view" && formData.imageUrls && formData.imageUrls.length > 0 && (
+                 <div className="grid grid-cols-3 gap-2 mb-4">
+                    {formData.imageUrls.map((url, idx) => (
+                      <img key={idx} src={url} alt="Court" className="h-24 w-full object-cover rounded-md border border-border" />
+                    ))}
                  </div>
               )}
 
@@ -383,7 +387,17 @@ export default function CourtsPage() {
               {modalMode !== "view" && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Hình Ảnh</label>
-                  <Input type="file" accept="image/*" onChange={(e) => setFormData({ ...formData, image: e.target.files[0] })} />
+                  <Input type="file" accept="image/*" multiple onChange={(e) => setFormData({ ...formData, images: Array.from(e.target.files) })} />
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {formData.images && formData.images.length > 0
+                      ? formData.images.map((file, idx) => (
+                          <img key={idx} src={URL.createObjectURL(file)} alt="preview" className="h-16 w-full object-cover rounded-md border border-border" />
+                        ))
+                      : formData.imageUrls && formData.imageUrls.map((url, idx) => (
+                          <img key={idx} src={url} alt="preview" className="h-16 w-full object-cover rounded-md border border-border" />
+                        ))
+                    }
+                  </div>
                 </div>
               )}
               
