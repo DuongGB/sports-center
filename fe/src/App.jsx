@@ -43,7 +43,14 @@ import { useTheme } from "./components/theme-provider";
 
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const paypalOptions = {
   "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID,
@@ -70,7 +77,9 @@ function AppContent() {
   }, [isAuthenticated, user, fetchCurrentUser]);
 
   useEffect(() => {
-    queryClient.clear();
+    if (!isAuthenticated) {
+      queryClient.resetQueries();
+    }
   }, [isAuthenticated]);
 
   const handleLoginSuccess = async () => {
@@ -81,7 +90,7 @@ function AppContent() {
         navigate("/admin");
       }
     } catch (error) {
-      // Ignore error as it's handled in redux
+      console.log(error);
     }
   };
 
@@ -220,9 +229,9 @@ export default function App() {
         <PayPalScriptProvider options={paypalOptions}>
           <AppContent />
           {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-          <ToastContainer 
-            position="top-right" 
-            autoClose={3000} 
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
             theme={theme === "system" ? "light" : theme}
             toastClassName="liquid-glass-toast"
           />
