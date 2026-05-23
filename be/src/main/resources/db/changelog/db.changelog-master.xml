@@ -14,5 +14,6 @@
     <include file="db/changelog/changes/006-add-is-hide-to-reviews.sql"/>
     <include file="db/changelog/changes/007-create-booking-qr-tables.xml"/>
     <include file="db/changelog/changes/008-create-notifications-table.xml"/>
+    <include file="db/changelog/changes/009-make-guest-email-nullable.sql"/>
 
 </databaseChangeLog>

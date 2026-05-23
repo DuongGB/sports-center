@@ -99,7 +99,11 @@ const AdminLayout = () => {
     try {
       const notifsRes = await notificationService.getNotifications(page, 5);
       if (notifsRes && notifsRes.data) {
-        setNotifications(notifsRes.data.data || []);
+        const normalized = (notifsRes.data.data || []).map(n => ({
+          ...n,
+          isRead: n.isRead !== undefined ? n.isRead : n.read
+        }));
+        setNotifications(normalized);
         setNotifPage(notifsRes.data.currentPage || 1);
         setTotalNotifPages(notifsRes.data.totalPages || 1);
       }
@@ -179,9 +183,13 @@ const AdminLayout = () => {
         client.subscribe("/topic/admin/notifications", (msg) => {
           try {
             const newNotif = JSON.parse(msg.body);
+            const normalizedNotif = {
+              ...newNotif,
+              isRead: newNotif.isRead !== undefined ? newNotif.isRead : newNotif.read
+            };
             setNotifications((prev) => {
-              if (prev.find((n) => n.id === newNotif.id)) return prev;
-              const updated = [newNotif, ...prev];
+              if (prev.find((n) => n.id === normalizedNotif.id)) return prev;
+              const updated = [normalizedNotif, ...prev];
               return updated.slice(0, 5);
             });
             setUnreadCount((prev) => prev + 1);
@@ -468,10 +476,10 @@ const AdminLayout = () => {
                         notifications.map((notif) => (
                           <div
                             key={notif.id}
-                            className={`p-4 flex gap-3 hover:bg-foreground/5 transition-all relative group ${
+                            className={`p-4 flex gap-3 transition-all relative group border-b border-border/10 ${
                               !notif.isRead 
-                                ? "bg-teal-500/5 dark:bg-teal-500/10 border-l-4 border-teal-500" 
-                                : "opacity-75 border-l-4 border-transparent hover:opacity-100"
+                                ? "bg-teal-500/8 dark:bg-teal-500/12 hover:bg-teal-500/12 dark:hover:bg-teal-500/18 border-l-4 border-teal-500" 
+                                : "bg-transparent hover:bg-foreground/5 border-l-4 border-transparent"
                             }`}
                           >
                             {/* Icon Indicator */}
@@ -479,16 +487,16 @@ const AdminLayout = () => {
                               {notif.type === "BOOKING_CREATED" ? (
                                 <div className={`p-1.5 rounded-lg transition-colors ${
                                   !notif.isRead 
-                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                                    : "bg-muted text-muted-foreground/60 opacity-60"
+                                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" 
+                                    : "bg-muted text-muted-foreground"
                                 }`}>
                                   <CalendarDays size={16} />
                                 </div>
                               ) : (
                                 <div className={`p-1.5 rounded-lg transition-colors ${
                                   !notif.isRead 
-                                    ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" 
-                                    : "bg-muted text-muted-foreground/60 opacity-60"
+                                    ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" 
+                                    : "bg-muted text-muted-foreground"
                                 }`}>
                                   <X size={16} />
                                 </div>
@@ -498,24 +506,24 @@ const AdminLayout = () => {
                             {/* Content */}
                             <div className="flex-1 min-w-0 pr-4 z-20">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className={`text-xs ${!notif.isRead ? "font-bold text-foreground" : "font-medium text-muted-foreground/80"}`}>
+                                <p className={`text-xs ${!notif.isRead ? "font-bold text-foreground" : "font-semibold text-foreground/80"}`}>
                                   {notif.title}
                                 </p>
                                 {!notif.isRead ? (
-                                  <span className="px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-600 dark:text-teal-400 text-[9px] font-bold tracking-wide uppercase flex items-center gap-1">
+                                  <span className="px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-600 dark:text-teal-400 text-[9px] font-bold tracking-wide uppercase flex items-center gap-1 border border-teal-500/30">
                                     <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse flex-shrink-0" />
                                     Mới
                                   </span>
                                 ) : (
-                                  <span className="px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground/60 text-[9px] font-medium">
+                                  <span className="px-1.5 py-0.5 rounded bg-foreground/10 text-muted-foreground text-[9px] font-semibold border border-border/40">
                                     Đã đọc
                                   </span>
                                 )}
                               </div>
-                              <p className={`text-xs line-clamp-2 mt-1 ${!notif.isRead ? "text-muted-foreground font-medium" : "text-muted-foreground/60 font-normal"}`}>
+                              <p className={`text-xs line-clamp-2 mt-1 ${!notif.isRead ? "text-foreground/90 font-medium" : "text-muted-foreground font-normal"}`}>
                                 {notif.message}
                               </p>
-                              <span className="text-[10px] text-muted-foreground/50 mt-2 block">
+                              <span className="text-[10px] text-muted-foreground font-medium mt-2 block">
                                 {formatRelativeTime(notif.createdAt)}
                               </span>
                             </div>

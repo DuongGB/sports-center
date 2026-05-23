@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import {
   Users,
@@ -149,7 +150,6 @@ export default function DashboardPage() {
 
     let reportTitle = "";
     let dataRows = [];
-    let totalRevenue = 0;
 
     const allMonths = monthlyData || [];
 
@@ -157,15 +157,14 @@ export default function DashboardPage() {
       reportTitle = `NĂM ${selectedYear}`;
       dataRows = allMonths.map((m, idx) => {
         const rev = m.revenue || 0;
-        totalRevenue += rev;
-        return [idx + 1, m.monthLabel, `${rev}`];
+        return [idx + 1, m.monthLabel, rev];
       });
     } else if (exportType === "month") {
       const mIdx = Number(exportValue);
       const mData = allMonths[mIdx];
       reportTitle = `${mData.monthLabel.toUpperCase()} - NĂM ${selectedYear}`;
-      totalRevenue = mData.revenue || 0;
-      dataRows = [[1, mData.monthLabel, `${totalRevenue}`]];
+      const rev = mData.revenue || 0;
+      dataRows = [[1, mData.monthLabel, rev]];
     } else if (exportType === "quarter") {
       const qIdx = Number(exportValue);
       const qMonths = [qIdx * 3, qIdx * 3 + 1, qIdx * 3 + 2];
@@ -174,41 +173,13 @@ export default function DashboardPage() {
       qMonths.forEach((mIdx, i) => {
         const mData = allMonths[mIdx];
         const rev = mData ? mData.revenue || 0 : 0;
-        totalRevenue += rev;
         dataRows.push([
           i + 1,
           mData ? mData.monthLabel : `Tháng ${mIdx + 1}`,
-          `${rev}`,
+          rev,
         ]);
       });
     }
-
-    const csvContent = [
-      ["TRUNG TÂM THỂ THAO D-SPORT CENTER"],
-      ["Địa chỉ: Số 12 Nguyễn Văn Bảo, Phường 4, Gò Vấp, TP.HCM"],
-      ["Điện thoại: 0123 456 789"],
-      [],
-      ["BÁO CÁO DOANH THU " + reportTitle],
-      ["Ngày lập báo cáo: " + new Date().toLocaleDateString("vi-VN")],
-      [],
-      ["STT", "Thời gian", "Doanh thu (VNĐ)"],
-      ...dataRows,
-      [],
-      ["TỔNG CỘNG:", "", `${totalRevenue}`],
-      [],
-      [],
-      ["", "", "Người lập biểu"],
-      ["", "", "(Ký và ghi rõ họ tên)"],
-    ]
-      .map((e) => e.join(","))
-      .join("\n");
-
-    const blob = new Blob(["\ufeff" + csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
 
     const fileBaseName =
       exportType === "year"
@@ -217,10 +188,79 @@ export default function DashboardPage() {
           ? `Bao_cao_thang_${Number(exportValue) + 1}_${selectedYear}`
           : `Bao_cao_quy_${Number(exportValue) + 1}_${selectedYear}`;
 
-    link.setAttribute("download", `${fileBaseName}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Construct worksheet structure using array of objects (cells) for precise typing and styling
+    const headerRows = [
+      [{ v: "TRUNG TÂM THỂ THAO D-SPORT CENTER", t: "s" }],
+      [{ v: "Địa chỉ: Số 12 Nguyễn Văn Bảo, Phường 4, Gò Vấp, TP.HCM", t: "s" }],
+      [{ v: "Điện thoại: 0123 456 789", t: "s" }],
+      [],
+      [{ v: `BÁO CÁO DOANH THU THỜI GIAN: ${reportTitle}`, t: "s" }],
+      [{ v: "Ngày lập báo cáo: " + new Date().toLocaleDateString("vi-VN"), t: "s" }],
+      [],
+      [
+        { v: "STT", t: "s" },
+        { v: "Thời gian", t: "s" },
+        { v: "Doanh thu (VNĐ)", t: "s" }
+      ]
+    ];
+
+    const dataStartRow = headerRows.length + 1; // 1-based index (row 9)
+    const formattedDataRows = dataRows.map((row) => [
+      { v: row[0], t: "n" },
+      { v: row[1], t: "s" },
+      { v: row[2], t: "n", z: '#,##0"đ"' } // Proper Excel cell number formatting
+    ]);
+
+    const dataEndRow = dataStartRow + formattedDataRows.length - 1;
+
+    // Totals and signature rows
+    const formulaRange = `C${dataStartRow}:C${dataEndRow}`;
+    const totalRow = [
+      { v: "TỔNG CỘNG:", t: "s" },
+      { v: "", t: "s" },
+      { f: `SUM(${formulaRange})`, t: "n", z: '#,##0"đ"' } // Excel formula
+    ];
+
+    const footerRows = [
+      [],
+      totalRow,
+      [],
+      [],
+      [
+        { v: "", t: "s" },
+        { v: "", t: "s" },
+        { v: "Người lập biểu", t: "s" }
+      ],
+      [
+        { v: "", t: "s" },
+        { v: "", t: "s" },
+        { v: "(Ký và ghi rõ họ tên)", t: "s" }
+      ]
+    ];
+
+    const allRows = [...headerRows, ...formattedDataRows, ...footerRows];
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+    // Merge titles cleanly
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 2 } }
+    ];
+
+    // Precise column widths to prevent ### formatting errors and overlap
+    ws["!cols"] = [
+      { wch: 10 }, // STT column
+      { wch: 25 }, // Time column
+      { wch: 28 }  // Revenue column
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Doanh Thu");
+    XLSX.writeFile(wb, `${fileBaseName}.xlsx`);
   };
 
   // ===== Stats Cards =====

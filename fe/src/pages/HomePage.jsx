@@ -48,17 +48,15 @@ const navLinks = [
   { label: "Liên hệ", href: "#contact" },
 ];
 
-
-
 const pricePlans = [
   {
-    title: "Giờ thấp điểm",
-    price: "Từ 90.000đ",
-    note: "Phù hợp buổi sáng và đầu giờ chiều.",
+    title: "Giá ngày lễ",
+    price: "Ưu đãi siêu hời",
+    note: "Ngày lễ luôn được giảm giá mạnh",
   },
   {
     title: "Giờ tiêu chuẩn",
-    price: "Từ 150.000đ",
+    price: "Từ 60.000đ",
     note: "Khung giờ linh hoạt trong ngày.",
   },
   {
@@ -87,7 +85,6 @@ function statusStyles(status) {
 }
 
 export default function HomePage({
-  user,
   isAuthenticated,
   onLoginClick,
   onRegisterClick,
@@ -102,10 +99,14 @@ export default function HomePage({
   });
 
   const navigate = useNavigate();
-  const { data: myBookingsData } = useMyBookingsQuery(1, 8, { enabled: isAuthenticated });
+  const { data: myBookingsData } = useMyBookingsQuery(1, 8, {
+    enabled: isAuthenticated,
+  });
   const recentBookings = useMemo(() => {
     if (!myBookingsData) return [];
-    const bookingsList = Array.isArray(myBookingsData) ? myBookingsData : (myBookingsData.data || []);
+    const bookingsList = Array.isArray(myBookingsData)
+      ? myBookingsData
+      : myBookingsData.data || [];
     return bookingsList.slice(0, 3);
   }, [myBookingsData]);
 
@@ -113,11 +114,20 @@ export default function HomePage({
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
   const { data: activeEvents = [] } = useActiveEventsQuery();
 
-
-
-
-  const { courts, loading: courtsLoading, page, totalPages, totalElements: totalCourts, setPage, setFilters } = useCourts();
-  const { sportTypes, loading: sportTypesLoading, totalElements: totalSportTypes } = useSportTypes();
+  const {
+    courts,
+    loading: courtsLoading,
+    page,
+    totalPages,
+    totalElements: totalCourts,
+    setPage,
+    setFilters,
+  } = useCourts();
+  const {
+    sportTypes,
+    loading: sportTypesLoading,
+    totalElements: totalSportTypes,
+  } = useSportTypes();
 
   const stats = [
     { value: `${totalCourts}+`, label: "Sân đang hoạt động" },
@@ -137,7 +147,8 @@ export default function HomePage({
     if (nameLower.includes("pickleball")) return "🥒";
     if (nameLower.includes("bóng bàn")) return "🏓";
     if (nameLower.includes("bóng rổ")) return "🏀";
-    if (nameLower.includes("tennis") || nameLower.includes("quần vợt")) return "🎾";
+    if (nameLower.includes("tennis") || nameLower.includes("quần vợt"))
+      return "🎾";
     return "🎯";
   };
 
@@ -145,14 +156,19 @@ export default function HomePage({
     if (!events || events.length === 0) return null;
 
     let bestDiscount = null;
-    const originalPrice = court.prices && court.prices.length > 0 ? court.prices[0].price : 0;
+    const originalPrice =
+      court.prices && court.prices.length > 0 ? court.prices[0].price : 0;
     if (originalPrice === 0) return null;
 
-    events.forEach(event => {
+    events.forEach((event) => {
       // Check if this event applies to this court
-      const applies = event.scope === "ALL_COURTS" || event.targets?.some(target => 
-        target.courtId === court.id || target.sportTypeId === court.sportTypeId
-      );
+      const applies =
+        event.scope === "ALL_COURTS" ||
+        event.targets?.some(
+          (target) =>
+            target.courtId === court.id ||
+            target.sportTypeId === court.sportTypeId,
+        );
 
       if (applies) {
         let currentFinalPrice = originalPrice;
@@ -167,11 +183,14 @@ export default function HomePage({
         }
 
         if (currentFinalPrice < (bestDiscount?.finalPrice ?? Infinity)) {
-          bestDiscount = { 
-            type: event.type, 
-            value: event.type === "DISCOUNT_PERCENT" ? event.discountPercent : event.discountAmount,
+          bestDiscount = {
+            type: event.type,
+            value:
+              event.type === "DISCOUNT_PERCENT"
+                ? event.discountPercent
+                : event.discountAmount,
             finalPrice: Math.max(0, currentFinalPrice),
-            originalPrice
+            originalPrice,
           };
         }
       }
@@ -180,39 +199,44 @@ export default function HomePage({
     return bestDiscount;
   };
 
-  const displaySports = sportTypes.map(st => ({
-
+  const displaySports = sportTypes.map((st) => ({
     id: st.id,
     name: st.name,
     icon: getSportIcon(st.name),
-    description: "Khám phá sân chơi chất lượng cao và cơ sở vật chất tuyệt vời.",
+    description:
+      "Khám phá sân chơi chất lượng cao và cơ sở vật chất tuyệt vời.",
   }));
 
-  const displayCourts = courts.map(court => {
+  const displayCourts = courts.map((court) => {
     const discountInfo = calculateDiscountedPrice(court, activeEvents);
-    
+
     return {
       id: court.id,
       name: court.name,
       sport: court.sportTypeName || "Khác",
-      price: court.prices && court.prices.length > 0 
-        ? `${court.prices[0].price.toLocaleString()}đ/giờ` 
-        : "Liên hệ",
-      originalPrice: court.prices && court.prices.length > 0 ? court.prices[0].price : 0,
+      price:
+        court.prices && court.prices.length > 0
+          ? `${court.prices[0].price.toLocaleString()}đ/giờ`
+          : "Liên hệ",
+      originalPrice:
+        court.prices && court.prices.length > 0 ? court.prices[0].price : 0,
       discountInfo,
       location: court.location,
-      status: court.status === "ACTIVE" ? "available" : court.status === "MAINTENANCE" ? "maintenance" : "inactive",
+      status:
+        court.status === "ACTIVE"
+          ? "available"
+          : court.status === "MAINTENANCE"
+            ? "maintenance"
+            : "inactive",
       rating: court.averageRating || 0,
       totalReviews: court.totalReviews || 0,
-      image: court.courtImages && court.courtImages.length > 0 
-        ? court.courtImages[0] 
-        : "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
+      image:
+        court.courtImages && court.courtImages.length > 0
+          ? court.courtImages[0]
+          : "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop",
       tags: ["Mới cập nhật", "Giữ chỗ nhanh"],
     };
   });
-
-
-  const featuredCount = courts.length;
 
   const handleSearchClick = () => {
     const apiFilters = {
@@ -220,19 +244,19 @@ export default function HomePage({
       keyword: search.keyword.trim(),
       sportTypeId: search.sport === "all" ? "" : search.sport,
     };
-    
+
     // Also include location/courtName in keyword if not empty
     if (search.location.trim()) {
-      apiFilters.keyword = apiFilters.keyword 
+      apiFilters.keyword = apiFilters.keyword
         ? `${apiFilters.keyword} ${search.location.trim()}`
         : search.location.trim();
     }
-    
+
     setFilters(apiFilters);
     setPage(1);
 
-    const el = document.getElementById('booking');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    const el = document.getElementById("booking");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -240,9 +264,9 @@ export default function HomePage({
       {/* Side Banners - Only visible on very large screens */}
       <div className="side-banner side-banner-left">
         <div className="banner-content group relative cursor-pointer">
-          <img 
-            src="/sports_gear_banner_1778866716963.png" 
-            alt="Ad Left" 
+          <img
+            src="/sports_gear_banner_1778866716963.png"
+            alt="Ad Left"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -251,12 +275,12 @@ export default function HomePage({
           </div>
         </div>
       </div>
-      
+
       <div className="side-banner side-banner-right">
         <div className="banner-content group relative cursor-pointer">
-          <img 
-            src="/booking_discount_banner_1778866731696.png" 
-            alt="Ad Right" 
+          <img
+            src="/booking_discount_banner_1778866731696.png"
+            alt="Ad Right"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -271,10 +295,30 @@ export default function HomePage({
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 -z-10 hero-3d-bg grid-pattern" />
           {/* Floating 3D sport emojis */}
-          <div className="absolute top-20 left-[8%] text-5xl floating opacity-60 pointer-events-none select-none" aria-hidden="true">⚽</div>
-          <div className="absolute top-40 right-[12%] text-4xl floating-reverse opacity-50 pointer-events-none select-none" aria-hidden="true">🏸</div>
-          <div className="absolute bottom-20 left-[15%] text-4xl floating-slow opacity-40 pointer-events-none select-none" aria-hidden="true">🎾</div>
-          <div className="absolute bottom-32 right-[20%] text-5xl floating opacity-30 pointer-events-none select-none" aria-hidden="true">🏀</div>
+          <div
+            className="absolute top-20 left-[8%] text-5xl floating opacity-60 pointer-events-none select-none"
+            aria-hidden="true"
+          >
+            ⚽
+          </div>
+          <div
+            className="absolute top-40 right-[12%] text-4xl floating-reverse opacity-50 pointer-events-none select-none"
+            aria-hidden="true"
+          >
+            🏸
+          </div>
+          <div
+            className="absolute bottom-20 left-[15%] text-4xl floating-slow opacity-40 pointer-events-none select-none"
+            aria-hidden="true"
+          >
+            🎾
+          </div>
+          <div
+            className="absolute bottom-32 right-[20%] text-5xl floating opacity-30 pointer-events-none select-none"
+            aria-hidden="true"
+          >
+            🏀
+          </div>
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-24">
             <div className="flex flex-col justify-center">
               <div className="slide-up mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary shimmer">
@@ -286,7 +330,11 @@ export default function HomePage({
               {activeEvents.length > 0 && (
                 <div className="slide-up-d1 mb-6 grid gap-3 max-w-2xl">
                   {activeEvents.map((ev, i) => (
-                    <div key={ev.id} className="relative overflow-hidden glass-card rounded-xl border border-primary/30 p-3 depth-shadow group" style={{ animationDelay: `${i * 0.1}s` }}>
+                    <div
+                      key={ev.id}
+                      className="relative overflow-hidden glass-card rounded-xl border border-primary/30 p-3 depth-shadow group"
+                      style={{ animationDelay: `${i * 0.1}s` }}
+                    >
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                       <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -294,8 +342,12 @@ export default function HomePage({
                             <Zap className="h-5 w-5" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">{ev.name}</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{ev.description || "Ưu đãi đặc biệt đang diễn ra"}</p>
+                            <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">
+                              {ev.name}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                              {ev.description || "Ưu đãi đặc biệt đang diễn ra"}
+                            </p>
                           </div>
                         </div>
                         <div className="text-left sm:text-right shrink-0 ml-13 sm:ml-0">
@@ -306,11 +358,18 @@ export default function HomePage({
                           )}
                           {ev.type === "DISCOUNT_FIXED" && (
                             <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold px-3 py-1 shadow-lg">
-                              Giảm {Number(ev.discountAmount).toLocaleString("vi-VN")}đ
+                              Giảm{" "}
+                              {Number(ev.discountAmount).toLocaleString(
+                                "vi-VN",
+                              )}
+                              đ
                             </Badge>
                           )}
                           {ev.type === "BLOCK_BOOKING" && (
-                            <Badge variant="destructive" className="text-sm font-bold px-3 py-1">
+                            <Badge
+                              variant="destructive"
+                              className="text-sm font-bold px-3 py-1"
+                            >
                               Thông báo
                             </Badge>
                           )}
@@ -322,7 +381,8 @@ export default function HomePage({
               )}
 
               <h1 className="slide-up-d1 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                Nền tảng đặt sân thể thao đa môn cho <span className="gradient-text">người chơi hiện đại.</span>
+                Nền tảng đặt sân thể thao đa môn cho{" "}
+                <span className="gradient-text">người chơi hiện đại.</span>
               </h1>
 
               <p className="slide-up-d2 mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
@@ -338,7 +398,12 @@ export default function HomePage({
                     <ArrowRight className="h-4 w-4" />
                   </a>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="glass-card border-primary/20">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="glass-card border-primary/20"
+                >
                   <a href="#sports">Khám phá môn thể thao</a>
                 </Button>
               </div>
@@ -350,7 +415,9 @@ export default function HomePage({
                     className="glass-card rounded-2xl p-5 gradient-border"
                     style={{ animationDelay: `${i * 0.1}s` }}
                   >
-                    <div className="text-2xl font-bold gradient-text">{item.value}</div>
+                    <div className="text-2xl font-bold gradient-text">
+                      {item.value}
+                    </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {item.label}
                     </div>
@@ -481,7 +548,10 @@ export default function HomePage({
                     />
                   </div>
 
-                  <Button className="h-11 w-full gap-2" onClick={handleSearchClick}>
+                  <Button
+                    className="h-11 w-full gap-2"
+                    onClick={handleSearchClick}
+                  >
                     <CalendarDays className="h-4 w-4" />
                     Tìm sân trống ngay
                   </Button>
@@ -515,14 +585,16 @@ export default function HomePage({
             </div>
           </div>
         </section>
-        
+
         {/* Recent Bookings Section (Only for logged in users) */}
         {isAuthenticated && recentBookings.length > 0 && (
           <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 border-b border-border/40">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold">Lịch sử đặt sân gần đây</h2>
-                <p className="text-sm text-muted-foreground">Các hoạt động mới nhất của bạn trên hệ thống.</p>
+                <p className="text-sm text-muted-foreground">
+                  Các hoạt động mới nhất của bạn trên hệ thống.
+                </p>
               </div>
               <Button asChild variant="link" size="sm">
                 <Link to="/my-bookings">Xem tất cả</Link>
@@ -530,23 +602,36 @@ export default function HomePage({
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {recentBookings.map((booking) => (
-                <Card key={booking.id} className="bg-card/50 hover:bg-card transition-colors cursor-pointer" onClick={() => navigate("/my-bookings")}>
+                <Card
+                  key={booking.id}
+                  className="bg-card/50 hover:bg-card transition-colors cursor-pointer"
+                  onClick={() => navigate("/my-bookings")}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                         {booking.courtName.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-semibold text-sm line-clamp-1">{booking.courtName}</p>
-                        <p className="text-xs text-muted-foreground">{booking.bookingDate} • {booking.startTime.slice(0,5)}</p>
+                        <p className="font-semibold text-sm line-clamp-1">
+                          {booking.courtName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {booking.bookingDate} •{" "}
+                          {booking.startTime.slice(0, 5)}
+                        </p>
                       </div>
                     </div>
-                    {booking.bookingStatus === "COMPLETED" && !booking.isReviewed && (
-                      <Badge className="bg-amber-500 hover:bg-amber-600 text-[10px] px-2 py-0">Đánh giá</Badge>
-                    )}
-                    {booking.bookingStatus === "COMPLETED" && booking.isReviewed && (
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    )}
+                    {booking.bookingStatus === "COMPLETED" &&
+                      !booking.isReviewed && (
+                        <Badge className="bg-amber-500 hover:bg-amber-600 text-[10px] px-2 py-0">
+                          Đánh giá
+                        </Badge>
+                      )}
+                    {booking.bookingStatus === "COMPLETED" &&
+                      booking.isReviewed && (
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      )}
                   </CardContent>
                 </Card>
               ))}
@@ -584,10 +669,7 @@ export default function HomePage({
               </div>
             ) : (
               displaySports.map((sport) => (
-                <div
-                  key={sport.name}
-                  className="card-3d group"
-                >
+                <div key={sport.name} className="card-3d group">
                   <div className="card-3d-inner glass-card rounded-2xl p-6 gradient-border">
                     <div className="flex items-start gap-4">
                       <div className="sport-icon-3d h-14 w-14 text-3xl">
@@ -617,9 +699,13 @@ export default function HomePage({
         >
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-primary">Danh sách sân bãi</p>
+              <p className="text-sm font-medium text-primary">
+                Danh sách sân bãi
+              </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                {courtsLoading ? "Đang tải danh sách sân..." : `Khám phá các sân chơi phù hợp`}
+                {courtsLoading
+                  ? "Đang tải danh sách sân..."
+                  : `Khám phá các sân chơi phù hợp`}
               </h2>
               <p className="mt-2 max-w-2xl text-muted-foreground">
                 Danh sách dưới đây được thiết kế như một trải nghiệm thương mại:
@@ -660,106 +746,119 @@ export default function HomePage({
               </div>
             ) : (
               displayCourts.map((court) => (
-              <div
-                key={court.id}
-                className="card-3d group overflow-hidden rounded-2xl glass-card depth-shadow"
-              >
-                <div 
-                  className="relative aspect-[4/3] overflow-hidden cursor-pointer"
-                  onClick={() => navigate(`/court/${court.id}`)}
+                <div
+                  key={court.id}
+                  className="card-3d group overflow-hidden rounded-2xl glass-card depth-shadow"
                 >
-                  <img
-                    src={court.image}
-                    alt={court.name}
-                    className="h-full w-full object-cover parallax-zoom"
-                  />
-                  <div className="absolute left-4 top-4 flex items-center gap-2">
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-medium backdrop-blur ${statusStyles(
-                        court.status,
-                      )}`}
-                    >
-                      {statusLabel(court.status)}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-4 left-4 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-                    {court.sport}
-                  </div>
-                </div>
-
-                <CardHeader className="space-y-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="cursor-pointer" onClick={() => navigate(`/court/${court.id}`)}>
-                      <CardTitle className="text-xl hover:text-primary transition-colors">{court.name}</CardTitle>
-                      <CardDescription className="mt-1 flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {court.location}
-                      </CardDescription>
-                    </div>
-                    <div 
-                      className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-300 cursor-pointer hover:bg-amber-500/20 transition-colors"
-                      onClick={() => {
-                        setSelectedCourtForReviews(court);
-                        setIsReviewsModalOpen(true);
-                      }}
-                    >
-                      <Star className="h-4 w-4 fill-current" />
-                      {court.rating} {court.totalReviews > 0 && <span className="text-xs opacity-70">({court.totalReviews})</span>}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {court.tags.map((tag) => (
+                  <div
+                    className="relative aspect-[4/3] overflow-hidden cursor-pointer"
+                    onClick={() => navigate(`/court/${court.id}`)}
+                  >
+                    <img
+                      src={court.image}
+                      alt={court.name}
+                      className="h-full w-full object-cover parallax-zoom"
+                    />
+                    <div className="absolute left-4 top-4 flex items-center gap-2">
                       <span
-                        key={tag}
-                        className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
+                        className={`rounded-full border px-3 py-1 text-xs font-medium backdrop-blur ${statusStyles(
+                          court.status,
+                        )}`}
                       >
-                        {tag}
+                        {statusLabel(court.status)}
                       </span>
-                    ))}
+                    </div>
+                    <div className="absolute bottom-4 left-4 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+                      {court.sport}
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-border/60 pt-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Giá thuê</p>
-                      {court.discountInfo ? (
-                        <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground line-through decoration-red-500/50">
-                            {court.price}
+                  <CardHeader className="space-y-2">
+                    <div className="flex items-start justify-between gap-4">
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => navigate(`/court/${court.id}`)}
+                      >
+                        <CardTitle className="text-xl hover:text-primary transition-colors">
+                          {court.name}
+                        </CardTitle>
+                        <CardDescription className="mt-1 flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {court.location}
+                        </CardDescription>
+                      </div>
+                      <div
+                        className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-300 cursor-pointer hover:bg-amber-500/20 transition-colors"
+                        onClick={() => {
+                          setSelectedCourtForReviews(court);
+                          setIsReviewsModalOpen(true);
+                        }}
+                      >
+                        <Star className="h-4 w-4 fill-current" />
+                        {court.rating}{" "}
+                        {court.totalReviews > 0 && (
+                          <span className="text-xs opacity-70">
+                            ({court.totalReviews})
                           </span>
-                          <p className="text-xl font-bold gradient-text-emerald">
-                            {court.discountInfo.finalPrice.toLocaleString()}đ/giờ
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-xl font-semibold gradient-text-emerald">
-                          {court.price}
-                        </p>
-                      )}
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {court.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
 
+                    <div className="flex items-center justify-between border-t border-border/60 pt-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Giá thuê
+                        </p>
+                        {court.discountInfo ? (
+                          <div className="flex flex-col">
+                            <span className="text-xs text-muted-foreground line-through decoration-red-500/50">
+                              {court.price}
+                            </span>
+                            <p className="text-xl font-bold gradient-text-emerald">
+                              {court.discountInfo.finalPrice.toLocaleString()}
+                              đ/giờ
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xl font-semibold gradient-text-emerald">
+                            {court.price}
+                          </p>
+                        )}
+                      </div>
 
-                    <Button
-                      disabled={court.status !== "available"}
-                      onClick={() => {
-                        navigate(`/booking?courtId=${court.id}`);
-                      }}
-                    >
-                      {court.status === "available" ? "Đặt ngay" : "Tạm dừng"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </div>
-            )))}
+                      <Button
+                        disabled={court.status !== "available"}
+                        onClick={() => {
+                          navigate(`/booking?courtId=${court.id}`);
+                        }}
+                      >
+                        {court.status === "available" ? "Đặt ngay" : "Tạm dừng"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </div>
+              ))
+            )}
           </div>
 
           {!courtsLoading && totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setPage((p) => Math.max(1, p - 1))} 
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
                 Trước
@@ -767,9 +866,9 @@ export default function HomePage({
               <span className="text-sm font-medium text-muted-foreground">
                 Trang {page} / {totalPages}
               </span>
-              <Button 
-                variant="outline" 
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))} 
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
                 Tiếp
@@ -795,8 +894,13 @@ export default function HomePage({
 
           <div className="grid gap-4 lg:grid-cols-3">
             {pricePlans.map((plan, i) => (
-              <div key={plan.title} className={`card-3d ${i === 1 ? 'scale-105 z-10' : ''}`}>
-                <div className={`card-3d-inner glass-card rounded-2xl p-6 space-y-3 gradient-border ${i === 1 ? 'ring-2 ring-primary/20' : ''}`}>
+              <div
+                key={plan.title}
+                className={`card-3d ${i === 1 ? "scale-105 z-10" : ""}`}
+              >
+                <div
+                  className={`card-3d-inner glass-card rounded-2xl p-6 space-y-3 gradient-border ${i === 1 ? "ring-2 ring-primary/20" : ""}`}
+                >
                   <div className="flex items-center gap-2">
                     <div className="sport-icon-3d h-10 w-10">
                       <ShieldCheck className="h-5 w-5 text-primary" />
@@ -901,7 +1005,12 @@ export default function HomePage({
         >
           <div className="rounded-[2rem] glass-card p-6 sm:p-8 lg:p-10 gradient-border relative overflow-hidden">
             {/* Floating decorative elements */}
-            <div className="absolute top-6 right-8 text-4xl floating-slow opacity-20 pointer-events-none select-none" aria-hidden="true">🏆</div>
+            <div
+              className="absolute top-6 right-8 text-4xl floating-slow opacity-20 pointer-events-none select-none"
+              aria-hidden="true"
+            >
+              🏆
+            </div>
             <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
                 <p className="text-sm font-medium text-primary">Liên hệ</p>
@@ -917,9 +1026,6 @@ export default function HomePage({
                   <Button asChild size="lg" className="btn-neon">
                     <a href="#booking">Xem sân trống</a>
                   </Button>
-                  <Button asChild variant="outline" size="lg" className="glass-card">
-                    <a href="tel:0356309561">Gọi tư vấn</a>
-                  </Button>
                 </div>
               </div>
 
@@ -930,14 +1036,14 @@ export default function HomePage({
                 </div>
                 <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="mt-2 text-lg font-semibold">
-                    contact@sportscenter.vn
+                  <p className="mt-2 text-lg font-semibold wrap-break-word">
+                    duongnguyenqn1323@gmail.com
                   </p>
                 </div>
                 <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm text-muted-foreground">Địa chỉ</p>
                   <p className="mt-2 text-lg font-semibold">
-                    123 Đường ABC, Quận 1, TP.HCM
+                    Quốc lộ 1A,Tam Xuân, Thành Phố Đà Nẵng
                   </p>
                 </div>
                 <div className="glass-card rounded-2xl p-5">
