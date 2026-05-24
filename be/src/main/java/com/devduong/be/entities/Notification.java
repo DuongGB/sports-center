@@ -1,6 +1,7 @@
 package com.devduong.be.entities;
 
 import com.devduong.be.enums.NotificationType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -34,6 +35,7 @@ public class Notification {
     @Column(name = "target_id")
     String targetId;
 
+    @JsonProperty("isRead")
     @Column(name = "is_read", nullable = false)
     boolean isRead;
 

@@ -5,6 +5,7 @@ import com.devduong.be.enums.NotificationType;
 import com.devduong.be.repositories.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class NotificationService {
     NotificationRepository notificationRepository;
@@ -83,6 +85,13 @@ public class NotificationService {
 
     @Transactional
     public void deleteNotification(UUID id) {
-        notificationRepository.deleteById(id);
+        log.info("Deleting notification with ID: {}", id);
+        if (notificationRepository.existsById(id)) {
+            notificationRepository.deleteById(id);
+            notificationRepository.flush(); // Force database sync in the active transaction
+            log.info("Notification with ID: {} deleted successfully", id);
+        } else {
+            log.warn("Notification with ID: {} not found in database", id);
+        }
     }
 }

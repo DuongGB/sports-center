@@ -35,9 +35,11 @@ export default function CourtDetailPage() {
 
   const { data: activeEvents = [] } = useActiveEventsQuery();
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setSelectedImageIndex(0);
   }, [id]);
 
   const calculateDiscountedPrice = (court, events) => {
@@ -104,10 +106,8 @@ export default function CourtDetailPage() {
     );
   }
 
-  const mainImage =
-    court.courtImages?.[0] ||
-    "https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop";
-  const otherImages = court.courtImages?.slice(1) || [];
+  const allImages = court.courtImages?.length > 0 ? court.courtImages : ["https://images.unsplash.com/photo-1587280501635-3953384038ce?q=80&w=2070&auto=format&fit=crop"];
+  const mainImage = allImages[selectedImageIndex] || allImages[0];
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -143,12 +143,13 @@ export default function CourtDetailPage() {
                 </Badge>
               </div>
 
-              {otherImages.length > 0 && (
-                <div className="grid grid-cols-4 gap-4">
-                  {otherImages.map((img, idx) => (
+              {allImages.length > 1 && (
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                  {allImages.map((img, idx) => (
                     <div
                       key={idx}
-                      className="aspect-square overflow-hidden rounded-2xl border border-border/60 shadow-sm transition-transform hover:scale-95 cursor-pointer"
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={`aspect-square overflow-hidden rounded-xl border-2 shadow-sm transition-all hover:scale-95 cursor-pointer ${selectedImageIndex === idx ? 'border-primary opacity-100 ring-2 ring-primary/30 ring-offset-1 ring-offset-background' : 'border-border/60 opacity-60 hover:opacity-100'}`}
                     >
                       <img
                         src={img}

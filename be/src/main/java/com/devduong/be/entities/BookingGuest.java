@@ -34,7 +34,7 @@ public class BookingGuest {
     @Column(name = "full_name", nullable = false)
     String fullName;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = true)
     String email;
 
     @Column(name = "phone", nullable = false)
